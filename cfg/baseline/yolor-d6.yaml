@@ -1,0 +1,63 @@
+# parameters
+nc: 80  # number of classes
+depth_multiple: 1.0  # expand model depth
+width_multiple: 1.25  # expand layer channels
+
+# anchors
+anchors:
+  - [ 19,27,  44,40,  38,94 ]  # P3/8
+  - [ 96,68,  86,152,  180,137 ]  # P4/16
+  - [ 140,301,  303,264,  238,542 ]  # P5/32
+  - [ 436,615,  739,380,  925,792 ]  # P6/64
+
+# CSP-Darknet backbone
+backbone:
+  # [from, number, module, args]
+  [[-1, 1, ReOrg, []],  # 0
+   [-1, 1, Conv, [64, 3, 1]],  # 1-P1/2
+   [-1, 1, DownC, [128]],  # 2-P2/4
+   [-1, 3, BottleneckCSPA, [128]],
+   [-1, 1, DownC, [256]],  # 4-P3/8
+   [-1, 15, BottleneckCSPA, [256]],
+   [-1, 1, DownC, [512]],  # 6-P4/16
+   [-1, 15, BottleneckCSPA, [512]],
+   [-1, 1, DownC, [768]], # 8-P5/32
+   [-1, 7, BottleneckCSPA, [768]],
+   [-1, 1, DownC, [1024]], # 10-P6/64
+   [-1, 7, BottleneckCSPA, [1024]],  # 11
+  ]
+
+# CSP-Dark-PAN head
+head:
+  [[-1, 1, SPPCSPC, [512]], # 12
+   [-1, 1, Conv, [384, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [-6, 1, Conv, [384, 1, 1]], # route backbone P5
+   [[-1, -2], 1, Concat, [1]],
+   [-1, 3, BottleneckCSPB, [384]], # 17
+   [-1, 1, Conv, [256, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [-13, 1, Conv, [256, 1, 1]], # route backbone P4
+   [[-1, -2], 1, Concat, [1]],
+   [-1, 3, BottleneckCSPB, [256]], # 22
+   [-1, 1, Conv, [128, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [-20, 1, Conv, [128, 1, 1]], # route backbone P3
+   [[-1, -2], 1, Concat, [1]],
+   [-1, 3, BottleneckCSPB, [128]], # 27
+   [-1, 1, Conv, [256, 3, 1]],
+   [-2, 1, DownC, [256]],
+   [[-1, 22], 1, Concat, [1]],  # cat
+   [-1, 3, BottleneckCSPB, [256]], # 31
+   [-1, 1, Conv, [512, 3, 1]],
+   [-2, 1, DownC, [384]],
+   [[-1, 17], 1, Concat, [1]],  # cat
+   [-1, 3, BottleneckCSPB, [384]], # 35
+   [-1, 1, Conv, [768, 3, 1]],
+   [-2, 1, DownC, [512]],
+   [[-1, 12], 1, Concat, [1]],  # cat
+   [-1, 3, BottleneckCSPB, [512]], # 39
+   [-1, 1, Conv, [1024, 3, 1]],
+
+   [[28,32,36,40], 1, IDetect, [nc, anchors]],   # Detect(P3, P4, P5, P6)
+  ]
