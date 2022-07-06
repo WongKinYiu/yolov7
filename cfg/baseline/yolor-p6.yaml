@@ -1,0 +1,63 @@
+# parameters
+nc: 80  # number of classes
+depth_multiple: 1.0  # expand model depth
+width_multiple: 1.0  # expand layer channels
+
+# anchors
+anchors:
+  - [ 19,27,  44,40,  38,94 ]  # P3/8
+  - [ 96,68,  86,152,  180,137 ]  # P4/16
+  - [ 140,301,  303,264,  238,542 ]  # P5/32
+  - [ 436,615,  739,380,  925,792 ]  # P6/64
+
+# CSP-Darknet backbone
+backbone:
+  # [from, number, module, args]
+  [[-1, 1, ReOrg, []],  # 0
+   [-1, 1, Conv, [64, 3, 1]],  # 1-P1/2
+   [-1, 1, Conv, [128, 3, 2]],  # 2-P2/4
+   [-1, 3, BottleneckCSPA, [128]],
+   [-1, 1, Conv, [256, 3, 2]],  # 4-P3/8
+   [-1, 7, BottleneckCSPA, [256]],
+   [-1, 1, Conv, [384, 3, 2]],  # 6-P4/16
+   [-1, 7, BottleneckCSPA, [384]],
+   [-1, 1, Conv, [512, 3, 2]], # 8-P5/32
+   [-1, 3, BottleneckCSPA, [512]],
+   [-1, 1, Conv, [640, 3, 2]], # 10-P6/64
+   [-1, 3, BottleneckCSPA, [640]],  # 11
+  ]
+
+# CSP-Dark-PAN head
+head:
+  [[-1, 1, SPPCSPC, [320]], # 12
+   [-1, 1, Conv, [256, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [-6, 1, Conv, [256, 1, 1]], # route backbone P5
+   [[-1, -2], 1, Concat, [1]],
+   [-1, 3, BottleneckCSPB, [256]], # 17
+   [-1, 1, Conv, [192, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [-13, 1, Conv, [192, 1, 1]], # route backbone P4
+   [[-1, -2], 1, Concat, [1]],
+   [-1, 3, BottleneckCSPB, [192]], # 22
+   [-1, 1, Conv, [128, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [-20, 1, Conv, [128, 1, 1]], # route backbone P3
+   [[-1, -2], 1, Concat, [1]],
+   [-1, 3, BottleneckCSPB, [128]], # 27
+   [-1, 1, Conv, [256, 3, 1]],
+   [-2, 1, Conv, [192, 3, 2]],
+   [[-1, 22], 1, Concat, [1]],  # cat
+   [-1, 3, BottleneckCSPB, [192]], # 31
+   [-1, 1, Conv, [384, 3, 1]],
+   [-2, 1, Conv, [256, 3, 2]],
+   [[-1, 17], 1, Concat, [1]],  # cat
+   [-1, 3, BottleneckCSPB, [256]], # 35
+   [-1, 1, Conv, [512, 3, 1]],
+   [-2, 1, Conv, [320, 3, 2]],
+   [[-1, 12], 1, Concat, [1]],  # cat
+   [-1, 3, BottleneckCSPB, [320]], # 39
+   [-1, 1, Conv, [640, 3, 1]],
+
+   [[28,32,36,40], 1, IDetect, [nc, anchors]],   # Detect(P3, P4, P5, P6)
+  ]
