@@ -45,7 +45,7 @@ cd /yolov7
 
 ## Testing
 
-[`yolov7.pt`]()
+[`yolov7.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7.pt)
 
 ```
 python test.py --data data/coco.yaml --img 640 --batch 32 --conf 0.001 --iou 0.65 --device 0 --weights yolov7.pt --name yolov7_640_val
@@ -67,6 +67,10 @@ You will get the results:
  Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.73549
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.83868
 ```
+
+## Training
+
+The training code and instrument will release soon.
 
 ## Citation
 
