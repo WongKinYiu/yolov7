@@ -69,6 +69,13 @@ You will get the results:
 
 The training code and instrument will release soon.
 
+
+## Export
+Use the args `--include-nms` can to export end to end onnx model which include the `EfficientNMS`. 
+```shell
+python models/export.py --weights yolov7.pt --grid  --include-nms
+```
+
 ## Citation
 
 ```

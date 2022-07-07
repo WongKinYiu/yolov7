@@ -23,7 +23,7 @@ except ImportError:
 class Detect(nn.Module):
     stride = None  # strides computed during build
     export = False  # onnx export
-
+    include_nms = False 
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(Detect, self).__init__()
         self.nc = nc  # number of classes
@@ -48,18 +48,36 @@ class Detect(nn.Module):
             if not self.training:  # inference
                 if self.grid[i].shape[2:4] != x[i].shape[2:4]:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
-
+                shape = 1, self.na, ny, nx, 2  # grid shape
                 y = x[i].sigmoid()
-                y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
-                y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                xy, wh, conf = y.split((2, 2, self.nc + 1), 4) 
+                xy = (xy * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
+                wh = (wh * 2) ** 2 * self.anchor_grid[i].expand(shape)  # wh
+                y = torch.cat((xy, wh, conf), -1)
                 z.append(y.view(bs, -1, self.no))
 
-        return x if self.training else (torch.cat(z, 1), x)
+        if self.include_nms:
+            z = self.convert(z)
+        else:
+            z = torch.cat(z, 1)
+        return x if self.training else z
 
     @staticmethod
     def _make_grid(nx=20, ny=20):
         yv, xv = torch.meshgrid([torch.arange(ny), torch.arange(nx)])
         return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
+
+    def convert(self, z):
+        z = torch.cat(z, 1)
+        box = z[:, :, :4]
+        conf = z[:, :, 4:5]
+        score = z[:, :, 5:]
+        score *= conf
+        convert_matrix = torch.tensor([[1, 0, 1, 0], [0, 1, 0, 1], [-0.5, 0, 0.5, 0], [0, -0.5, 0, 0.5]],
+                                           dtype=torch.float32,
+                                           device=z.device)
+        box @= convert_matrix                          
+        return (box, score)
 
 
 class IDetect(nn.Module):
