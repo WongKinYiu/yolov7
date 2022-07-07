@@ -47,7 +47,7 @@ pip install -r requirements.txt
 
 ## inference 
 ```
-
+!python detect.py --weights /content/yolov7.pt --img 416 --conf 0.4 --source /content/cars.jpg
 ```
 ## Testing
 
