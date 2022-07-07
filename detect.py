@@ -1,11 +1,13 @@
-import argparse
-import time
-from pathlib import Path
+import warnings
+warnings.filterwarnings("ignore")
 
 import cv2
+import time
 import torch
+import argparse
 import torch.backends.cudnn as cudnn
 from numpy import random
+from pathlib import Path
 
 from models.experimental import attempt_load
 from utils.datasets import LoadStreams, LoadImages
@@ -64,6 +66,8 @@ def detect(save_img=False):
     if device.type != 'cpu':
         model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
     t0 = time.time()
+
+    windows = []
     for path, img, im0s, vid_cap in dataset:
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -121,8 +125,12 @@ def detect(save_img=False):
 
             # Stream results
             if view_img:
+                if p not in windows:
+                    windows.append(p)
+                    cv2.namedWindow(str(p), cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)  # allow window resize (Linux)
+                    cv2.resizeWindow(str(p), im0.shape[1], im0.shape[0])
                 cv2.imshow(str(p), im0)
-                cv2.waitKey(1)  # 1 millisecond
+                cv2.waitKey(1)
 
             # Save results (image with detections)
             if save_img:
