@@ -269,7 +269,7 @@ class LoadStreams:  # multiple IP or RTSP cameras
         self.img_size = img_size
         self.stride = stride
 
-        if os.path.isfile(sources):
+        if os.path.isfile(sources) and sources.endswith('.txt'):
             with open(sources, 'r') as f:
                 sources = [x.strip() for x in f.read().strip().splitlines() if len(x.strip())]
         else:
