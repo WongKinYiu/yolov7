@@ -6,14 +6,14 @@ import time
 import torch
 import argparse
 import torch.backends.cudnn as cudnn
-from numpy import random
+from numpy import average, random
 from pathlib import Path
 
 from models.experimental import attempt_load
-from utils.datasets import LoadStreams, LoadImages
+from utils.datasets import CalcFPS, LoadStreams, LoadImages
 from utils.general import check_img_size, check_requirements, check_imshow, non_max_suppression, apply_classifier, \
     scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
-from utils.plots import plot_one_box
+from utils.plots import plot_one_box, draw_text
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 
 
@@ -68,6 +68,7 @@ def detect(save_img=False):
     t0 = time.time()
 
     windows = []
+    fps_counter = CalcFPS()
     for path, img, im0s, vid_cap in dataset:
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -122,6 +123,20 @@ def detect(save_img=False):
 
             # Print time (inference + NMS)
             #print(f'{s}Done. ({t2 - t1:.3f}s)')
+
+            # FPS counter
+            fps_counter.update(1.0 / (t2 - t1))
+            avg_fps = fps_counter.accumulate()
+
+            draw_text(
+                im0,
+                f"FPS: {avg_fps:0.1f}",
+                pos=(20, 20),
+                font_scale=1.0,
+                text_color=(204, 85, 17),
+                text_color_bg=(255, 255, 255),
+                font_thickness=2,
+            )
 
             # Stream results
             if view_img:

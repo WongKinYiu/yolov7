@@ -8,9 +8,10 @@ import random
 import shutil
 import time
 from itertools import repeat
-from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from threading import Thread
+from collections import deque
+from multiprocessing.pool import ThreadPool
 
 import cv2
 import numpy as np
@@ -178,7 +179,7 @@ class LoadImages:  # for inference
                     ret_val, img0 = self.cap.read()
 
             self.frame += 1
-            print(f'video {self.count + 1}/{self.nf} ({self.frame}/{self.nframes}) {path}: ', end='')
+            # print(f'video {self.count + 1}/{self.nf} ({self.frame}/{self.nframes}) {path}: ', end='')
 
         else:
             # Read image
@@ -1318,3 +1319,16 @@ def load_segmentations(self, index):
     #print(key)
     # /work/handsomejw66/coco17/
     return self.segs[key]
+
+class CalcFPS:
+    def __init__(self, nsamples: int = 50):
+        self.framerate = deque(maxlen=nsamples)
+
+    def update(self, duration: float):
+        self.framerate.append(duration)
+
+    def accumulate(self):
+        if len(self.framerate) > 1:
+            return np.average(self.framerate)
+        else:
+            return 0.0
