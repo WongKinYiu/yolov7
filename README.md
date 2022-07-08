@@ -90,6 +90,10 @@ Download MS COCO dataset images ([train](http://images.cocodataset.org/zips/trai
 
 The re-parameterization code and instruction will release soon.
 
+## Inference
+
+`python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source inference/images/horses.jpg`
+
 ## Citation
 
 ```
