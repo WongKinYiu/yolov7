@@ -1,3 +1,11 @@
+# YOLOv7-TensorRT 
+
+## Dependencies
+- TensorRT == 7.2.3.4
+- OpenCV >= 4.1.0
+- PyCuda == 2021.1
+
+
 # ONNX -> TensorRT 
 These scripts were last tested using the
 [NGC TensorRT Container Version 20.06-py3](https://ngc.nvidia.com/catalog/containers/nvidia:tensorrt).
