@@ -48,19 +48,16 @@ class Detect(nn.Module):
             if not self.training:  # inference
                 if self.grid[i].shape[2:4] != x[i].shape[2:4]:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
-                shape = 1, self.na, ny, nx, 2  # grid shape
                 y = x[i].sigmoid()
                 xy, wh, conf = y.split((2, 2, self.nc + 1), 4) 
                 xy = (xy * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
-                wh = (wh * 2) ** 2 * self.anchor_grid[i].expand(shape)  # wh
+                wh = (wh * 2) ** 2 * self.anchor_grid[i]# wh
                 y = torch.cat((xy, wh, conf), -1)
                 z.append(y.view(bs, -1, self.no))
 
         if self.include_nms:
             z = self.convert(z)
-        else:
-            z = torch.cat(z, 1)
-        return x if self.training else z
+        return x if self.training else (z, ) if self.include_nms else (torch.cat(z, 1), x)
 
     @staticmethod
     def _make_grid(nx=20, ny=20):
