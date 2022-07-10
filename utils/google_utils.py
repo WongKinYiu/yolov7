@@ -16,17 +16,17 @@ def gsutil_getsize(url=''):
     return eval(s.split(' ')[0]) if len(s) else 0  # bytes
 
 
-def attempt_download(file, repo='WongKinYiu/yolov6'):
+def attempt_download(file, repo='WongKinYiu/yolov7'):
     # Attempt file download if does not exist
     file = Path(str(file).strip().replace("'", '').lower())
 
     if not file.exists():
         try:
-            response = requests.get(f'https://api.github.com/repos/{repo}/releases/weights').json()  # github api
+            response = requests.get(f'https://api.github.com/repos/{repo}/releases/latest').json()  # github api
             assets = [x['name'] for x in response['assets']]  # release assets
             tag = response['tag_name']  # i.e. 'v1.0'
         except:  # fallback plan
-            assets = ['yolov6.pt']
+            assets = ['yolov7.pt']
             tag = subprocess.check_output('git tag', shell=True).decode().split()[-1]
 
         name = file.name
@@ -53,7 +53,7 @@ def attempt_download(file, repo='WongKinYiu/yolov6'):
 
 
 def gdrive_download(id='', file='tmp.zip'):
-    # Downloads a file from Google Drive. from yolov6.utils.google_utils import *; gdrive_download()
+    # Downloads a file from Google Drive. from yolov7.utils.google_utils import *; gdrive_download()
     t = time.time()
     file = Path(file)
     cookie = Path('cookie')  # gdrive cookie
