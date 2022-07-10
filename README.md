@@ -75,8 +75,28 @@ You will get the results:
 ```
 
 ## Training
+```
+python train.py --workers 8 --device 0 --batch-size 32 --data data/coco.yaml --img 640 640 --cfg cfg/training/yolov7.yaml --weights '' --name yolov7 --hyp data/hyp.scratch.p5.yaml
 
-The training code and instrument will release soon.
+python train.py --workers 8 --device 0 --batch-size 32 --data data/coco.yaml --img 640 640 --cfg cfg/training/yolov7x.yaml --weights '' --name yolov7x --hyp data/hyp.scratch.p5.yaml  
+```
+# For custom data training
+
+create your custom dataset as yolo format.
+reference: https://github.com/AlexeyAB/Yolo_mark
+
+or use [labelimg](https://github.com/tzutalin/labelImg) tool for annotation with yolo format 
+  
+
+### For multi-gpu training
+```
+python -m torch.distributed.launch --nproc_per_node 4 --master_port 9527 train.py --workers 8 --device 0,1,2,3 --sync-bn --batch-size 128 --data data/coco.yaml --img 640 640 --cfg cfg/training/yolov7.yaml --weights '' --name yolov7 --hyp data/hyp.scratch.p5.yaml
+
+python -m torch.distributed.launch --nproc_per_node 4 --master_port 9527 train.py --workers 8 --device 0,1,2,3 --sync-bn --batch-size 128 --data data/coco.yaml --img 640 640 --cfg cfg/training/yolov7x.yaml --weights '' --name yolov7x --hyp data/hyp.scratch.p5.yaml
+```
+The training code and instruction of p6 models will release soon.
+
+Download MS COCO dataset images ([train](https://images.cocodataset.org/zips/train2017.zip), [val](https://images.cocodataset.org/zips/val2017.zip), [test](https://images.cocodataset.org/zips/test2017.zip)) and labels. If you have previously used a different version of YOLO, we strongly recommend that you delete train2017.cache and val2017.cache files, and redownload [labels](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/coco2017labels-segments.zip)
 
 ## Citation
 
