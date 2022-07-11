@@ -73,11 +73,15 @@ To measure accuracy, download [COCO-annotations for Pycocotools](http://images.c
 
 ## Training
 
+Single GPU training
+
 ```
 python train.py --workers 8 --device 0 --batch-size 32 --data data/coco.yaml --img 640 640 --cfg cfg/training/yolov7.yaml --weights '' --name yolov7 --hyp data/hyp.scratch.p5.yaml
 
 python train.py --workers 8 --device 0 --batch-size 32 --data data/coco.yaml --img 640 640 --cfg cfg/training/yolov7x.yaml --weights '' --name yolov7x --hyp data/hyp.scratch.p5.yaml
 ```
+
+Multiple GPU training
 
 ```
 python -m torch.distributed.launch --nproc_per_node 4 --master_port 9527 train.py --workers 8 --device 0,1,2,3 --sync-bn --batch-size 128 --data data/coco.yaml --img 640 640 --cfg cfg/training/yolov7.yaml --weights '' --name yolov7 --hyp data/hyp.scratch.p5.yaml
@@ -86,7 +90,6 @@ python -m torch.distributed.launch --nproc_per_node 4 --master_port 9527 train.p
 ```
 
 The training code and instruction of p6 models will release soon.
-
 
 Download MS COCO dataset images ([train](http://images.cocodataset.org/zips/train2017.zip), [val](http://images.cocodataset.org/zips/val2017.zip), [test](http://images.cocodataset.org/zips/test2017.zip)) and [labels](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/coco2017labels-segments.zip). If you have previously used a different version of YOLO, we strongly recommend that you delete `train2017.cache` and `val2017.cache` files, and redownload [labels](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/coco2017labels-segments.zip) 
 
@@ -108,6 +111,19 @@ The re-parameterization code and instruction will release soon.
   year={2022}
 }
 ```
+
+## Teaser
+
+Yolov7-mask & YOLOv7-pose
+
+<div align="center">
+    <a href="./">
+        <img src="./figure/mask.png" width="56%"/>
+    </a>
+    <a href="./">
+        <img src="./figure/pose.png" width="42%"/>
+    </a>
+</div>
 
 ## Acknowledgements
 
