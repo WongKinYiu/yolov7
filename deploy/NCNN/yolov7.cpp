@@ -241,12 +241,12 @@ static int detect_objects(const cv::Mat &bgr, std::vector<Object> &objects)
         ex.extract("out0", out);
 
         ncnn::Mat anchors(6);
-        anchors[0] = 10.f;
-        anchors[1] = 13.f;
-        anchors[2] = 16.f;
-        anchors[3] = 30.f;
-        anchors[4] = 33.f;
-        anchors[5] = 23.f;
+        anchors[0] = 12.f;
+        anchors[1] = 16.f;
+        anchors[2] = 19.f;
+        anchors[3] = 36.f;
+        anchors[4] = 40.f;
+        anchors[5] = 28.f;
 
         std::vector<Object> objects8;
         generate_proposals(anchors, 8, in_pad, out, prob_threshold, objects8);
@@ -260,12 +260,12 @@ static int detect_objects(const cv::Mat &bgr, std::vector<Object> &objects)
         ex.extract("out1", out);
 
         ncnn::Mat anchors(6);
-        anchors[0] = 30.f;
-        anchors[1] = 61.f;
-        anchors[2] = 62.f;
-        anchors[3] = 45.f;
-        anchors[4] = 59.f;
-        anchors[5] = 119.f;
+        anchors[0] = 36.f;
+        anchors[1] = 75.f;
+        anchors[2] = 76.f;
+        anchors[3] = 55.f;
+        anchors[4] = 72.f;
+        anchors[5] = 146.f;
 
         std::vector<Object> objects16;
         generate_proposals(anchors, 16, in_pad, out, prob_threshold, objects16);
@@ -279,12 +279,12 @@ static int detect_objects(const cv::Mat &bgr, std::vector<Object> &objects)
         ex.extract("out2", out);
 
         ncnn::Mat anchors(6);
-        anchors[0] = 116.f;
-        anchors[1] = 90.f;
-        anchors[2] = 156.f;
-        anchors[3] = 198.f;
-        anchors[4] = 373.f;
-        anchors[5] = 326.f;
+        anchors[0] = 142.f;
+        anchors[1] = 110.f;
+        anchors[2] = 192.f;
+        anchors[3] = 243.f;
+        anchors[4] = 459.f;
+        anchors[5] = 401.f;
 
         std::vector<Object> objects32;
         generate_proposals(anchors, 32, in_pad, out, prob_threshold, objects32);
