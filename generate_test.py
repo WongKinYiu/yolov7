@@ -1,3 +1,4 @@
+#genrate tran.txt & valid.txt
 import os
 
 image_files = []
