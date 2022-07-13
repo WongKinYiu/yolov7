@@ -205,7 +205,7 @@ def main():
             logger.warning("INT8 not supported on this platform.")
 
         if args.int8:
-                from Calibrator import ImageCalibrator, get_int8_calibrator # local module
+                from calibrator import ImageCalibrator, get_int8_calibrator # local module
                 config.int8_calibrator = get_int8_calibrator(args.calibration_cache,
                                                              args.calibration_data,
                                                              args.max_calibration_size,
