@@ -55,6 +55,53 @@ python3 onnx_to_tensorrt.py --explicit-batch \
                       --calibration-cache="caches/yolov7.cache" \
                       -o yolov7.int8.engine
 ```
+See the [INT8 Calibration](#int8-calibration) section below for details on calibration
+using your own model or different data, where you don't have an existing calibration cache
+or want to create a new one.
+
+### INT8 Calibration
+
+This class can be tweaked to work for other kinds of models, inputs, etc.
+
+However, to calibrate using different data or a different model, you can do so with the `--calibration-data` argument.
+
+* This requires that you've mounted a dataset, such as Imagenet, to use for calibration.
+    * Add something like `-v /imagenet:/imagenet` to your Docker command in Step (1)
+      to mount a dataset found locally at `/imagenet`.
+* You can specify your own `preprocess_func` by defining it inside of `calibrator.py`
+
+```bash
+# Path to dataset to use for calibration.
+#   **Not necessary if you already have a calibration cache from a previous run.
+CALIBRATION_DATA="/imagenet"
+
+# Truncate calibration images to a random sample of this amount if more are found.
+#   **Not necessary if you already have a calibration cache from a previous run.
+MAX_CALIBRATION_SIZE=512
+
+# Calibration cache to be used instead of calibration data if it already exists,
+# or the cache will be created from the calibration data if it doesn't exist.
+CACHE_FILENAME="caches/yolov6.cache"
+
+# Path to ONNX model
+ONNX_MODEL="model/yolov6.onnx"
+
+# Path to write TensorRT engine to
+OUTPUT="yolov6.int8.engine"
+
+# Creates an int8 engine from your ONNX model, creating ${CACHE_FILENAME} based
+# on your ${CALIBRATION_DATA}, unless ${CACHE_FILENAME} already exists, then
+# it will use simply use that instead.
+python3 onnx_to_tensorrt.py --fp16 --int8 -v \
+        --max_calibration_size=${MAX_CALIBRATION_SIZE} \
+        --calibration-data=${CALIBRATION_DATA} \
+        --calibration-cache=${CACHE_FILENAME} \
+        --preprocess_func=${PREPROCESS_FUNC} \
+        --explicit-batch \
+        --onnx ${ONNX_MODEL} -o ${OUTPUT}
+
+```
+*NOTE:* For some of the optional command line arguments, See `./onnx_to_tensorrt.py -h` for full list of command line options.
 
 ### 3. Run Yolov7 TRT Demo
 
