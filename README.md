@@ -95,7 +95,7 @@ Download MS COCO dataset images ([train](http://images.cocodataset.org/zips/trai
 
 ## Re-parameterization
 
-The re-parameterization code and instruction will release soon.
+See [reparameterization.ipynb](tools/reparameterization.ipynb)
 
 ## Inference
 
