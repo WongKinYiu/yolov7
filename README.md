@@ -125,9 +125,18 @@ See [reparameterization.ipynb](tools/reparameterization.ipynb)
 
 ## Inference
 
+**Single Image**
 ``` bash
 python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source inference/images/horses.jpg
 ```
+Output image saved to "**runs/detect/expXX/**"
+
+**Single Video**
+
+``` bash
+python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source yourvideo.mp4
+```
+Output video saved to "**runs/detect/expXX/**"
 
 <div align="center">
     <a href="./">
