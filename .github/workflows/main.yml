@@ -1,0 +1,54 @@
+me: ci
+on:
+  push:
+    branches:
+      - 'main'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+          -
+            name: Checkout 
+            uses: actions/checkout@v2
+          -
+            name: Login to Docker Hub
+            if: github.event_name != 'pull_request'
+            uses: docker/login-action@v1
+            with:
+              registry: ghcr.io
+              username: ${{ github.actor }}
+              password: ${{ secrets.GITHUB_TOKEN }}
+#             uses: docker/login-action@v1
+#             with:
+#               username: ${{ secrets.DOCKER_HUB_USERNAME }}
+#               password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          -
+            name: Set up Docker Buildx
+            uses: docker/setup-buildx-action@v1
+            
+          - 
+            name: Sanitize repo slug
+            uses: actions/github-script@v6
+            id: repo_slug
+            with:
+              result-encoding: string
+              script: return 'ghcr.io/${{ github.repository }}'.toLowerCase()   
+          -
+            name: Build and push
+            uses: docker/build-push-action@v2
+            with:
+              context: .
+              file: ./docker/Dockerfile
+              builder: ${{ steps.buildx.outputs.name }}
+              push: true
+              #tags: ${{ secrets.DOCKER_HUB_USERNAME }}/object_detection_tools_function:latest
+              #tags: ghcr.io/binze/object_detection_tools_function:latest
+              tags: ${{ steps.repo_slug.outputs.result }}:latest
+              #cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/simplewhale:buildcache
+              #cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/simplewhale:buildcache,mode=max
