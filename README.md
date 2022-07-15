@@ -2,7 +2,11 @@
 
 Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors](https://arxiv.org/abs/2207.02696)
 
-<img src="./figure/performance.png" height="480">
+<div align="center">
+    <a href="./">
+        <img src="./figure/performance.png" width="79%"/>
+    </a>
+</div>
 
 ## Web Demo
 
@@ -27,7 +31,7 @@ MS COCO
 Docker environment (recommended)
 <details><summary> <b>Expand</b> </summary>
 
-```
+``` bash
 # create the docker container, you can change the share memory size if you have more.
 nvidia-docker run --name yolov7 -it -v your_coco_path/:/coco/ -v your_code_path/:/yolov7 --shm-size=64g nvcr.io/nvidia/pytorch:21.08-py3
 
@@ -48,7 +52,7 @@ cd /yolov7
 
 [`yolov7.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7.pt) [`yolov7x.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7x.pt) [`yolov7-w6.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-w6.pt) [`yolov7-e6.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-e6.pt) [`yolov7-d6.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-d6.pt) [`yolov7-e6e.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-e6e.pt)
 
-```
+``` bash
 python test.py --data data/coco.yaml --img 640 --batch 32 --conf 0.001 --iou 0.65 --device 0 --weights yolov7.pt --name yolov7_640_val
 ```
 
@@ -88,7 +92,7 @@ Single GPU training
 python train.py --workers 8 --device 0 --batch-size 32 --data data/coco.yaml --img 640 640 --cfg cfg/training/yolov7.yaml --weights '' --name yolov7 --hyp data/hyp.scratch.p5.yaml
 
 # train p6 models
-python train_aux.py --workers 8 --device 0 --batch-size 32 --data data/coco.yaml --img 1280 1280 --cfg cfg/training/yolov7-w6.yaml --weights '' --name yolov7-w6 --hyp data/hyp.scratch.p6.yaml
+python train_aux.py --workers 8 --device 0 --batch-size 16 --data data/coco.yaml --img 1280 1280 --cfg cfg/training/yolov7-w6.yaml --weights '' --name yolov7-w6 --hyp data/hyp.scratch.p6.yaml
 ```
 
 Multiple GPU training
@@ -101,6 +105,20 @@ python -m torch.distributed.launch --nproc_per_node 4 --master_port 9527 train.p
 python -m torch.distributed.launch --nproc_per_node 8 --master_port 9527 train_aux.py --workers 8 --device 0,1,2,3,4,5,6,7 --sync-bn --batch-size 128 --data data/coco.yaml --img 1280 1280 --cfg cfg/training/yolov7-w6.yaml --weights '' --name yolov7-w6 --hyp data/hyp.scratch.p6.yaml
 ```
 
+## Transfer learning
+
+[`yolov7_training.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7_training.pt) [`yolov7x_training.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7x_training.pt) [`yolov7-w6_training.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-w6_training.pt) [`yolov7-e6_training.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-e6_training.pt) [`yolov7-d6_training.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-d6_training.pt) [`yolov7-e6e_training.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-e6e_training.pt)
+
+Single GPU finetuning for custom dataset
+
+``` bash
+# finetune p5 models
+python train.py --workers 8 --device 0 --batch-size 32 --data data/custom.yaml --img 640 640 --cfg cfg/training/yolov7-custom.yaml --weights 'yolov7_training.pt' --name yolov7-custom --hyp data/hyp.scratch.custom.yaml
+
+# finetune p6 models
+python train_aux.py --workers 8 --device 0 --batch-size 16 --data data/custom.yaml --img 1280 1280 --cfg cfg/training/yolov7-w6-custom.yaml --weights 'yolov7-w6_training.pt' --name yolov7-w6-custom --hyp data/hyp.scratch.custom.yaml
+```
+
 ## Training on Custom Data
 
 Follow the [YOLOv7 Custom Training Tutorial](https://blog.roboflow.com/yolov7-custom-dataset-training-tutorial/) <a href="https://colab.research.google.com/drive/1X9A8odmK4k6l26NDviiT6dd6TgR-piOa"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a> to learn how to create and prepare your dataset, train a model in Google Colab, and download your weights for inference.
@@ -111,7 +129,15 @@ See [reparameterization.ipynb](tools/reparameterization.ipynb)
 
 ## Inference
 
-`python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source inference/images/horses.jpg`
+``` bash
+python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source inference/images/horses.jpg
+```
+
+<div align="center">
+    <a href="./">
+        <img src="./figure/horses_prediction.jpg" width="59%"/>
+    </a>
+</div>
 
 ## Citation
 

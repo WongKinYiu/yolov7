@@ -1102,12 +1102,20 @@ class ComputeLossBinOTA:
                 matching_anchs[i].append(all_anch[layer_idx])
 
         for i in range(nl):
-            matching_bs[i] = torch.cat(matching_bs[i], dim=0)
-            matching_as[i] = torch.cat(matching_as[i], dim=0)
-            matching_gjs[i] = torch.cat(matching_gjs[i], dim=0)
-            matching_gis[i] = torch.cat(matching_gis[i], dim=0)
-            matching_targets[i] = torch.cat(matching_targets[i], dim=0)
-            matching_anchs[i] = torch.cat(matching_anchs[i], dim=0)
+            if matching_targets[i] != []:
+                matching_bs[i] = torch.cat(matching_bs[i], dim=0)
+                matching_as[i] = torch.cat(matching_as[i], dim=0)
+                matching_gjs[i] = torch.cat(matching_gjs[i], dim=0)
+                matching_gis[i] = torch.cat(matching_gis[i], dim=0)
+                matching_targets[i] = torch.cat(matching_targets[i], dim=0)
+                matching_anchs[i] = torch.cat(matching_anchs[i], dim=0)
+            else:
+                matching_bs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_as[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_gjs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_gis[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_targets[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_anchs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
 
         return matching_bs, matching_as, matching_gjs, matching_gis, matching_targets, matching_anchs       
 
@@ -1115,7 +1123,7 @@ class ComputeLossBinOTA:
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
         na, nt = self.na, targets.shape[0]  # number of anchors, targets
         indices, anch = [], []
-        gain = torch.ones(7, device=targets.device)  # normalized to gridspace gain
+        gain = torch.ones(7, device=targets.device).long()  # normalized to gridspace gain
         ai = torch.arange(na, device=targets.device).float().view(na, 1).repeat(1, nt)  # same as .repeat_interleave(nt)
         targets = torch.cat((targets.repeat(na, 1, 1), ai[:, :, None]), 2)  # append anchor indices
 
@@ -1403,12 +1411,20 @@ class ComputeLossAuxOTA:
                 matching_anchs[i].append(all_anch[layer_idx])
 
         for i in range(nl):
-            matching_bs[i] = torch.cat(matching_bs[i], dim=0)
-            matching_as[i] = torch.cat(matching_as[i], dim=0)
-            matching_gjs[i] = torch.cat(matching_gjs[i], dim=0)
-            matching_gis[i] = torch.cat(matching_gis[i], dim=0)
-            matching_targets[i] = torch.cat(matching_targets[i], dim=0)
-            matching_anchs[i] = torch.cat(matching_anchs[i], dim=0)
+            if matching_targets[i] != []:
+                matching_bs[i] = torch.cat(matching_bs[i], dim=0)
+                matching_as[i] = torch.cat(matching_as[i], dim=0)
+                matching_gjs[i] = torch.cat(matching_gjs[i], dim=0)
+                matching_gis[i] = torch.cat(matching_gis[i], dim=0)
+                matching_targets[i] = torch.cat(matching_targets[i], dim=0)
+                matching_anchs[i] = torch.cat(matching_anchs[i], dim=0)
+            else:
+                matching_bs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_as[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_gjs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_gis[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_targets[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_anchs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
 
         return matching_bs, matching_as, matching_gjs, matching_gis, matching_targets, matching_anchs
 
@@ -1548,12 +1564,20 @@ class ComputeLossAuxOTA:
                 matching_anchs[i].append(all_anch[layer_idx])
 
         for i in range(nl):
-            matching_bs[i] = torch.cat(matching_bs[i], dim=0)
-            matching_as[i] = torch.cat(matching_as[i], dim=0)
-            matching_gjs[i] = torch.cat(matching_gjs[i], dim=0)
-            matching_gis[i] = torch.cat(matching_gis[i], dim=0)
-            matching_targets[i] = torch.cat(matching_targets[i], dim=0)
-            matching_anchs[i] = torch.cat(matching_anchs[i], dim=0)
+            if matching_targets[i] != []:
+                matching_bs[i] = torch.cat(matching_bs[i], dim=0)
+                matching_as[i] = torch.cat(matching_as[i], dim=0)
+                matching_gjs[i] = torch.cat(matching_gjs[i], dim=0)
+                matching_gis[i] = torch.cat(matching_gis[i], dim=0)
+                matching_targets[i] = torch.cat(matching_targets[i], dim=0)
+                matching_anchs[i] = torch.cat(matching_anchs[i], dim=0)
+            else:
+                matching_bs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_as[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_gjs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_gis[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_targets[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_anchs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
 
         return matching_bs, matching_as, matching_gjs, matching_gis, matching_targets, matching_anchs              
 
@@ -1561,7 +1585,7 @@ class ComputeLossAuxOTA:
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
         na, nt = self.na, targets.shape[0]  # number of anchors, targets
         indices, anch = [], []
-        gain = torch.ones(7, device=targets.device)  # normalized to gridspace gain
+        gain = torch.ones(7, device=targets.device).long()  # normalized to gridspace gain
         ai = torch.arange(na, device=targets.device).float().view(na, 1).repeat(1, nt)  # same as .repeat_interleave(nt)
         targets = torch.cat((targets.repeat(na, 1, 1), ai[:, :, None]), 2)  # append anchor indices
 
@@ -1614,7 +1638,7 @@ class ComputeLossAuxOTA:
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
         na, nt = self.na, targets.shape[0]  # number of anchors, targets
         indices, anch = [], []
-        gain = torch.ones(7, device=targets.device)  # normalized to gridspace gain
+        gain = torch.ones(7, device=targets.device).long()  # normalized to gridspace gain
         ai = torch.arange(na, device=targets.device).float().view(na, 1).repeat(1, nt)  # same as .repeat_interleave(nt)
         targets = torch.cat((targets.repeat(na, 1, 1), ai[:, :, None]), 2)  # append anchor indices
 
