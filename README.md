@@ -1,3 +1,28 @@
+# Instructions for using docker
+```
+# build docker image
+
+docker build -f docker/Dockerfile -t yolov5 .
+
+# run test script with docker image
+
+docker run \
+    --gpus all \
+    --shm-size=64g \
+    -v /home/erneslwt/data/coco128:/data/coco128 \
+    -v /home/ernestlwt/workspace/github/yolov7/data:/cfg \
+    -v /home/ernestlwt/workspace/github/yolov7/weights:/weights \
+    yolov5 \
+python test.py \
+    --data /cfg/coco128.yaml \
+    --weights /weights/yolov7-w6.pt \
+    --img 1080 \
+    --batch 16 \
+    --iou 0.65 \
+    --device 0 \
+    --name yolo_1080_test
+```
+
 # Official YOLOv7
 
 Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors](https://arxiv.org/abs/2207.02696)
