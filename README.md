@@ -2,7 +2,7 @@
 ```
 # build docker image
 
-docker build -f docker/Dockerfile -t yolov5 .
+docker build -f docker/Dockerfile -t yolov7 .
 
 # sample usage 
 
@@ -13,7 +13,7 @@ docker run \
     -v /home/ernestlwt/workspace/github/yolov7/data:/cfg \
     -v /home/ernestlwt/workspace/github/yolov7/weights:/weights \
     -v /home/ernestlwt/workspace/github/yolov7/results:/results \
-    yolov5 \
+    yolov7 \
 python test.py \
     --data /cfg/coco128.yaml \
     --weights /weights/yolov7-w6.pt \
