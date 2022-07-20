@@ -153,6 +153,12 @@ python train_aux.py --workers 8 --device 0 --batch-size 16 --data data/custom.ya
 
 See [reparameterization.ipynb](tools/reparameterization.ipynb)
 
+## Pose estimation
+
+[`yolov7-w6-pose.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-w6-pose.pt)
+
+See [keypoint.ipynb](https://github.com/WongKinYiu/yolov7/blob/main/tools/keypoint.ipynb).
+
 ## Inference
 
 ``` bash
@@ -202,5 +208,6 @@ Yolov7-mask & YOLOv7-pose
 * [https://github.com/ultralytics/yolov5](https://github.com/ultralytics/yolov5)
 * [https://github.com/DingXiaoH/RepVGG](https://github.com/DingXiaoH/RepVGG)
 * [https://github.com/JUGGHM/OREPA_CVPR2022](https://github.com/JUGGHM/OREPA_CVPR2022)
+* [https://github.com/TexasInstruments/edgeai-yolov5/tree/yolo-pose](https://github.com/TexasInstruments/edgeai-yolov5/tree/yolo-pose)
 
 </details>
