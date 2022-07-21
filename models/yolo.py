@@ -59,7 +59,7 @@ class Detect(nn.Module):
                     y = torch.cat((xy, wh, y[..., 4:]), -1)
                 z.append(y.view(bs, -1, self.no))
 
-        return x if self.training else torch.cat(z, 1)
+        return x if self.training else (torch.cat(z, 1), x)
 
     @staticmethod
     def _make_grid(nx=20, ny=20):
