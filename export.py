@@ -21,6 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('--dynamic', action='store_true', help='dynamic ONNX axes')
     parser.add_argument('--grid', action='store_true', help='export Detect() layer grid')
     parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--simplify', action='store_true', help='simplify onnx model')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
     print(opt)
@@ -68,6 +69,7 @@ if __name__ == '__main__':
 
         print('\nStarting ONNX export with onnx %s...' % onnx.__version__)
         f = opt.weights.replace('.pt', '.onnx')  # filename
+        model.eval()
         torch.onnx.export(model, img, f, verbose=False, opset_version=12, input_names=['images'],
                           output_names=['classes', 'boxes'] if y is None else ['output'],
                           dynamic_axes={'images': {0: 'batch', 2: 'height', 3: 'width'},  # size(1,3,640,640)
@@ -76,6 +78,23 @@ if __name__ == '__main__':
         # Checks
         onnx_model = onnx.load(f)  # load onnx model
         onnx.checker.check_model(onnx_model)  # check onnx model
+
+        # # Metadata
+        # d = {'stride': int(max(model.stride))}
+        # for k, v in d.items():
+        #     meta = onnx_model.metadata_props.add()
+        #     meta.key, meta.value = k, str(v)
+        # onnx.save(onnx_model, f)
+
+        if opt.simplify:
+            try:
+                import onnxsim
+
+                print('\nStarting to simplify ONNX...')
+                onnx_model, check = onnxsim.simplify(onnx_model)
+                assert check, 'assert check failed'
+            except Exception as e:
+                print(f'Simplifier failure: {e}')
         # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
         print('ONNX export success, saved as %s' % f)
     except Exception as e:
