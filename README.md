@@ -153,14 +153,22 @@ python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source inferen
 
 
 ## Export
-Tested with: Python 3.7.13 and Pytorch 1.12.0+cu113 
-Pytorch to ONNX, use `--include-nms` flag for the end-to-end ONNX model with `EfficientNMS`.
+### Pytorch to ONNX
+Tested with: Python 3.7.13 and Pytorch 1.12.0+cu113
+
+- `--include-grid`: Add Detect layer
+- `--include-nms`: Add EfficientNMS plugin
+- `--dynamic-batch`: Make first input dimension dynamic for dynamic batch support
+- `--dynamic-shape`: Make third and fourth input dimension dynamic for dynamic width and height
+- `--onnx-simplify` Run [onnx-simplifier](https://github.com/daquexian/onnx-simplifier)
+
+yolov7-tiny to ONNX with grid, nms and dynamic batchsize:
 ```shell
 wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
-python export.py --weights yolov7-tiny.pt --include-grid --include-nms
+python export.py --weights yolov7-tiny.pt --dynamic-batch --include-grid --include-nms --onnx-simplify
 ```
 
-ONNX to TensorRT
+### ONNX to TensorRT
 ```shell
 git clone https://github.com/Linaom1214/tensorrt-python.git
 cd tensorrt-python
