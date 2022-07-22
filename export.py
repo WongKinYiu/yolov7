@@ -79,23 +79,17 @@ if __name__ == '__main__':
                           dynamic_axes={'images': {0: 'batch', 2: 'height', 3: 'width'},  # size(1,3,640,640)
                                         'output': {0: 'batch', 2: 'y', 3: 'x'}} if opt.dynamic else None)
 
-        if opt.include_nms:
-            print('Registering NMS plugin...')
-            mo = RegisterNMS(f)
-            mo.register_nms()
-            mo.save(f)
-        else:
-            # Checks
-            onnx_model = onnx.load(f)  # load onnx model
-            onnx.checker.check_model(onnx_model)  # check onnx model
-            # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
+        # Checks
+        onnx_model = onnx.load(f)  # load onnx model
+        onnx.checker.check_model(onnx_model)  # check onnx model
+        # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
 
-            # # Metadata
-            # d = {'stride': int(max(model.stride))}
-            # for k, v in d.items():
-            #     meta = onnx_model.metadata_props.add()
-            #     meta.key, meta.value = k, str(v)
-            # onnx.save(onnx_model, f)
+        # # Metadata
+        # d = {'stride': int(max(model.stride))}
+        # for k, v in d.items():
+        #     meta = onnx_model.metadata_props.add()
+        #     meta.key, meta.value = k, str(v)
+        # onnx.save(onnx_model, f)
 
         if opt.simplify:
             try:
@@ -104,9 +98,17 @@ if __name__ == '__main__':
                 print('\nStarting to simplify ONNX...')
                 onnx_model, check = onnxsim.simplify(onnx_model)
                 assert check, 'assert check failed'
+                onnx.save(onnx_model, f)
             except Exception as e:
                 print(f'Simplifier failure: {e}')
         print('ONNX export success, saved as %s' % f)
+
+        if opt.include_nms:
+            print('Registering NMS plugin for ONNX...')
+            mo = RegisterNMS(f)
+            mo.register_nms()
+            mo.save(f)
+
     except Exception as e:
         print('ONNX export failure: %s' % e)
     # CoreML export

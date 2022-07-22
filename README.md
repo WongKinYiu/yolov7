@@ -153,9 +153,18 @@ python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source inferen
 
 
 ## Export
-Use the args `--include-nms` can to export end to end onnx model which include the `EfficientNMS`. 
+Tested with: Python 3.7.13 and Pytorch 1.12.0+cu113 
+Pytorch to ONNX, use `--include-nms` flag for the end-to-end ONNX model with `EfficientNMS`.
 ```shell
-python models/export.py --weights yolov7.pt --grid  --include-nms
+wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
+python export.py --weights yolov7-tiny.pt --grid --include-nms
+```
+
+ONNX to TensorRT
+```shell
+git clone https://github.com/Linaom1214/tensorrt-python.git
+cd tensorrt-python
+python export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p fp16
 ```
 
 ## Citation
