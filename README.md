@@ -171,11 +171,15 @@ wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
 !python export.py --weights yolov7-tiny.pt --onnx-simplify --dynamic-batch --include-grid --include-nms --include-nms-score-thresh=0.2 --include-nms-nms-thresh=0.5 --include-nms-detections-per-image=500
 ```
 
-### ONNX to TensorRT
+### ONNX to TensorRT with docker
 ```shell
-git clone https://github.com/Linaom1214/tensorrt-python.git
-cd tensorrt-python
-python export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p fp16
+$ docker run -it --rm --gpus=all nvcr.io/nvidia/tensorrt:22.04-py3
+$ # from new shell copy onnx to container
+$ docker cp yolov7-tiny.onnx 898c16f38c99:/workspace/tensorrt/bin
+$ # in container now
+$ cd /workspace/tensorrt/bin
+$ # convert onnx to tensorrt with min batch size 1, opt batch size 8 and max batch size 16
+$ ./trtexec --onnx=yolov7-tiny.onnx --minShapes=input:1x3x640x640 --optShapes=input:8x3x640x640 --maxShapes=input:16x3x640x640 --fp16 --saveEngine=yolov7-tiny.engine
 ```
 
 ## Citation
