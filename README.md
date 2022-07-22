@@ -158,6 +158,9 @@ Tested with: Python 3.7.13 and Pytorch 1.12.0+cu113
 
 - `--include-grid`: Add Detect layer
 - `--include-nms`: Add EfficientNMS plugin
+- `--include-nms-score-thresh`: NMS plugin threshold for score
+- `--include-nms-nms-thresh`: NMS plugin threshold for NMS IoU
+- `--include-nms-detections-per-image`: NMS plugin threshold for maximum amount of resulting objects per image
 - `--dynamic-batch`: Make first input dimension dynamic for dynamic batch support
 - `--dynamic-shape`: Make third and fourth input dimension dynamic for dynamic width and height
 - `--onnx-simplify` Run [onnx-simplifier](https://github.com/daquexian/onnx-simplifier)
