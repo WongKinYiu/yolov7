@@ -179,7 +179,7 @@ $ docker cp yolov7-tiny.onnx 898c16f38c99:/workspace/tensorrt/bin
 $ # in container now
 $ cd /workspace/tensorrt/bin
 $ # convert onnx to tensorrt with min batch size 1, opt batch size 8 and max batch size 16
-$ ./trtexec --onnx=yolov7-tiny.onnx --minShapes=input:1x3x640x640 --optShapes=input:8x3x640x640 --maxShapes=input:16x3x640x640 --fp16 --saveEngine=yolov7-tiny.engine
+$ ./trtexec --onnx=yolov7-tiny.onnx --minShapes=input:1x3x640x640 --optShapes=input:8x3x640x640 --maxShapes=input:16x3x640x640 --fp16 --workspace=4096 --saveEngine=yolov7-tiny.engine
 ```
 
 ## Citation
