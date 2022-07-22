@@ -19,7 +19,8 @@ if __name__ == '__main__':
     parser.add_argument('--weights', type=str, default='./yolor-csp-c.pt', help='weights path')
     parser.add_argument('--img-size', nargs='+', type=int, default=[640, 640], help='image size')  # height, width
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
-    parser.add_argument('--dynamic', action='store_true', help='dynamic ONNX axes')
+    parser.add_argument('--dynamic-batch', action='store_true', help='dynamic ONNX batchsize')
+    parser.add_argument('--dynamic-shape', action='store_true', help='dynamic ONNX input width and height')
     parser.add_argument('--grid', action='store_true', help='export Detect() layer grid')
     parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--simplify', action='store_true', help='simplify onnx model')
@@ -74,10 +75,20 @@ if __name__ == '__main__':
         print('\nStarting ONNX export with onnx %s...' % onnx.__version__)
         f = opt.weights.replace('.pt', '.onnx')  # filename
         model.eval()
+        dynamic_axes = None
+        if opt.dynamic_batch or opt.dynamic_shape:
+            dynamic_axes = { 'input': {}, 'output': {} }
+            if opt.dynamic_batch:
+                dynamic_axes['input'][0] = 'batch'
+                dynamic_axes['output'][0] = 'batch'
+            if opt.dynamic_shape:
+                dynamic_axes['input'][2] = 'height'
+                dynamic_axes['input'][3] = 'width'
+                dynamic_axes['output'][2] = 'y'
+                dynamic_axes['output'][3] = 'x'
         torch.onnx.export(model, img, f, verbose=False, opset_version=12, input_names=['images'],
                           output_names=['classes', 'boxes'] if y is None else ['output'],
-                          dynamic_axes={'images': {0: 'batch', 2: 'height', 3: 'width'},  # size(1,3,640,640)
-                                        'output': {0: 'batch', 2: 'y', 3: 'x'}} if opt.dynamic else None)
+                          dynamic_axes=dynamic_axes)
 
         # Checks
         onnx_model = onnx.load(f)  # load onnx model
