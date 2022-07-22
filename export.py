@@ -86,7 +86,8 @@ if __name__ == '__main__':
                 dynamic_axes['input'][3] = 'width'
                 dynamic_axes['output'][2] = 'y'
                 dynamic_axes['output'][3] = 'x'
-        torch.onnx.export(model, img, f, verbose=False, opset_version=12, input_names=['images'],
+        torch.onnx.export(model, img, f, verbose=False, opset_version=12,
+                          input_names=['input'],
                           output_names=['classes', 'boxes'] if y is None else ['output'],
                           dynamic_axes=dynamic_axes)
 
