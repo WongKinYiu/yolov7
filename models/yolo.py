@@ -62,7 +62,6 @@ class Detect(nn.Module):
             z = self.convert(z)
         else:
             z = torch.cat(z, 1)
-
         return x if self.training else z
 
     @staticmethod
