@@ -19,11 +19,11 @@ if __name__ == '__main__':
     parser.add_argument('--weights', type=str, default='./yolor-csp-c.pt', help='weights path')
     parser.add_argument('--img-size', nargs='+', type=int, default=[640, 640], help='image size')  # height, width
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
-    parser.add_argument('--include-nms', action='store_true', help='export end2end onnx')
     parser.add_argument('--dynamic', action='store_true', help='dynamic ONNX axes')
     parser.add_argument('--grid', action='store_true', help='export Detect() layer grid')
     parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--simplify', action='store_true', help='simplify onnx model')
+    parser.add_argument('--include-nms', action='store_true', help='export end2end onnx')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
     print(opt)
@@ -96,6 +96,7 @@ if __name__ == '__main__':
             #     meta = onnx_model.metadata_props.add()
             #     meta.key, meta.value = k, str(v)
             # onnx.save(onnx_model, f)
+
         if opt.simplify:
             try:
                 import onnxsim
