@@ -12,6 +12,7 @@ from models.experimental import attempt_load
 from utils.activations import Hardswish, SiLU
 from utils.general import set_logging, check_img_size
 from utils.torch_utils import select_device
+from utils.add_nms import RegisterNMS
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -22,6 +23,7 @@ if __name__ == '__main__':
     parser.add_argument('--grid', action='store_true', help='export Detect() layer grid')
     parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--simplify', action='store_true', help='simplify onnx model')
+    parser.add_argument('--include-nms', action='store_true', help='export end2end onnx')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
     print(opt)
@@ -52,7 +54,9 @@ if __name__ == '__main__':
         #     m.forward = m.forward_export  # assign forward (optional)
     model.model[-1].export = not opt.grid  # set Detect() layer grid export
     y = model(img)  # dry run
-
+    if opt.include_nms:
+        model.model[-1].include_nms = True
+        y = None
     # TorchScript export
     try:
         print('\nStarting TorchScript export with torch %s...' % torch.__version__)
@@ -75,16 +79,23 @@ if __name__ == '__main__':
                           dynamic_axes={'images': {0: 'batch', 2: 'height', 3: 'width'},  # size(1,3,640,640)
                                         'output': {0: 'batch', 2: 'y', 3: 'x'}} if opt.dynamic else None)
 
-        # Checks
-        onnx_model = onnx.load(f)  # load onnx model
-        onnx.checker.check_model(onnx_model)  # check onnx model
+        if opt.include_nms:
+            print('Registering NMS plugin...')
+            mo = RegisterNMS(f)
+            mo.register_nms()
+            mo.save(f)
+        else:
+            # Checks
+            onnx_model = onnx.load(f)  # load onnx model
+            onnx.checker.check_model(onnx_model)  # check onnx model
+            # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
 
-        # # Metadata
-        # d = {'stride': int(max(model.stride))}
-        # for k, v in d.items():
-        #     meta = onnx_model.metadata_props.add()
-        #     meta.key, meta.value = k, str(v)
-        # onnx.save(onnx_model, f)
+            # # Metadata
+            # d = {'stride': int(max(model.stride))}
+            # for k, v in d.items():
+            #     meta = onnx_model.metadata_props.add()
+            #     meta.key, meta.value = k, str(v)
+            # onnx.save(onnx_model, f)
 
         if opt.simplify:
             try:
@@ -95,11 +106,9 @@ if __name__ == '__main__':
                 assert check, 'assert check failed'
             except Exception as e:
                 print(f'Simplifier failure: {e}')
-        # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
         print('ONNX export success, saved as %s' % f)
     except Exception as e:
         print('ONNX export failure: %s' % e)
-
     # CoreML export
     try:
         import coremltools as ct
