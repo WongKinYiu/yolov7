@@ -157,7 +157,7 @@ Tested with: Python 3.7.13 and Pytorch 1.12.0+cu113
 Pytorch to ONNX, use `--include-nms` flag for the end-to-end ONNX model with `EfficientNMS`.
 ```shell
 wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
-python export.py --weights yolov7-tiny.pt --grid --include-nms
+python export.py --weights yolov7-tiny.pt --include-grid --include-nms
 ```
 
 ONNX to TensorRT

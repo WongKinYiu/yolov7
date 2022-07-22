@@ -21,10 +21,10 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
     parser.add_argument('--dynamic-batch', action='store_true', help='dynamic ONNX batchsize')
     parser.add_argument('--dynamic-shape', action='store_true', help='dynamic ONNX input width and height')
-    parser.add_argument('--grid', action='store_true', help='export Detect() layer grid')
     parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-    parser.add_argument('--simplify', action='store_true', help='simplify onnx model')
+    parser.add_argument('--include-grid', action='store_true', help='export Detect() layer grid')
     parser.add_argument('--include-nms', action='store_true', help='export end2end onnx')
+    parser.add_argument('--onnx-simplify', action='store_true', help='simplify onnx model')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
     print(opt)
@@ -53,7 +53,7 @@ if __name__ == '__main__':
                 m.act = SiLU()
         # elif isinstance(m, models.yolo.Detect):
         #     m.forward = m.forward_export  # assign forward (optional)
-    model.model[-1].export = not opt.grid  # set Detect() layer grid export
+    model.model[-1].export = not opt.include_grid  # set Detect() layer grid export
     y = model(img)  # dry run
     if opt.include_nms:
         model.model[-1].include_nms = True
@@ -102,7 +102,7 @@ if __name__ == '__main__':
         #     meta.key, meta.value = k, str(v)
         # onnx.save(onnx_model, f)
 
-        if opt.simplify:
+        if opt.onnx_simplify:
             try:
                 import onnxsim
 
