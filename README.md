@@ -153,19 +153,25 @@ python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source inferen
 
 
 ## Export
-Tested with: Python 3.7.13 and Pytorch 1.12.0+cu113 
-Pytorch to ONNX, use `--include-nms` flag for the end-to-end ONNX model with `EfficientNMS`.
+
+Pytorch -> ONNX -> TensorRT -> Detection on TensorRT in Python <a href="https://colab.research.google.com/gist/AlexeyAB/fcb47ae544cf284eb24d8ad8e880d45c/yolov7trtlinaom.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+
+
+**Pytorch to ONNX**, use `--include-nms` flag for the end-to-end ONNX model with `EfficientNMS`
 ```shell
 wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
 python export.py --weights yolov7-tiny.pt --grid --include-nms
 ```
 
-ONNX to TensorRT
+**ONNX to TensorRT**
 ```shell
 git clone https://github.com/Linaom1214/tensorrt-python.git
 cd tensorrt-python
 python export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p fp16
 ```
+
+Tested with: Python 3.7.13, Pytorch 1.12.0+cu113
+
 
 ## Citation
 
