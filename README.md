@@ -165,10 +165,10 @@ Tested with: Python 3.7.13 and Pytorch 1.12.0+cu113
 - `--dynamic-shape`: Make third and fourth input dimension dynamic for dynamic width and height
 - `--onnx-simplify` Run [onnx-simplifier](https://github.com/daquexian/onnx-simplifier)
 
-yolov7-tiny to ONNX with grid, nms and dynamic batchsize:
+yolov7-tiny to ONNX with dynamic batchsize, grid and nms(score-thresh=0.2, nms-thresh=0.5, detections-per-image=500):
 ```shell
 wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
-python export.py --weights yolov7-tiny.pt --dynamic-batch --include-grid --include-nms --onnx-simplify
+!python export.py --weights yolov7-tiny.pt --onnx-simplify --dynamic-batch --include-grid --include-nms --include-nms-score-thresh=0.2 --include-nms-nms-thresh=0.5 --include-nms-detections-per-image=500
 ```
 
 ### ONNX to TensorRT
