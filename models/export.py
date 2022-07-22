@@ -89,6 +89,13 @@ if __name__ == '__main__':
             onnx_model = onnx.load(f)  # load onnx model
             onnx.checker.check_model(onnx_model)  # check onnx model
             # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
+
+            # # Metadata
+            # d = {'stride': int(max(model.stride))}
+            # for k, v in d.items():
+            #     meta = onnx_model.metadata_props.add()
+            #     meta.key, meta.value = k, str(v)
+            # onnx.save(onnx_model, f)
         if opt.simplify:
             try:
                 import onnxsim
