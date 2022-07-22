@@ -5,7 +5,7 @@ from copy import deepcopy
 
 sys.path.append('./')  # to run '$ python *.py' files in subdirectories
 logger = logging.getLogger(__name__)
-
+import torch
 from models.common import *
 from models.experimental import *
 from utils.autoanchor import check_anchor_order
@@ -49,15 +49,19 @@ class Detect(nn.Module):
                 if self.grid[i].shape[2:4] != x[i].shape[2:4]:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
                 y = x[i].sigmoid()
-                xy, wh, conf = y.split((2, 2, self.nc + 1), 4) 
-                xy = (xy * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
-                wh = (wh * 2) ** 2 * self.anchor_grid[i]# wh
-                y = torch.cat((xy, wh, conf), -1)
+                if not torch.onnx.is_in_onnx_export():
+                    y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
+                    y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                else:
+                    xy = (y[..., 0:2] * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
+                    wh = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                    y = torch.cat((xy, wh, y[..., 4:]), -1)
                 z.append(y.view(bs, -1, self.no))
 
         if self.include_nms:
             z = self.convert(z)
-        return x if self.training else (z, ) if self.include_nms else (torch.cat(z, 1), x)
+
+        return x if self.training else (z, ) if self.include_nms else torch.cat(z, 1)
 
     @staticmethod
     def _make_grid(nx=20, ny=20):
