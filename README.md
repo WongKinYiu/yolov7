@@ -174,6 +174,19 @@ Yolov7-mask & YOLOv7-pose
         <img src="./figure/pose.png" width="42%"/>
     </a>
 </div>
+## End2End Detect for TensorRT8+ and onnxruntime
+
+Usage:
+
+```shell
+# export end2end onnx for TensorRT8+ backend
+python export.py --weights yolov7-d6.pt --grid --end2end --simplify --topk-all 100 --iou-thres 0.65 --conf-thres 0.35
+
+# convert onnx to TensorRT engine
+/usr/src/tensorrt/bin/trtexec --onnx=yolov7-d6.onnx --saveEngine=yolov7-d6.engine --fp16
+```
+
+See more information in [end2end_example.ipynb](end2end_example.ipynb) .
 
 ## Acknowledgements
 
