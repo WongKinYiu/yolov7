@@ -60,8 +60,10 @@ class Detect(nn.Module):
 
         if self.include_nms:
             z = self.convert(z)
+        else:
+            z = torch.cat(z, 1)
 
-        return x if self.training else (z, ) if self.include_nms else torch.cat(z, 1)
+        return x if self.training else z
 
     @staticmethod
     def _make_grid(nx=20, ny=20):
