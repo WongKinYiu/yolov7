@@ -23,7 +23,10 @@ if __name__ == '__main__':
     parser.add_argument('--dynamic-shape', action='store_true', help='dynamic ONNX input width and height')
     parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--include-grid', action='store_true', help='export Detect() layer grid')
-    parser.add_argument('--include-nms', action='store_true', help='export end2end onnx')
+    parser.add_argument('--include-nms', action='store_true', help='export nms plugin')
+    parser.add_argument('--include-nms-score-thresh', default=0.25, type=float, help='export nms plugin score threshold, default 0.25')
+    parser.add_argument('--include-nms-nms-thresh', default=0.45, type=float, help='export nms plugin nms threshold, default 0.45')
+    parser.add_argument('--include-nms-detections-per-image', default=100, type=int, help='export nms plugin max detections per image, default 100')
     parser.add_argument('--onnx-simplify', action='store_true', help='simplify onnx model')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
@@ -118,7 +121,7 @@ if __name__ == '__main__':
         if opt.include_nms:
             print('Registering NMS plugin for ONNX...')
             mo = RegisterNMS(f)
-            mo.register_nms()
+            mo.register_nms(score_thresh=opt.include_nms_score_thresh, nms_thresh=opt.include_nms_nms_thresh, detections_per_img=opt.include_nms_detections_per_img)
             mo.save(f)
 
     except Exception as e:
