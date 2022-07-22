@@ -19,11 +19,15 @@ if __name__ == '__main__':
     parser.add_argument('--weights', type=str, default='./yolor-csp-c.pt', help='weights path')
     parser.add_argument('--img-size', nargs='+', type=int, default=[640, 640], help='image size')  # height, width
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
-    parser.add_argument('--dynamic', action='store_true', help='dynamic ONNX axes')
-    parser.add_argument('--grid', action='store_true', help='export Detect() layer grid')
+    parser.add_argument('--dynamic-batch', action='store_true', help='dynamic ONNX batchsize')
+    parser.add_argument('--dynamic-shape', action='store_true', help='dynamic ONNX input width and height')
     parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-    parser.add_argument('--simplify', action='store_true', help='simplify onnx model')
-    parser.add_argument('--include-nms', action='store_true', help='export end2end onnx')
+    parser.add_argument('--include-grid', action='store_true', help='export Detect() layer grid')
+    parser.add_argument('--include-nms', action='store_true', help='export nms plugin')
+    parser.add_argument('--include-nms-score-thresh', default=0.25, type=float, help='export nms plugin score threshold, default 0.25')
+    parser.add_argument('--include-nms-nms-thresh', default=0.45, type=float, help='export nms plugin nms threshold, default 0.45')
+    parser.add_argument('--include-nms-detections-per-image', default=100, type=int, help='export nms plugin max detections per image, default 100')
+    parser.add_argument('--onnx-simplify', action='store_true', help='simplify onnx model')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
     print(opt)
@@ -52,7 +56,7 @@ if __name__ == '__main__':
                 m.act = SiLU()
         # elif isinstance(m, models.yolo.Detect):
         #     m.forward = m.forward_export  # assign forward (optional)
-    model.model[-1].export = not opt.grid  # set Detect() layer grid export
+    model.model[-1].export = not opt.include_grid  # set Detect() layer grid export
     y = model(img)  # dry run
     if opt.include_nms:
         model.model[-1].include_nms = True
@@ -74,10 +78,21 @@ if __name__ == '__main__':
         print('\nStarting ONNX export with onnx %s...' % onnx.__version__)
         f = opt.weights.replace('.pt', '.onnx')  # filename
         model.eval()
-        torch.onnx.export(model, img, f, verbose=False, opset_version=12, input_names=['images'],
+        dynamic_axes = None
+        if opt.dynamic_batch or opt.dynamic_shape:
+            dynamic_axes = { 'input': {}, 'output': {} }
+            if opt.dynamic_batch:
+                dynamic_axes['input'][0] = 'batch'
+                dynamic_axes['output'][0] = 'batch'
+            if opt.dynamic_shape:
+                dynamic_axes['input'][2] = 'height'
+                dynamic_axes['input'][3] = 'width'
+                dynamic_axes['output'][2] = 'y'
+                dynamic_axes['output'][3] = 'x'
+        torch.onnx.export(model, img, f, verbose=False, opset_version=12,
+                          input_names=['input'],
                           output_names=['classes', 'boxes'] if y is None else ['output'],
-                          dynamic_axes={'images': {0: 'batch', 2: 'height', 3: 'width'},  # size(1,3,640,640)
-                                        'output': {0: 'batch', 2: 'y', 3: 'x'}} if opt.dynamic else None)
+                          dynamic_axes=dynamic_axes)
 
         # Checks
         onnx_model = onnx.load(f)  # load onnx model
@@ -91,7 +106,7 @@ if __name__ == '__main__':
         #     meta.key, meta.value = k, str(v)
         # onnx.save(onnx_model, f)
 
-        if opt.simplify:
+        if opt.onnx_simplify:
             try:
                 import onnxsim
 
@@ -106,7 +121,7 @@ if __name__ == '__main__':
         if opt.include_nms:
             print('Registering NMS plugin for ONNX...')
             mo = RegisterNMS(f)
-            mo.register_nms()
+            mo.register_nms(score_thresh=opt.include_nms_score_thresh, nms_thresh=opt.include_nms_nms_thresh, detections_per_img=opt.include_nms_detections_per_image)
             mo.save(f)
 
     except Exception as e:

@@ -153,25 +153,34 @@ python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source inferen
 
 
 ## Export
+### Pytorch to ONNX
+Tested with: Python 3.7.13 and Pytorch 1.12.0+cu113
 
-Pytorch -> ONNX -> TensorRT -> Detection on TensorRT in Python <a href="https://colab.research.google.com/gist/AlexeyAB/fcb47ae544cf284eb24d8ad8e880d45c/yolov7trtlinaom.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+- `--include-grid`: Add Detect layer
+- `--include-nms`: Add EfficientNMS plugin
+- `--include-nms-score-thresh`: NMS plugin threshold for score
+- `--include-nms-nms-thresh`: NMS plugin threshold for NMS IoU
+- `--include-nms-detections-per-image`: NMS plugin threshold for maximum amount of resulting objects per image
+- `--dynamic-batch`: Make first input dimension dynamic for dynamic batch support
+- `--dynamic-shape`: Make third and fourth input dimension dynamic for dynamic width and height
+- `--onnx-simplify` Run [onnx-simplifier](https://github.com/daquexian/onnx-simplifier)
 
-
-**Pytorch to ONNX**, use `--include-nms` flag for the end-to-end ONNX model with `EfficientNMS`
+yolov7-tiny to ONNX with dynamic batchsize, grid and nms(score-thresh=0.2, nms-thresh=0.5, detections-per-image=500):
 ```shell
 wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
-python export.py --weights yolov7-tiny.pt --grid --include-nms
+!python export.py --weights yolov7-tiny.pt --onnx-simplify --dynamic-batch --include-grid --include-nms --include-nms-score-thresh=0.2 --include-nms-nms-thresh=0.5 --include-nms-detections-per-image=500
 ```
 
-**ONNX to TensorRT**
+### ONNX to TensorRT with docker
 ```shell
-git clone https://github.com/Linaom1214/tensorrt-python.git
-cd tensorrt-python
-python export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p fp16
+$ docker run -it --rm --gpus=all nvcr.io/nvidia/tensorrt:22.04-py3
+$ # from new shell copy onnx to container
+$ docker cp yolov7-tiny.onnx 898c16f38c99:/workspace/tensorrt/bin
+$ # in container now
+$ cd /workspace/tensorrt/bin
+$ # convert onnx to tensorrt with min batch size 1, opt batch size 8 and max batch size 16
+$ ./trtexec --onnx=yolov7-tiny.onnx --minShapes=input:1x3x640x640 --optShapes=input:8x3x640x640 --maxShapes=input:16x3x640x640 --fp16 --workspace=4096 --saveEngine=yolov7-tiny.engine
 ```
-
-Tested with: Python 3.7.13, Pytorch 1.12.0+cu113
-
 
 ## Citation
 
