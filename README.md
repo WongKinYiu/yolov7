@@ -154,22 +154,36 @@ python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source inferen
 
 ## Export
 
-Pytorch -> ONNX -> TensorRT -> Detection on TensorRT in Python <a href="https://colab.research.google.com/gist/AlexeyAB/fcb47ae544cf284eb24d8ad8e880d45c/yolov7trtlinaom.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+
+**Pytorch to ONNX** <a href="https://colab.research.google.com/gist/AlexeyAB/ae8ec223c0d7c3d8b6b4e2c609a72df0/yolov7trtlinaom.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+```shell
+python export.py --weights yolov7-tiny.pt --grid --end2end --simplify \
+        --topk-all 100 --iou-thres 0.65 --conf-thres 0.35 --max-wh 640
+```
+
+**Pytorch to TensorRT** <a href="https://colab.research.google.com/gist/AlexeyAB/ae8ec223c0d7c3d8b6b4e2c609a72df0/yolov7trtlinaom.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+
+```shell
+wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
+python export.py --weights ./yolov7-tiny.pt --grid --end2end --simplify --topk-all 100 --iou-thres 0.65 --conf-thres 0.35
+git clone https://github.com/Linaom1214/tensorrt-python.git
+python ./tensorrt-python/export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p fp16
+```
+
+**Pytorch to TensorRT another way** <a href="https://colab.research.google.com/gist/AlexeyAB/fcb47ae544cf284eb24d8ad8e880d45c/yolov7trtlinaom.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a> <details><summary> <b>Expand</b> </summary>
 
 
-**Pytorch to ONNX**, use `--include-nms` flag for the end-to-end ONNX model with `EfficientNMS`
 ```shell
 wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
 python export.py --weights yolov7-tiny.pt --grid --include-nms
-```
-
-**ONNX to TensorRT**
-
-```shell
 git clone https://github.com/Linaom1214/tensorrt-python.git
-cd tensorrt-python
-python export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p fp16
+python ./tensorrt-python/export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p fp16
+
+# Or use trtexec to convert ONNX to TensorRT engine
+/usr/src/tensorrt/bin/trtexec --onnx=yolov7-tiny.onnx --saveEngine=yolov7-tiny-nms.trt --fp16
 ```
+
+</details>
 
 Tested with: Python 3.7.13, Pytorch 1.12.0+cu113
 
@@ -198,24 +212,6 @@ Yolov7-mask & YOLOv7-pose
     </a>
 </div>
 
-## End2End Detect for TensorRT8+ and onnxruntime
-
-Usage:
-
-```shell
-# export end2end onnx for TensorRT8+ backend
-python export.py --weights yolov7-d6.pt --grid --end2end --simplify --topk-all 100 --iou-thres 0.65 --conf-thres 0.35
-
-# convert onnx to TensorRT engine
-/usr/src/tensorrt/bin/trtexec --onnx=yolov7-d6.onnx --saveEngine=yolov7-d6.engine --fp16
-
-# export end2end onnx for onnxruntime backend
-python export.py --weights yolov7-d6.pt --grid --end2end --simplify --topk-all 100 --iou-thres 0.65 --conf-thres 0.35 --max-wh 7680
-```
-
-See more information for tensorrt end2end detect in [end2end_tensorrt.ipynb](end2end_tensorrt.ipynb) .
-
-See more information for onnxruntime end2end detect in [end2end_onnxruntime.ipynb](end2end_onnxruntime.ipynb) .
 
 ## Acknowledgements
 
