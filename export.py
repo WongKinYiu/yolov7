@@ -12,6 +12,7 @@ from models.experimental import attempt_load, End2End
 from utils.activations import Hardswish, SiLU
 from utils.general import set_logging, check_img_size
 from utils.torch_utils import select_device
+from utils.add_nms import RegisterNMS
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -27,6 +28,7 @@ if __name__ == '__main__':
     parser.add_argument('--conf-thres', type=float, default=0.25, help='conf threshold for NMS')
     parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--simplify', action='store_true', help='simplify onnx model')
+    parser.add_argument('--include-nms', action='store_true', help='export end2end onnx')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
     print(opt)
@@ -57,7 +59,9 @@ if __name__ == '__main__':
         #     m.forward = m.forward_export  # assign forward (optional)
     model.model[-1].export = not opt.grid  # set Detect() layer grid export
     y = model(img)  # dry run
-
+    if opt.include_nms:
+        model.model[-1].include_nms = True
+        y = None
     # TorchScript export
     try:
         print('\nStarting TorchScript export with torch %s...' % torch.__version__)
@@ -94,10 +98,13 @@ if __name__ == '__main__':
         # Checks
         onnx_model = onnx.load(f)  # load onnx model
         onnx.checker.check_model(onnx_model)  # check onnx model
+
         if opt.end2end and opt.max_wh is None:
             for i in onnx_model.graph.output:
                 for j in i.type.tensor_type.shape.dim:
                     j.dim_param = str(shapes.pop(0))
+
+        # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
 
         # # Metadata
         # d = {'stride': int(max(model.stride))}
@@ -115,12 +122,19 @@ if __name__ == '__main__':
                 assert check, 'assert check failed'
             except Exception as e:
                 print(f'Simplifier failure: {e}')
+
         # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
         onnx.save(onnx_model,f)
         print('ONNX export success, saved as %s' % f)
+
+        if opt.include_nms:
+            print('Registering NMS plugin for ONNX...')
+            mo = RegisterNMS(f)
+            mo.register_nms()
+            mo.save(f)
+
     except Exception as e:
         print('ONNX export failure: %s' % e)
-
     # CoreML export
     try:
         import coremltools as ct
