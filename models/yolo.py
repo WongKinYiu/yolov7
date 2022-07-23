@@ -63,7 +63,7 @@ class Detect(nn.Module):
         if self.training:
             out = x
         elif self.end2end:
-            torch.cat(z, 1))
+            torch.cat(z, 1)
         elif self.include_nms:
             z = self.convert(z)
             out = (z, )
@@ -153,7 +153,7 @@ class IDetect(nn.Module):
         if self.training:
             out = x
         elif self.end2end:
-            torch.cat(z, 1))
+            torch.cat(z, 1)
         elif self.include_nms:
             z = self.convert(z)
             out = (z, )
