@@ -23,7 +23,9 @@ except ImportError:
 class Detect(nn.Module):
     stride = None  # strides computed during build
     export = False  # onnx export
+    end2end = False
     include_nms = False 
+
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(Detect, self).__init__()
         self.nc = nc  # number of classes
@@ -58,10 +60,17 @@ class Detect(nn.Module):
                     y = torch.cat((xy, wh, y[..., 4:]), -1)
                 z.append(y.view(bs, -1, self.no))
 
-        if self.include_nms:
+        if self.training:
+            out = x
+        elif self.end2end:
+            out = torch.cat(z, 1)
+        elif self.include_nms:
             z = self.convert(z)
+            out = (z, )
+        else:
+            out = (torch.cat(z, 1), x)
 
-        return x if self.training else (z, ) if self.include_nms else (torch.cat(z, 1), x)
+        return out
 
     @staticmethod
     def _make_grid(nx=20, ny=20):
@@ -84,7 +93,8 @@ class Detect(nn.Module):
 class IDetect(nn.Module):
     stride = None  # strides computed during build
     export = False  # onnx export
-    include_nms = False
+    end2end = False
+    include_nms = False 
 
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(IDetect, self).__init__()
@@ -140,10 +150,17 @@ class IDetect(nn.Module):
                 y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
                 z.append(y.view(bs, -1, self.no))
 
-        if self.include_nms:
+        if self.training:
+            out = x
+        elif self.end2end:
+            out = torch.cat(z, 1)
+        elif self.include_nms:
             z = self.convert(z)
+            out = (z, )
+        else:
+            out = (torch.cat(z, 1), x)
 
-        return x if self.training else (z, ) if self.include_nms else (torch.cat(z, 1), x)
+        return out
     
     def fuse(self):
         print("IDetect.fuse")
