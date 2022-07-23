@@ -1,0 +1,64 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.241.1/containers/docker-existing-dockerfile
+{
+    "name": "Existing Dockerfile",
+
+    // Sets the run context to one level up instead of the .devcontainer folder.
+    "context": "..",
+
+    // Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
+    "dockerFile": "../Dockerfile",
+
+    // Use 'forwardPorts' to make a list of ports inside the container available locally.
+    // "forwardPorts": [],
+
+    // Uncomment the next line to run commands after the container is created - for example installing curl.
+    "postCreateCommand": "apt-get update && apt-get install -y curl tmux vim htop ranger wget" ,
+
+    // Uncomment when using a ptrace-based debugger like C++, Go, and Rust
+    "runArgs": [ 
+        "--gpus=all",
+        "--shm-size=16g"
+    ],
+
+    // Uncomment to use the Docker CLI from inside the container. See https://aka.ms/vscode-remote/samples/docker-from-docker.
+    // "mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],
+
+    // Uncomment to connect as a non-root user if you've added one. See https://aka.ms/vscode-remote/containers/non-root.
+    // "remoteUser": "vscode"
+    "features": {
+        "git": {
+          "version": "latest",
+          "ppa": false
+        },
+        "github-cli": "latest",
+        "azure-cli": "latest"
+      },
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.linting.enabled": true,
+                "python.linting.pylintEnabled": true,
+                "python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
+                "python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+                "python.formatting.yapfPath": "/usr/local/py-utils/bin/yapf",
+                "python.linting.banditPath": "/usr/local/py-utils/bin/bandit",
+                "python.linting.flake8Path": "/usr/local/py-utils/bin/flake8",
+                "python.linting.mypyPath": "/usr/local/py-utils/bin/mypy",
+                "python.linting.pycodestylePath": "/usr/local/py-utils/bin/pycodestyle",
+                "python.linting.pydocstylePath": "/usr/local/py-utils/bin/pydocstyle",
+                "python.linting.pylintPath": "/usr/local/py-utils/bin/pylint"
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-toolsai.jupyter",
+                "ms-toolsai.jupyter-renderers",
+                "eamodio.gitlens",
+                "ritwickdey.LiveServer",
+                "GitHub.vscode-pull-request-github"
+            ]
+        }
+    }
+}

@@ -35,5 +35,5 @@ ipython  # interactive notebook
 psutil  # system utilization
 thop  # FLOPs computation
 # albumentations>=1.0.3
-# pycocotools>=2.0  # COCO mAP
+pycocotools>=2.0  # COCO mAP
 # roboflow
