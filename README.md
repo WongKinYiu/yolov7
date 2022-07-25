@@ -156,19 +156,21 @@ python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source inferen
 ## Export
 
 
-**Pytorch to ONNX** <a href="https://colab.research.google.com/gist/AlexeyAB/ae8ec223c0d7c3d8b6b4e2c609a72df0/yolov7trtlinaom.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+**Pytorch to ONNX with NMS (and inference)** <a href="https://colab.research.google.com/github/WongKinYiu/yolov7/blob/main/tools/YOLOv7onnx.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
 ```shell
 python export.py --weights yolov7-tiny.pt --grid --end2end --simplify \
         --topk-all 100 --iou-thres 0.65 --conf-thres 0.35 --max-wh 640
 ```
 
-**Pytorch to TensorRT** <a href="https://colab.research.google.com/gist/AlexeyAB/ae8ec223c0d7c3d8b6b4e2c609a72df0/yolov7trtlinaom.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+**Pytorch to TensorRT with NMS (and inference)** <a href="https://colab.research.google.com/github/WongKinYiu/yolov7/blob/main/tools/YOLOv7trt.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
 
 ```shell
 wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
 python export.py --weights ./yolov7-tiny.pt --grid --end2end --simplify --topk-all 100 --iou-thres 0.65 --conf-thres 0.35
 git clone https://github.com/Linaom1214/tensorrt-python.git
 python ./tensorrt-python/export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p fp16
+
+# example of inference in C++ https://github.com/Linaom1214/tensorrt-python/tree/main/yolov7/cpp
 ```
 
 **Pytorch to TensorRT another way** <a href="https://colab.research.google.com/gist/AlexeyAB/fcb47ae544cf284eb24d8ad8e880d45c/yolov7trtlinaom.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a> <details><summary> <b>Expand</b> </summary>
