@@ -15,7 +15,7 @@ Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-t
 
 ## Web Demo
 
-- Integrated into [Huggingface Spaces 🤗](https://huggingface.co/spaces/akhaliq/yolov7) using [Gradio](https://github.com/gradio-app/gradio). Try out the Web Demo [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/akhaliq/yolov7)
+- Integrated into [Huggingface Spaces 🤗](https://huggingface.co/spaces/akhaliq/yolov7) using Gradio. Try out the Web Demo [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/akhaliq/yolov7)
 
 ## Performance 
 
@@ -36,7 +36,7 @@ MS COCO
 Docker environment (recommended)
 <details><summary> <b>Expand</b> </summary>
 
-``` bash
+``` shell
 # create the docker container, you can change the share memory size if you have more.
 nvidia-docker run --name yolov7 -it -v your_coco_path/:/coco/ -v your_code_path/:/yolov7 --shm-size=64g nvcr.io/nvidia/pytorch:21.08-py3
 
@@ -57,7 +57,7 @@ cd /yolov7
 
 [`yolov7.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7.pt) [`yolov7x.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7x.pt) [`yolov7-w6.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-w6.pt) [`yolov7-e6.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-e6.pt) [`yolov7-d6.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-d6.pt) [`yolov7-e6e.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-e6e.pt)
 
-``` bash
+``` shell
 python test.py --data data/coco.yaml --img 640 --batch 32 --conf 0.001 --iou 0.65 --device 0 --weights yolov7.pt --name yolov7_640_val
 ```
 
@@ -84,7 +84,7 @@ To measure accuracy, download [COCO-annotations for Pycocotools](http://images.c
 
 Data preparation
 
-``` bash
+``` shell
 bash scripts/get_coco.sh
 ```
 
@@ -92,7 +92,7 @@ bash scripts/get_coco.sh
 
 Single GPU training
 
-``` bash
+``` shell
 # train p5 models
 python train.py --workers 8 --device 0 --batch-size 32 --data data/coco.yaml --img 640 640 --cfg cfg/training/yolov7.yaml --weights '' --name yolov7 --hyp data/hyp.scratch.p5.yaml
 
@@ -102,7 +102,7 @@ python train_aux.py --workers 8 --device 0 --batch-size 16 --data data/coco.yaml
 
 Multiple GPU training
 
-``` bash
+``` shell
 # train p5 models
 python -m torch.distributed.launch --nproc_per_node 4 --master_port 9527 train.py --workers 8 --device 0,1,2,3 --sync-bn --batch-size 128 --data data/coco.yaml --img 640 640 --cfg cfg/training/yolov7.yaml --weights '' --name yolov7 --hyp data/hyp.scratch.p5.yaml
 
@@ -116,7 +116,7 @@ python -m torch.distributed.launch --nproc_per_node 8 --master_port 9527 train_a
 
 Single GPU finetuning for custom dataset
 
-``` bash
+``` shell
 # finetune p5 models
 python train.py --workers 8 --device 0 --batch-size 32 --data data/custom.yaml --img 640 640 --cfg cfg/training/yolov7-custom.yaml --weights 'yolov7_training.pt' --name yolov7-custom --hyp data/hyp.scratch.custom.yaml
 
@@ -137,11 +137,12 @@ See [keypoint.ipynb](https://github.com/WongKinYiu/yolov7/blob/main/tools/keypoi
 ## Inference
 
 On video:
-``` bash
+``` shell
 python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source yourvideo.mp4
+```
 
 On image:
-``` bash
+``` shell
 python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source inference/images/horses.jpg
 ```
 
@@ -154,22 +155,38 @@ python detect.py --weights yolov7.pt --conf 0.25 --img-size 640 --source inferen
 
 ## Export
 
-Pytorch -> ONNX -> TensorRT -> Detection on TensorRT in Python <a href="https://colab.research.google.com/gist/AlexeyAB/fcb47ae544cf284eb24d8ad8e880d45c/yolov7trtlinaom.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+
+**Pytorch to ONNX with NMS (and inference)** <a href="https://colab.research.google.com/github/WongKinYiu/yolov7/blob/main/tools/YOLOv7onnx.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+```shell
+python export.py --weights yolov7-tiny.pt --grid --end2end --simplify \
+        --topk-all 100 --iou-thres 0.65 --conf-thres 0.35 --img-size 640 640 --max-wh 640
+```
+
+**Pytorch to TensorRT with NMS (and inference)** <a href="https://colab.research.google.com/github/WongKinYiu/yolov7/blob/main/tools/YOLOv7trt.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+
+```shell
+wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
+python export.py --weights ./yolov7-tiny.pt --grid --end2end --simplify --topk-all 100 --iou-thres 0.65 --conf-thres 0.35 --img-size 640 640
+git clone https://github.com/Linaom1214/tensorrt-python.git
+python ./tensorrt-python/export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p fp16
+
+# example of inference in C++ https://github.com/Linaom1214/tensorrt-python/tree/main/yolov7/cpp
+```
+
+**Pytorch to TensorRT another way** <a href="https://colab.research.google.com/gist/AlexeyAB/fcb47ae544cf284eb24d8ad8e880d45c/yolov7trtlinaom.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a> <details><summary> <b>Expand</b> </summary>
 
 
-**Pytorch to ONNX**, use `--include-nms` flag for the end-to-end ONNX model with `EfficientNMS`
 ```shell
 wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt
 python export.py --weights yolov7-tiny.pt --grid --include-nms
-```
-
-**ONNX to TensorRT**
-
-```shell
 git clone https://github.com/Linaom1214/tensorrt-python.git
-cd tensorrt-python
-python export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p fp16
+python ./tensorrt-python/export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p fp16
+
+# Or use trtexec to convert ONNX to TensorRT engine
+/usr/src/tensorrt/bin/trtexec --onnx=yolov7-tiny.onnx --saveEngine=yolov7-tiny-nms.trt --fp16
 ```
+
+</details>
 
 Tested with: Python 3.7.13, Pytorch 1.12.0+cu113
 
@@ -198,24 +215,6 @@ Yolov7-mask & YOLOv7-pose
     </a>
 </div>
 
-## End2End Detect for TensorRT8+ and onnxruntime
-
-Usage:
-
-```shell
-# export end2end onnx for TensorRT8+ backend
-python export.py --weights yolov7-d6.pt --grid --end2end --simplify --topk-all 100 --iou-thres 0.65 --conf-thres 0.35
-
-# convert onnx to TensorRT engine
-/usr/src/tensorrt/bin/trtexec --onnx=yolov7-d6.onnx --saveEngine=yolov7-d6.engine --fp16
-
-# export end2end onnx for onnxruntime backend
-python export.py --weights yolov7-d6.pt --grid --end2end --simplify --topk-all 100 --iou-thres 0.65 --conf-thres 0.35 --max-wh 7680
-```
-
-See more information for tensorrt end2end detect in [end2end_tensorrt.ipynb](end2end_tensorrt.ipynb) .
-
-See more information for onnxruntime end2end detect in [end2end_onnxruntime.ipynb](end2end_onnxruntime.ipynb) .
 
 ## Acknowledgements
 
