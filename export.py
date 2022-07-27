@@ -102,7 +102,7 @@ if __name__ == '__main__':
                 }
             else:
                 output_axes = {
-                    'outputs': {0: 'batch'},
+                    'output': {0: 'batch'},
                 }
             dynamic_axes.update(output_axes)
         if opt.grid and opt.end2end:
