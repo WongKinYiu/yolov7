@@ -20,6 +20,7 @@ if __name__ == '__main__':
     parser.add_argument('--img-size', nargs='+', type=int, default=[640, 640], help='image size')  # height, width
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
     parser.add_argument('--dynamic', action='store_true', help='dynamic ONNX axes')
+    parser.add_argument('--dynamic-batch', action='store_true', help='dynamic batch onnx for tensorrt and onnx-runtime')
     parser.add_argument('--grid', action='store_true', help='export Detect() layer grid')
     parser.add_argument('--end2end', action='store_true', help='export end2end onnx')
     parser.add_argument('--max-wh', type=int, default=None, help='None for tensorrt nms, int value for onnx-runtime nms')
@@ -31,6 +32,8 @@ if __name__ == '__main__':
     parser.add_argument('--include-nms', action='store_true', help='export end2end onnx')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
+    opt.dynamic = opt.dynamic and not opt.end2end
+    opt.dynamic = False if opt.dynamic_batch else opt.dynamic
     print(opt)
     set_logging()
     t = time.time()
@@ -80,6 +83,28 @@ if __name__ == '__main__':
         f = opt.weights.replace('.pt', '.onnx')  # filename
         model.eval()
         output_names = ['classes', 'boxes'] if y is None else ['output']
+        dynamic_axes = None
+        if opt.dynamic:
+            dynamic_axes = {'images': {0: 'batch', 2: 'height', 3: 'width'},  # size(1,3,640,640)
+             'output': {0: 'batch', 2: 'y', 3: 'x'}}
+        if opt.dynamic_batch:
+            opt.batch_size = 'batch'
+            dynamic_axes = {
+                'images': {
+                    0: 'batch',
+                }, }
+            if opt.end2end and opt.max_wh is None:
+                output_axes = {
+                    'num_dets': {0: 'batch'},
+                    'det_boxes': {0: 'batch'},
+                    'det_scores': {0: 'batch'},
+                    'det_classes': {0: 'batch'},
+                }
+            else:
+                output_axes = {
+                    'output': {0: 'batch'},
+                }
+            dynamic_axes.update(output_axes)
         if opt.grid and opt.end2end:
             print('\nStarting export end2end onnx model for %s...' % 'TensorRT' if opt.max_wh is None else 'onnxruntime')
             model = End2End(model,opt.topk_all,opt.iou_thres,opt.conf_thres,opt.max_wh,device)
@@ -92,8 +117,7 @@ if __name__ == '__main__':
 
         torch.onnx.export(model, img, f, verbose=False, opset_version=12, input_names=['images'],
                           output_names=output_names,
-                          dynamic_axes={'images': {0: 'batch', 2: 'height', 3: 'width'},  # size(1,3,640,640)
-                                        'output': {0: 'batch', 2: 'y', 3: 'x'}} if opt.dynamic and not opt.end2end else None)
+                          dynamic_axes=dynamic_axes)
 
         # Checks
         onnx_model = onnx.load(f)  # load onnx model
