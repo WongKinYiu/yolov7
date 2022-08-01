@@ -116,7 +116,7 @@ if __name__ == '__main__':
                 else:
                     output_names = ['output']
             else:
-                model.concat = True
+                model.model[-1].concat = True
 
         torch.onnx.export(model, img, f, verbose=False, opset_version=12, input_names=['images'],
                           output_names=output_names,
