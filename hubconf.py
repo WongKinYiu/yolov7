@@ -65,7 +65,7 @@ def custom(path_or_model='path/to/model.pt', autoshape=True):
     Returns:
         pytorch model
     """
-    model = torch.load(path_or_model) if isinstance(path_or_model, str) else path_or_model  # load checkpoint
+    model = torch.load(path_or_model, map_location=torch.device('cpu')) if isinstance(path_or_model, str) else path_or_model  # load checkpoint
     if isinstance(model, dict):
         model = model['ema' if model.get('ema') else 'model']  # load model
 
