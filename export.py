@@ -89,7 +89,7 @@ if __name__ == '__main__':
         ct_model = ct.convert(ts, inputs=[ct.ImageType('image', shape=img.shape, scale=1 / 255.0, bias=[0, 0, 0])])
         bits, mode = (8, 'kmeans_lut') if opt.int8 else (16, 'linear') if opt.fp16 else (32, None)
         if bits < 32:
-            if sys.platform == 'Darwin':  # quantization only supported on macOS
+            if sys.platform.lower() == 'darwin':  # quantization only supported on macOS
                 with warnings.catch_warnings():
                     warnings.filterwarnings("ignore", category=DeprecationWarning)  # suppress numpy==1.20 float warning
                     ct_model = ct.models.neural_network.quantization_utils.quantize_weights(ct_model, bits, mode)
