@@ -1,6 +1,5 @@
- 'names': ['Ship']
- 'nc': 1
- 'path': ''
- 'test': '/content/drive/MyDrive/Datasets/HRSID_YOLO/test'
- 'train': '/content/drive/MyDrive/Datasets/HRSID_YOLO/train'
- 'val': '/content/drive/MyDrive/Datasets/HRSID_YOLO/val'
+ names: ['Ship']
+ nc: 1
+ test: '/content/drive/MyDrive/Datasets/HRSID_YOLO/test'
+ train: '/content/drive/MyDrive/Datasets/HRSID_YOLO/train'
+ val: '/content/drive/MyDrive/Datasets/HRSID_YOLO/val'
