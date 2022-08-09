@@ -51,8 +51,8 @@ def check_anchors(dataset, model, thr=4.0, imgsz=640):
         if new_bpr > bpr:  # replace anchors
             anchors = torch.tensor(anchors, device=m.anchors.device).type_as(m.anchors)
             m.anchor_grid[:] = anchors.clone().view_as(m.anchor_grid)  # for inference
-            m.anchors[:] = anchors.clone().view_as(m.anchors) / m.stride.to(m.anchors.device).view(-1, 1, 1)  # loss
             check_anchor_order(m)
+            m.anchors[:] = anchors.clone().view_as(m.anchors) / m.stride.to(m.anchors.device).view(-1, 1, 1)  # loss
             print(f'{prefix}New anchors saved to model. Update model *.yaml to use these anchors in the future.')
         else:
             print(f'{prefix}Original anchors better than new anchors. Proceeding with original anchors.')
