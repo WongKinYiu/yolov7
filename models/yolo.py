@@ -98,7 +98,8 @@ class IDetect(nn.Module):
     stride = None  # strides computed during build
     export = False  # onnx export
     end2end = False
-    include_nms = False 
+    include_nms = False
+    concat = False
 
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(IDetect, self).__init__()
@@ -312,6 +313,7 @@ class IAuxDetect(nn.Module):
     export = False  # onnx export
     end2end = False
     include_nms = False
+    concat = False
 
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(IAuxDetect, self).__init__()
