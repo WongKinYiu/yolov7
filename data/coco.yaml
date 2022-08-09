@@ -1,4 +1,4 @@
- names: ['Ship']
+ names: ['ship']
  nc: 1
  test: '/content/drive/MyDrive/Datasets/HRSID_YOLO/test'
  train: '/content/drive/MyDrive/Datasets/HRSID_YOLO/train'
