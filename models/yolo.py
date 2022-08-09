@@ -167,6 +167,8 @@ class IDetect(nn.Module):
         elif self.include_nms:
             z = self.convert(z)
             out = (z, )
+        elif self.concat:
+            out = torch.cat(z, 1)            
         else:
             out = (torch.cat(z, 1), x)
 
@@ -387,6 +389,8 @@ class IAuxDetect(nn.Module):
         elif self.include_nms:
             z = self.convert(z)
             out = (z, )
+        elif self.concat:
+            out = torch.cat(z, 1)            
         else:
             out = (torch.cat(z, 1), x)
 
