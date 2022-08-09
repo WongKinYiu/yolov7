@@ -42,10 +42,7 @@ coco/
 coco128/
 VOC/
 
-coco2017labels-segments.zip
-test2017.zip
-train2017.zip
-val2017.zip
+*.zip
 
 # MATLAB GitIgnore -----------------------------------------------------------------------------------------------------
 *.m~
