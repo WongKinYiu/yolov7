@@ -42,6 +42,11 @@ coco/
 coco128/
 VOC/
 
+coco2017labels-segments.zip
+test2017.zip
+train2017.zip
+val2017.zip
+
 # MATLAB GitIgnore -----------------------------------------------------------------------------------------------------
 *.m~
 *.mat
@@ -62,6 +67,8 @@ VOC/
 *_openvino_model/
 darknet53.conv.74
 yolov3-tiny.conv.15
+*.ptl
+*.trt
 
 # GitHub Python GitIgnore ----------------------------------------------------------------------------------------------
 # Byte-compiled / optimized / DLL files
