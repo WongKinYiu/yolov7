@@ -53,6 +53,34 @@ class ReOrg(nn.Module):
         return torch.cat([x[..., ::2, ::2], x[..., 1::2, ::2], x[..., ::2, 1::2], x[..., 1::2, 1::2]], 1)
 
 
+class Merge(nn.Module):
+    def __init__(self,ch=()):
+        super(Merge, self).__init__()
+
+    def forward(self, x):
+        
+        return [x[0],x[1],x[2]]
+
+
+class Refine(nn.Module):
+
+    def __init__(self, c2, k, s, ch):  # ch_in, ch_out, kernel, stride, padding, groups
+        super(Refine, self).__init__()
+        self.refine = nn.ModuleList()
+        for c in ch:
+            self.refine.append(Conv(c, c2, k, s))
+
+    def forward(self, x):
+        for i, f in enumerate(x):
+            if i == 0:
+                r = self.refine[i](f)
+            else:
+                r_p = self.refine[i](f)
+                r_p = F.interpolate(r_p, r.size()[2:], mode="bilinear", align_corners=False)
+                r = r + r_p
+        return r
+
+
 class Concat(nn.Module):
     def __init__(self, dimension=1):
         super(Concat, self).__init__()
