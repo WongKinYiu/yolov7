@@ -307,6 +307,93 @@ class IKeypoint(nn.Module):
         yv, xv = torch.meshgrid([torch.arange(ny), torch.arange(nx)])
         return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
 
+class MT(nn.Module):
+    stride = None  # strides computed during build
+    export = False  # onnx export
+
+    def __init__(self, nc=80, anchors=(), attn=None, mask_iou=False, ch=()):  # detection layer
+        super(MT, self).__init__()
+        self.nc = nc  # number of classes
+        self.no = nc + 5  # number of outputs per anchor
+        self.nl = len(anchors)  # number of detection layers
+        self.na = len(anchors[0]) // 2  # number of anchors
+        self.grid = [torch.zeros(1)] * self.nl  # init grid
+        a = torch.tensor(anchors).float().view(self.nl, -1, 2)
+        self.register_buffer('anchors', a)  # shape(nl,na,2)
+        self.register_buffer('anchor_grid', a.clone().view(self.nl, 1, -1, 1, 1, 2))  # shape(nl,1,na,1,1,2)
+        self.original_anchors = anchors
+        self.m = nn.ModuleList(nn.Conv2d(x, self.no * self.na, 1) for x in ch[0])  # output conv
+        if mask_iou:
+            self.m_iou = nn.ModuleList(nn.Conv2d(x, self.na, 1) for x in ch[0])  # output con
+        self.mask_iou = mask_iou
+        self.attn = attn
+        if attn is not None:
+            # self.attn_m = nn.ModuleList(nn.Conv2d(x, attn * self.na, 3, padding=1) for x in ch)  # output conv
+            self.attn_m = nn.ModuleList(nn.Conv2d(x, attn * self.na, 1) for x in ch[0])  # output conv
+            #self.attn_m = nn.ModuleList(nn.Conv2d(x, attn * self.na,  kernel_size=3, stride=1, padding=1) for x in ch)  # output conv
+
+    def forward(self, x):
+        #print(x[1].shape)
+        #print(x[2].shape)
+        #print([a.shape for a in x])
+        #exit()
+        # x = x.copy()  # for profiling
+        z = []  # inference output
+        za = []
+        zi = []
+        attn = [None] * self.nl
+        iou = [None] * self.nl
+        self.training |= self.export
+        output = dict()
+        for i in range(self.nl):
+            if self.attn is not None:
+                attn[i] = self.attn_m[i](x[0][i])  # conv
+                bs, _, ny, nx = attn[i].shape  # x(bs,2352,20,20) to x(bs,3,20,20,784)
+                attn[i] = attn[i].view(bs, self.na, self.attn, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+            if self.mask_iou:
+                iou[i] = self.m_iou[i](x[0][i])
+            x[0][i] = self.m[i](x[0][i])  # conv
+            
+            bs, _, ny, nx = x[0][i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
+            x[0][i] = x[0][i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+            if self.mask_iou:
+                iou[i] = iou[i].view(bs, self.na, ny, nx).contiguous()
+
+            if not self.training:  # inference
+                za.append(attn[i].view(bs, -1, self.attn))
+                if self.mask_iou:
+                    zi.append(iou[i].view(bs, -1))
+                if self.grid[i].shape[2:4] != x[0][i].shape[2:4]:
+                    self.grid[i] = self._make_grid(nx, ny).to(x[0][i].device)
+
+                y = x[0][i].sigmoid()
+                y[..., 0:2] = (y[..., 0:2] * 3. - 1.0 + self.grid[i]) * self.stride[i]  # xy
+                y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                z.append(y.view(bs, -1, self.no))
+        output["mask_iou"] = None
+        if not self.training:
+            output["test"] = torch.cat(z, 1)
+            if self.attn is not None:
+                output["attn"] = torch.cat(za, 1)
+            if self.mask_iou:
+                output["mask_iou"] = torch.cat(zi, 1).sigmoid()
+             
+        else:
+            if self.attn is not None:
+                output["attn"] = attn
+            if self.mask_iou:
+                output["mask_iou"] = iou
+        output["bbox_and_cls"] = x[0]
+        output["bases"] = x[1]
+        output["sem"] = x[2]
+        
+        return output
+
+    @staticmethod
+    def _make_grid(nx=20, ny=20):
+        yv, xv = torch.meshgrid([torch.arange(ny), torch.arange(nx)])
+        return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
+
 
 class IAuxDetect(nn.Module):
     stride = None  # strides computed during build
@@ -793,6 +880,16 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
                 args[1] = [list(range(args[1] * 2))] * len(f)
         elif m is ReOrg:
             c2 = ch[f] * 4
+        elif m in [Merge]:
+            c2 = args[0]
+        elif m in [MT]:
+            if len(args) == 3:
+                args.append(False)
+                #print(f)
+                #print(len(ch))
+            #for x in f:
+            #    print(ch[x])
+            args.append([ch[x] for x in f])
         elif m is Contract:
             c2 = ch[f] * args[0] ** 2
         elif m is Expand:
