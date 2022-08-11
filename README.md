@@ -128,12 +128,6 @@ python train_aux.py --workers 8 --device 0 --batch-size 16 --data data/custom.ya
 
 See [reparameterization.ipynb](tools/reparameterization.ipynb)
 
-## Pose estimation
-
-[`yolov7-w6-pose.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-w6-pose.pt)
-
-See [keypoint.ipynb](https://github.com/WongKinYiu/yolov7/blob/main/tools/keypoint.ipynb).
-
 ## Inference
 
 On video:
@@ -188,6 +182,31 @@ python ./tensorrt-python/export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p
 
 Tested with: Python 3.7.13, Pytorch 1.12.0+cu113
 
+## Pose estimation
+
+[`code`](https://github.com/WongKinYiu/yolov7/tree/pose) [`yolov7-w6-pose.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-w6-pose.pt)
+
+See [keypoint.ipynb](https://github.com/WongKinYiu/yolov7/blob/main/tools/keypoint.ipynb).
+
+<div align="center">
+    <a href="./">
+        <img src="./figure/pose.png" width="39%"/>
+    </a>
+</div>
+
+
+## Instance segmentation
+
+[`code`](https://github.com/WongKinYiu/yolov7/tree/mask) [`yolov7-mask.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-mask.pt)
+
+See [instance.ipynb](https://github.com/WongKinYiu/yolov7/blob/main/tools/instance.ipynb).
+
+<div align="center">
+    <a href="./">
+        <img src="./figure/mask.png" width="59%"/>
+    </a>
+</div>
+
 
 ## Citation
 
@@ -199,19 +218,6 @@ Tested with: Python 3.7.13, Pytorch 1.12.0+cu113
   year={2022}
 }
 ```
-
-## Teaser
-
-Yolov7-mask & YOLOv7-pose
-
-<div align="center">
-    <a href="./">
-        <img src="./figure/mask.png" width="56%"/>
-    </a>
-    <a href="./">
-        <img src="./figure/pose.png" width="42%"/>
-    </a>
-</div>
 
 
 ## Acknowledgements
