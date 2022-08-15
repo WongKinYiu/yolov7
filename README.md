@@ -28,6 +28,22 @@ python test.py \
 
 ```
 
+# Instruction for transfering to private network
+
+### First time
+
+- Copy entire repo to transfer media
+- Copy repo to desired location
+- Set remote url
+```
+git remote set-url <REMOTE-NAME> <NEW-URL>
+Example: git remote set-url origin https://github.com/git/git.git
+```
+- clear filemode problem if it exist
+```
+git config core.filemode false
+```
+
 # Official YOLOv7
 
 Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors](https://arxiv.org/abs/2207.02696)
