@@ -44,6 +44,22 @@ Example: git remote set-url origin https://github.com/git/git.git
 git config core.filemode false
 ```
 
+### Subsequent Transfer
+
+- Fetch latest commits
+    - If transfer media has repo `git pull`
+    - If transfer media does not have repo `git clone` whole repo
+- If filemode problem exist `git config core.filemode false`
+- Over on local repo in the private network set remote to transfer media, fetch new commits and set remote back to private gitlab
+```
+Example:
+git remote set-url origin /location/in/harddisk/yolov7
+git pull
+git remote set-url origin https://github.com/git/git.git
+git push
+```
+Private gitlab is not updated with the latest commits
+
 # Official YOLOv7
 
 Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors](https://arxiv.org/abs/2207.02696)
