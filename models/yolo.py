@@ -659,6 +659,16 @@ class Model(nn.Module):
             self.stride = m.stride
             self._initialize_biases_kpt()  # only run once
             # print('Strides: %s' % m.stride.tolist())
+        if isinstance(m, MT):
+            s = 256  # 2x min stride
+            temp = self.forward(torch.zeros(1, ch, s, s))
+            if isinstance(temp, list):
+                temp = temp[0]
+            m.stride = torch.tensor([s / x.shape[-2] for x in temp["bbox_and_cls"]])  # forward
+            check_anchor_order(m)
+            m.anchors /= m.stride.view(-1, 1, 1)
+            self.stride = m.stride
+            self._initialize_biases()
 
         # Init weights, biases
         initialize_weights(self)
@@ -895,7 +905,7 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
         elif m is Expand:
             c2 = ch[f] // args[0] ** 2
         elif m is Refine:
-            args.append([ch[x + 1] for x in f])
+            args.append([ch[x] for x in f])
             c2 = args[0]
         else:
             c2 = ch[f]
