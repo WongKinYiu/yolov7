@@ -29,6 +29,7 @@ class YOLOv7Mask():
         with open(hyp_cfg, 'r') as f:
             self.hyp = yaml.load(f, Loader=yaml.FullLoader)
         self.weights_path = weight_path
+        self.model = self.get_model()
 
     def get_model(self):
         weights = torch.load(self.weights_path)
@@ -88,7 +89,7 @@ class YOLOv7Mask():
     def get_mask(self,
                  img_path,
                  visualize=False):
-        model = self.get_model()
+        model = self.model
 
         image = self.img_to_tensor(img_path)
 
