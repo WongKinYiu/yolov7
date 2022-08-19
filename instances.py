@@ -43,7 +43,6 @@ class YOLOv7Mask():
     def img_to_tensor(self, img_path):
         image = cv2.imread(img_path)
         image = letterbox(image, 640, stride=64, auto=True)[0]
-        image_ = image.copy()
         image = transforms.ToTensor()(image)
         image = torch.tensor(np.array([image.numpy()]))
 
@@ -133,5 +132,5 @@ class YOLOv7Mask():
 if __name__ == '__main__':
     yolov7 = YOLOv7Mask()
     masks, cls, conf, bboxs = yolov7.get_mask(
-        "inference/images/horses.jpg", visualize=False)
+        "inference/images/horses.jpg", visualize=True)
     print(masks, cls, conf, bboxs)
