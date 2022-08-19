@@ -17,7 +17,6 @@ from detectron2.modeling.poolers import ROIPooler
 from detectron2.structures import Boxes
 from detectron2.utils.memory import retry_if_cuda_oom
 from detectron2.layers import paste_masks_in_image
-from annolid.utils.draw import draw_binary_masks
 
 
 class YOLOv7Mask():
