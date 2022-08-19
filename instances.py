@@ -3,7 +3,6 @@ YOLOV7 instance segmentation network.
 This is a modified version of YOLOv7 mask based on
 https://github.com/WongKinYiu/yolov7/blob/mask/tools/instance.ipynb.
 """
-import matplotlib.pyplot as plt
 import torch
 import cv2
 import yaml
@@ -86,7 +85,8 @@ class YOLOv7Mask():
 
     def get_mask(self,
                  img_path,
-                 visualize=False):
+                 visualize=False,
+                 conf_thresh=0.25):
         model = self.model
 
         image = self.img_to_tensor(img_path)
@@ -102,30 +102,31 @@ class YOLOv7Mask():
         pooler = ROIPooler(output_size=self.hyp['mask_resolution'], scales=(
             pooler_scale,), sampling_ratio=1, pooler_type='ROIAlignV2', canonical_level=2)
         output, output_mask, output_mask_score, output_ac, output_ab = non_max_suppression_mask_conf(
-            inf_out, attn, bases, pooler, self.hyp, conf_thres=0.25, iou_thres=0.65, merge=False, mask_iou=None)
+            inf_out, attn, bases, pooler, self.hyp, conf_thres=conf_thresh, iou_thres=0.65, merge=False, mask_iou=None)
 
         pred, pred_masks = output[0], output_mask[0]
-        base = bases[0]
-        bboxes = Boxes(pred[:, :4])
-        original_pred_masks = pred_masks.view(-1,
-                                              self.hyp['mask_resolution'], self.hyp['mask_resolution'])
-        pred_masks = retry_if_cuda_oom(paste_masks_in_image)(
-            original_pred_masks, bboxes, (height, width), threshold=0.5)
-        pred_masks_np = pred_masks.detach().cpu().numpy()
-        pred_cls = pred[:, 5].detach().cpu().numpy()
-        pred_conf = pred[:, 4].detach().cpu().numpy()
+        try:
+            bboxes = Boxes(pred[:, :4])
+            original_pred_masks = pred_masks.view(-1,
+                                                  self.hyp['mask_resolution'], self.hyp['mask_resolution'])
+            pred_masks = retry_if_cuda_oom(paste_masks_in_image)(
+                original_pred_masks, bboxes, (height, width), threshold=0.5)
+            pred_masks_np = pred_masks.detach().cpu().numpy()
+            pred_cls = pred[:, 5].detach().cpu().numpy()
+            pred_conf = pred[:, 4].detach().cpu().numpy()
 
-        nbboxes = bboxes.tensor.detach().cpu().numpy().astype(np.int)
+            nbboxes = bboxes.tensor.detach().cpu().numpy().astype(np.int)
 
-        if visualize:
-            pnimg = self.vis_output(
-                image, pred_masks_np, nbboxes, pred_cls, pred_conf, names)
-            plt.figure(figsize=(8, 8))
-            plt.axis('off')
-            plt.imshow(pnimg)
-            plt.show()
+            if visualize:
+                pnimg = self.vis_output(
+                    image, pred_masks_np, nbboxes, pred_cls, pred_conf, names)
+                pnimg = cv2.cvtColor(pnimg, cv2.COLOR_BGR2RGB)
+                cv2.imwrite(img_path.replace('.', '_vis.'), pnimg)
 
-        return pred_masks_np, pred_cls, pred_conf, nbboxes
+            return pred_masks_np, pred_cls, pred_conf, nbboxes
+        except Exception as e:
+            print('No mask found')
+            return None, None, None, None
 
 
 if __name__ == '__main__':
