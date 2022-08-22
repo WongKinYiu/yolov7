@@ -37,7 +37,7 @@ def attempt_download(file, repo='WongKinYiu/yolov7'):
         except KeyError:  # fallback plan
             tag = subprocess.check_output(
                 'git tag', shell=True).decode().split()[-1]
-        except subprocess.CalledProcessError:  # fallback to default release can't get tag
+        except subprocess.CalledProcessError:  # fallback to default release if can't get tag
             tag = "v0.1"
 
         name = file.name
