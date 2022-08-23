@@ -223,7 +223,7 @@ See [instance.ipynb](https://github.com/WongKinYiu/yolov7/blob/main/tools/instan
 
 ## Teaser
 
-Yolov7-semantic & YOLOv7-panoptic
+Yolov7-semantic & YOLOv7-panoptic & YOLOv7-caption
 
 <div align="center">
     <a href="./">
@@ -234,6 +234,9 @@ Yolov7-semantic & YOLOv7-panoptic
     </a>
     <a href="./">
         <img src="./figure/tennis_panoptic.png" width="24%"/>
+    </a>
+    <a href="./">
+        <img src="./figure/tennis_caption.png" width="24%"/>
     </a>
 </div>
 
