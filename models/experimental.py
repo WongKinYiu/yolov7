@@ -174,7 +174,7 @@ class ONNX_ORT(nn.Module):
         boxes = x[:, :, :4]
         conf = x[:, :, 4:5]
         scores = x[:, :, 5:]
-        if self.nc == 1:
+        if self.n_classes == 1:
             scores = conf # for models with one class, cls_loss is 0 and cls_conf is always 0.5,
                                  # so there is no need to multiplicate.
         else:
@@ -211,7 +211,7 @@ class ONNX_TRT(nn.Module):
         boxes = x[:, :, :4]
         conf = x[:, :, 4:5]
         scores = x[:, :, 5:]
-        if self.nc == 1:
+        if self.n_classes == 1:
             scores = conf # for models with one class, cls_loss is 0 and cls_conf is always 0.5,
                                  # so there is no need to multiplicate.
         else:
