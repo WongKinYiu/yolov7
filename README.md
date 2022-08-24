@@ -183,6 +183,19 @@ python ./tensorrt-python/export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p
 
 Tested with: Python 3.7.13, Pytorch 1.12.0+cu113
 
+## Quantization
+
+See [YOLOv7_quantization_act.ipynb](./tools/YOLOv7_quantization_act.ipynb)
+
+- Benchmark
+
+| Model | Base mAP<sup>val<br>0.5:0.95  | Quant mAP<sup>val<br>0.5:0.95 | Latency<sup><small>FP32</small><sup><br><sup> | Latency<sup><small>FP16</small><sup><br><sup> | Latency<sup><small>INT8</small><sup><br><sup> | Model |
+| :-------- |:-------- |:--------: | :--------: | :---------------------: | :----------------: | :----------------: |
+| YOLOv7 |  51.2   | 50.9  |  26.84ms  |   7.44ms   |  **4.55ms**  | [ONNX](https://paddle-slim-models.bj.bcebos.com/act/yolov7.onnx) &#124; [Quant ONNX](https://bj.bcebos.com/v1/paddle-slim-models/act/yolov7_quant_onnx.tar) |
+| YOLOv7-Tiny  |  37.3   | 37.0 |  5.06ms  |   2.32ms   |  **1.68ms** | [ONNX](https://paddle-slim-models.bj.bcebos.com/act/yolov7-tiny.onnx) &#124; [Quant ONNX](https://bj.bcebos.com/v1/paddle-slim-models/act/yolov7_tiny_quant_onnx.tar) |
+
+
+
 ## Pose estimation
 
 [`code`](https://github.com/WongKinYiu/yolov7/tree/pose) [`yolov7-w6-pose.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-w6-pose.pt)
