@@ -15,6 +15,18 @@ from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 
 
+def count(found_classes,im0):
+  model_values=[]
+  aligns=im0.shape
+  align_bottom=aligns[0]
+  align_right=(aligns[1]/1.7 ) 
+
+  for i, (k, v) in enumerate(found_classes.items()):
+    a=f"{k} = {v}"
+    model_values.append(v)
+    align_bottom=align_bottom-35                                                   
+    cv2.putText(im0, str(a) ,(int(align_right),align_bottom), cv2.FONT_HERSHEY_SIMPLEX, 1,(45,255,255),1,cv2.LINE_AA)
+
 def detect(save_img=False):
     source, weights, view_img, save_txt, imgsz, trace = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, not opt.no_trace
     save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
@@ -109,11 +121,16 @@ def detect(save_img=False):
             if len(det):
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
-
+                
+                found_classes={} # Creating a dict to storage our detected items
                 # Print results
                 for c in det[:, -1].unique():
-                    n = (det[:, -1] == c).sum()  # detections per class
+                    n = (det[:, -1] == c).sum()  # detections per class 
+                    class_index=int(c)
+                    count_of_object=int(n)
+                    found_classes[names[class_index]]=int(n)
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
+                    count(found_classes=found_classes,im0=im0)  # Applying counter function
 
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
