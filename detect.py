@@ -14,19 +14,19 @@ from utils.general import check_img_size, check_requirements, check_imshow, non_
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 
-
+#----------------------------------------Object Counter----------------------------------------
 def count(found_classes,im0):
   model_values=[]
-  aligns=im0.shape
+  aligns=im0.shape     #finding the image shape to put our counting screen wherever we want it so here I choose the right bottomo 
   align_bottom=aligns[0]
-  align_right=(aligns[1]/1.7 ) 
+  align_right=(aligns[1]/1.7 ) # 1.7 fits generally great for the right bottom of the image    
 
   for i, (k, v) in enumerate(found_classes.items()):
     a=f"{k} = {v}"
     model_values.append(v)
-    align_bottom=align_bottom-35                                                   
+    align_bottom=align_bottom-35  #updating align bottom to write new objects separated from each other on the screen to avoid confusion                                                     
     cv2.putText(im0, str(a) ,(int(align_right),align_bottom), cv2.FONT_HERSHEY_SIMPLEX, 1,(45,255,255),1,cv2.LINE_AA)
-
+#--------------------------------------------------------------------------------
 def detect(save_img=False):
     source, weights, view_img, save_txt, imgsz, trace = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, not opt.no_trace
     save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
@@ -122,7 +122,7 @@ def detect(save_img=False):
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
                 
-                found_classes={} # Creating a dict to storage our detected items
+                found_classes={} # Creating a dict to storage our detected items  # creating a found_classes to count objects by classes
                 # Print results
                 for c in det[:, -1].unique():
                     n = (det[:, -1] == c).sum()  # detections per class 
