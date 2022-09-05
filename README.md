@@ -3,7 +3,7 @@ Implementation of "YOLOv7: Trainable bag-of-freebies sets new state-of-the-art f
 
 Pose estimation implimentation is based on [YOLO-Pose](https://arxiv.org/abs/2204.06806). 
 
-## Dataset preparison
+## Dataset preparation
 
 [[Keypoints Labels of MS COCO 2017]](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/coco2017labels-keypoints.zip)
 
