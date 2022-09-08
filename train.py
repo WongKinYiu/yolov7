@@ -39,15 +39,16 @@ from utils.plots import plot_images, plot_labels, plot_results, plot_evolution
 from utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first, is_parallel
 from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
 
-# TODO: Rip out all Weights and Biases References
-# TODO: Rip out all GCP References
-# TODO: Rip out TensorBoard References?
-
 logger = logging.getLogger(__name__)
 
+
+# Get AWS Config
+AWS_REGION_NAME = os.environ.get("AWS_REGION_NAME", "us-west-2")
+AWS_SECRET_ID = os.environ.get("AWS_SECRET_ID", "network/sandbox")
+
 # Get MLFlow basic auth credentials from AWS Secrets Store
-aws_secrets_client = boto3.client('secretsmanager', region_name="us-west-2")
-secrets = json.loads(aws_secrets_client.get_secret_value(SecretId="network/sandbox")["SecretString"])
+aws_secrets_client = boto3.client('secretsmanager', region_name=AWS_REGION_NAME)
+secrets = json.loads(aws_secrets_client.get_secret_value(SecretId=AWS_SECRET_ID)["SecretString"])
 os.environ["MLFLOW_TRACKING_USERNAME"] = secrets["MLFLOW_BASIC_AUTH_USER"]
 os.environ["MLFLOW_TRACKING_PASSWORD"] = secrets["MLFLOW_BASIC_AUTH_PASS"]
 del aws_secrets_client
