@@ -37,3 +37,8 @@ thop  # FLOPs computation
 # albumentations>=1.0.3
 # pycocotools>=2.0  # COCO mAP
 # roboflow
+
+# Hivemapper Infra ----------------------------
+mlflow~=1.27.0
+boto3~=1.24.52 
+aws-secretsmanager-caching~=1.1.1.5
