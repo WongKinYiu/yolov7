@@ -1,4 +1,5 @@
 import argparse
+from importlib.util import module_for_loader
 import sys
 import time
 import warnings
@@ -7,111 +8,205 @@ sys.path.append('./')  # to run '$ python *.py' files in subdirectories
 
 import torch
 import torch.nn as nn
+import torch.nn.utils.prune as prune
 from torch.utils.mobile_optimizer import optimize_for_mobile
 
 import models
-from models.experimental import attempt_load, End2End
+from models.experimental import attempt_load
 from utils.activations import Hardswish, SiLU
 from utils.general import set_logging, check_img_size
 from utils.torch_utils import select_device
-from utils.add_nms import RegisterNMS
+from utils.datasets import CalibratorImages
+import tensorrt as trt
+import numpy as np
+from functools import reduce
+from torch2trt.calibration import DatasetCalibrator, TensorBatchDataset
+
+def get_module_by_name(model, access_string):
+    names = access_string.split('.')[:-1]
+    return reduce(getattr, names, model)
+
+def convert_to_engine(onnx_f, im, sparsify=False, int8=False, half=False, int8_calib_dataset=None, calib_batch_size=4, workspace=28, calib_algo='entropy2', end2end=False, conf_thres=0.45, iou_thres=0.25, max_det=100):
+    prefix = 'TensorRT:'
+    logger = trt.Logger(trt.Logger.INFO)
+    builder = trt.Builder(logger)
+    config = builder.create_builder_config()
+    config.max_workspace_size = 1 << workspace
+    flag = (1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
+    network = builder.create_network(flag)
+    parser = trt.OnnxParser(network, logger)
+    parser.parse_from_file(onnx_f)
+    inputs = [network.get_input(i) for i in range(network.num_inputs)]
+    outputs = [network.get_output(i) for i in range(network.num_outputs)]
+    print(f'{prefix} Network Description:')
+    for inp in inputs:
+        print(f'{prefix}\tinput "{inp.name}" with shape {inp.shape} and dtype {inp.dtype}')
+    for out in outputs:
+        print(f'{prefix}\toutput "{out.name}" with shape {out.shape} and dtype {out.dtype}')
+    
+    if end2end:
+        previous_output = network.get_output(0)
+        network.unmark_output(previous_output)
+        strides = trt.Dims([1,1,1])
+        starts = trt.Dims([0,0,0])
+        bs, num_boxes, temp = previous_output.shape
+        shapes = trt.Dims([bs, num_boxes, 4])
+        boxes = network.add_slice(previous_output, starts, shapes, strides)
+        num_classes = temp - 5
+        starts[2] = 4
+        shapes[2] = 1
+        obj_score = network.add_slice(previous_output, starts, shapes, strides)
+        starts[2] = 5
+        shapes[2] = num_classes
+        scores= network.add_slice(previous_output, starts, shapes, strides)
+        updated_scores = network.add_elementwise(obj_score.get_output(0), scores.get_output(0), trt.ElementWiseOperation.PROD)
+        
+        registry = trt.get_plugin_registry()
+        assert(registry)
+        creator = registry.get_plugin_creator("EfficientNMS_TRT","1")
+        assert(creator)
+        
+        fc = []
+        fc.append(trt.PluginField("background_class", np.array([-1], dtype=np.int32), trt.PluginFieldType.INT32))
+        fc.append(trt.PluginField("max_output_boxes", np.array([max_det], dtype=np.int32), trt.PluginFieldType.INT32))
+        fc.append(trt.PluginField("score_threshold", np.array([conf_thres], dtype=np.float32), trt.PluginFieldType.FLOAT32))
+        fc.append(trt.PluginField("iou_threshold", np.array([iou_thres], dtype=np.float32), trt.PluginFieldType.FLOAT32))
+        fc.append(trt.PluginField("box_coding", np.array([1], dtype=np.int32), trt.PluginFieldType.INT32))
+        
+        fc = trt.PluginFieldCollection(fc)
+        nms_layer = creator.create_plugin("nms_layer", fc)
+        
+        layer = network.add_plugin_v2([boxes.get_output(0), updated_scores.get_output(0)], nms_layer)
+        layer.get_output(0).name = "num"
+        layer.get_output(1).name = "boxes"
+        layer.get_output(2).name = "scores"
+        layer.get_output(3).name = "classes"
+        for i in range(4):
+            network.mark_output(layer.get_output(i))
+    
+    f = onnx_f.replace('onnx','engine')
+    print(f'{prefix} building FP{16 if builder.platform_has_fast_fp16 and half and not int8 else 32} engine in {f}')
+    if builder.platform_has_fast_fp16 and half:
+        config.set_flag(trt.BuilderFlag.FP16)
+
+    inputs_in = im
+    if not isinstance(im, tuple):
+        im = (im,)
+
+    if int8:
+        if int8_calib_dataset is None:
+            int8_calib_dataset = TensorBatchDataset(inputs_in)
+        if builder.platform_has_fast_fp16:
+            config.set_flag(trt.BuilderFlag.FP16)
+        if builder.platform_has_fast_int8:
+            print(f'{prefix} building INT8 engine in {f}')
+            config.set_flag(trt.BuilderFlag.INT8)
+        
+        if calib_algo=='entropy2':
+            algo = trt.CalibrationAlgoType.ENTROPY_CALIBRATION_2
+        elif calib_algo == 'entropy':
+            algo = trt.CalibrationAlgoType.ENTROPY_CALIBRATION
+        else:
+            algo = trt.CalibrationAlgoType.MINMAX_CALIBRATION
+        calibrator = DatasetCalibrator(
+            im, int8_calib_dataset, batch_size=calib_batch_size, algorithm=algo
+        )
+
+        config.int8_calibrator = calibrator
+
+    if sparsify:
+        config.set_flag(trt.BuilderFlag.SPARSE_WEIGHTS)
+        
+    with builder.build_engine(network, config) as engine, open(f, 'wb') as t:
+        t.write(engine.serialize())
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str, default='./yolor-csp-c.pt', help='weights path')
     parser.add_argument('--img-size', nargs='+', type=int, default=[640, 640], help='image size')  # height, width
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
-    parser.add_argument('--dynamic', action='store_true', help='dynamic ONNX axes')
-    parser.add_argument('--dynamic-batch', action='store_true', help='dynamic batch onnx for tensorrt and onnx-runtime')
     parser.add_argument('--grid', action='store_true', help='export Detect() layer grid')
-    parser.add_argument('--end2end', action='store_true', help='export end2end onnx')
-    parser.add_argument('--max-wh', type=int, default=None, help='None for tensorrt nms, int value for onnx-runtime nms')
+    parser.add_argument('--end2end_trt', action='store_true', help='export end2end trt (include NMS)')
     parser.add_argument('--topk-all', type=int, default=100, help='topk objects for every images')
-    parser.add_argument('--iou-thres', type=float, default=0.45, help='iou threshold for NMS')
-    parser.add_argument('--conf-thres', type=float, default=0.25, help='conf threshold for NMS')
+    parser.add_argument('--iou-thres', type=float, default=0.65, help='iou threshold for NMS')
+    parser.add_argument('--conf-thres', type=float, default=0.001, help='conf threshold for NMS')
     parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--simplify', action='store_true', help='simplify onnx model')
-    parser.add_argument('--include-nms', action='store_true', help='export end2end onnx')
-    parser.add_argument('--fp16', action='store_true', help='CoreML FP16 half-precision export')
-    parser.add_argument('--int8', action='store_true', help='CoreML INT8 quantization')
+    parser.add_argument('--opset', default=12, type=int, help='ONNX opset version')
+    parser.add_argument('--fp16', action='store_true', help='TensorRT FP16 half-precision export')
+    parser.add_argument('--sparsify', action='store_true', default=False, help='sparsify model')
+    parser.add_argument('--prop', type=float, default=0.3, help='sparsification amount')
+    parser.add_argument('--struct', default=False, action='store_true', help='structured sparsification')
+    parser.add_argument('--int8', action='store_true', help='TensorRT INT8 quantization')
+    parser.add_argument('--calibrate', default=False, action='store_true')
+    parser.add_argument('--calib-num-images', default=200, type=int, help='number of images to be used for INT8 calibration')
+    parser.add_argument('--calib-batch-size', default=4, type=int, help='INT8 calibration batch size')
+    parser.add_argument('--calib-algo', default='entropy2', type=str, choices=['entropy','entropy2','minmax'], help='INT8 calibration batch size')
+    parser.add_argument('--trt', action='store_true', default=False, help='enable TensorRT optimization')
+    parser.add_argument('--workspace', default=28, type=int, help='set workspace size')
+    parser.add_argument('--seed', type=int, default=10, help='seed for INT8 calibration')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
-    opt.dynamic = opt.dynamic and not opt.end2end
-    opt.dynamic = False if opt.dynamic_batch else opt.dynamic
+    
     print(opt)
     set_logging()
     t = time.time()
+    
+    # Model sparsification
+    if opt.sparsify:
+        print("Sparsifying model")
+        model = torch.load(opt.weights)
+        ckpt = {}
+        for k in model.keys():
+            ckpt[k] = model[k]
+        m = model['model'].float().cuda()
+        modules = [module[0] for module in m.named_parameters()]
+        parameters_to_prune = []
+        for module in modules:
+            if 'weight' in module:
+                obj = get_module_by_name(m, module)
+                if opt.struct and not isinstance(obj, nn.BatchNorm2d):
+                    prune.ln_structured(obj, name='weight', amount=opt.prop, n=1, dim=0)
+                    prune.remove(obj, 'weight')
+                else:
+                    parameters_to_prune.append((obj, 'weight'))
+        if not opt.struct:        
+            parameters_to_prune = tuple(parameters_to_prune)
+            prune.global_unstructured(parameters_to_prune, pruning_method=prune.L1Unstructured, amount=opt.prop)
+            for param in parameters_to_prune:
+                prune.remove(*param)
+            
+        ckpt['model'] = m
+        opt.weights = opt.weights.replace('.pt', '_pruned.pt')
+        torch.save(ckpt, opt.weights)
+        print(f"Model sparsification successful. Saved as {opt.weights}")
 
     # Load PyTorch model
     device = select_device(opt.device)
-    model = attempt_load(opt.weights, map_location=device)  # load FP32 model
+    model = attempt_load(opt.weights, map_location=device)  
     labels = model.names
-
+    
     # Checks
-    gs = int(max(model.stride))  # grid size (max stride)
-    opt.img_size = [check_img_size(x, gs) for x in opt.img_size]  # verify img_size are gs-multiples
+    gs = int(max(model.stride))  
+    opt.img_size = [check_img_size(x, gs) for x in opt.img_size]  
 
     # Input
-    img = torch.zeros(opt.batch_size, 3, *opt.img_size).to(device)  # image size(1,3,320,192) iDetection
+    img = torch.zeros(opt.batch_size, 3, *opt.img_size).to(device) 
 
     # Update model
     for k, m in model.named_modules():
-        m._non_persistent_buffers_set = set()  # pytorch 1.6.0 compatibility
-        if isinstance(m, models.common.Conv):  # assign export-friendly activations
+        m._non_persistent_buffers_set = set()  
+        if isinstance(m, models.common.Conv):  
             if isinstance(m.act, nn.Hardswish):
                 m.act = Hardswish()
             elif isinstance(m.act, nn.SiLU):
                 m.act = SiLU()
-        # elif isinstance(m, models.yolo.Detect):
-        #     m.forward = m.forward_export  # assign forward (optional)
-    model.model[-1].export = not opt.grid  # set Detect() layer grid export
-    y = model(img)  # dry run
-    if opt.include_nms:
-        model.model[-1].include_nms = True
-        y = None
-
-    # TorchScript export
-    try:
-        print('\nStarting TorchScript export with torch %s...' % torch.__version__)
-        f = opt.weights.replace('.pt', '.torchscript.pt')  # filename
-        ts = torch.jit.trace(model, img, strict=False)
-        ts.save(f)
-        print('TorchScript export success, saved as %s' % f)
-    except Exception as e:
-        print('TorchScript export failure: %s' % e)
-
-    # CoreML export
-    try:
-        import coremltools as ct
-
-        print('\nStarting CoreML export with coremltools %s...' % ct.__version__)
-        # convert model from torchscript and apply pixel scaling as per detect.py
-        ct_model = ct.convert(ts, inputs=[ct.ImageType('image', shape=img.shape, scale=1 / 255.0, bias=[0, 0, 0])])
-        bits, mode = (8, 'kmeans_lut') if opt.int8 else (16, 'linear') if opt.fp16 else (32, None)
-        if bits < 32:
-            if sys.platform.lower() == 'darwin':  # quantization only supported on macOS
-                with warnings.catch_warnings():
-                    warnings.filterwarnings("ignore", category=DeprecationWarning)  # suppress numpy==1.20 float warning
-                    ct_model = ct.models.neural_network.quantization_utils.quantize_weights(ct_model, bits, mode)
-            else:
-                print('quantization only supported on macOS, skipping...')
-
-        f = opt.weights.replace('.pt', '.mlmodel')  # filename
-        ct_model.save(f)
-        print('CoreML export success, saved as %s' % f)
-    except Exception as e:
-        print('CoreML export failure: %s' % e)
-                     
-    # TorchScript-Lite export
-    try:
-        print('\nStarting TorchScript-Lite export with torch %s...' % torch.__version__)
-        f = opt.weights.replace('.pt', '.torchscript.ptl')  # filename
-        tsl = torch.jit.trace(model, img, strict=False)
-        tsl = optimize_for_mobile(tsl)
-        tsl._save_for_lite_interpreter(f)
-        print('TorchScript-Lite export success, saved as %s' % f)
-    except Exception as e:
-        print('TorchScript-Lite export failure: %s' % e)
+    model.model[-1].export = not opt.grid
+    
+    
+    y = model(img)
+    
+    
 
     # ONNX export
     try:
@@ -120,63 +215,16 @@ if __name__ == '__main__':
         print('\nStarting ONNX export with onnx %s...' % onnx.__version__)
         f = opt.weights.replace('.pt', '.onnx')  # filename
         model.eval()
-        output_names = ['classes', 'boxes'] if y is None else ['output']
-        dynamic_axes = None
-        if opt.dynamic:
-            dynamic_axes = {'images': {0: 'batch', 2: 'height', 3: 'width'},  # size(1,3,640,640)
-             'output': {0: 'batch', 2: 'y', 3: 'x'}}
-        if opt.dynamic_batch:
-            opt.batch_size = 'batch'
-            dynamic_axes = {
-                'images': {
-                    0: 'batch',
-                }, }
-            if opt.end2end and opt.max_wh is None:
-                output_axes = {
-                    'num_dets': {0: 'batch'},
-                    'det_boxes': {0: 'batch'},
-                    'det_scores': {0: 'batch'},
-                    'det_classes': {0: 'batch'},
-                }
-            else:
-                output_axes = {
-                    'output': {0: 'batch'},
-                }
-            dynamic_axes.update(output_axes)
+        
         if opt.grid:
-            if opt.end2end:
-                print('\nStarting export end2end onnx model for %s...' % 'TensorRT' if opt.max_wh is None else 'onnxruntime')
-                model = End2End(model,opt.topk_all,opt.iou_thres,opt.conf_thres,opt.max_wh,device)
-                if opt.end2end and opt.max_wh is None:
-                    output_names = ['num_dets', 'det_boxes', 'det_scores', 'det_classes']
-                    shapes = [opt.batch_size, 1, opt.batch_size, opt.topk_all, 4,
-                              opt.batch_size, opt.topk_all, opt.batch_size, opt.topk_all]
-                else:
-                    output_names = ['output']
-            else:
-                model.model[-1].concat = True
+            model.model[-1].concat = True
 
-        torch.onnx.export(model, img, f, verbose=False, opset_version=12, input_names=['images'],
-                          output_names=output_names,
-                          dynamic_axes=dynamic_axes)
+        torch.onnx.export(model, img, f, verbose=False, opset_version=opt.opset, input_names=['images'],
+                          output_names=['output'])
 
         # Checks
         onnx_model = onnx.load(f)  # load onnx model
         onnx.checker.check_model(onnx_model)  # check onnx model
-
-        if opt.end2end and opt.max_wh is None:
-            for i in onnx_model.graph.output:
-                for j in i.type.tensor_type.shape.dim:
-                    j.dim_param = str(shapes.pop(0))
-
-        # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
-
-        # # Metadata
-        # d = {'stride': int(max(model.stride))}
-        # for k, v in d.items():
-        #     meta = onnx_model.metadata_props.add()
-        #     meta.key, meta.value = k, str(v)
-        # onnx.save(onnx_model, f)
 
         if opt.simplify:
             try:
@@ -188,18 +236,37 @@ if __name__ == '__main__':
             except Exception as e:
                 print(f'Simplifier failure: {e}')
 
-        # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
+        
+        onnx.save_model(onnx_model, f)
         onnx.save(onnx_model,f)
+        
         print('ONNX export success, saved as %s' % f)
-
-        if opt.include_nms:
-            print('Registering NMS plugin for ONNX...')
-            mo = RegisterNMS(f)
-            mo.register_nms()
-            mo.save(f)
-
+        
     except Exception as e:
         print('ONNX export failure: %s' % e)
+    
+    # TensorRT export
+    if opt.trt:
+        try:
+            if opt.int8 and opt.calibrate:
+                calib_dataset = CalibratorImages('../datasets/coco/val2017/*.jpg', auto=False, num_images=opt.calib_num_images, seed=opt.seed)
+            else:
+                calib_dataset = None
+            convert_to_engine(f, 
+                            img,
+                            sparsify=opt.sparsify, 
+                            half=opt.fp16, 
+                            int8=opt.int8, 
+                            int8_calib_dataset=calib_dataset, 
+                            calib_batch_size=opt.calib_batch_size, 
+                            workspace=opt.workspace, 
+                            calib_algo=opt.calib_algo, 
+                            end2end=opt.end2end_trt, 
+                            iou_thres=opt.iou_thres, 
+                            conf_thres=opt.conf_thres, 
+                            max_det=opt.topk_all)
+        except Exception as e:
+            print("TensorRT export failure: %s" % e)
 
     # Finish
     print('\nExport complete (%.2fs). Visualize with https://github.com/lutzroeder/netron.' % (time.time() - t))
