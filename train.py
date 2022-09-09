@@ -4,10 +4,13 @@ import math
 import os
 import random
 import time
+import json
 from copy import deepcopy
 from pathlib import Path
 from threading import Thread
+from warnings import warn
 
+import mlflow
 import numpy as np
 import torch.distributed as dist
 import torch.nn as nn
@@ -20,6 +23,7 @@ from torch.cuda import amp
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import boto3
 
 import test  # import test.py to get mAP after each epoch
 from models.experimental import attempt_load
@@ -38,8 +42,37 @@ from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
 logger = logging.getLogger(__name__)
 
 
+# Get AWS Config
+AWS_REGION_NAME = os.environ.get("AWS_REGION_NAME", "us-west-2")
+AWS_SECRET_ID = os.environ.get("AWS_SECRET_ID", "network/sandbox")
+
+# Get MLFlow basic auth credentials from AWS Secrets Store
+aws_secrets_client = boto3.client('secretsmanager', region_name=AWS_REGION_NAME)
+secrets = json.loads(aws_secrets_client.get_secret_value(SecretId=AWS_SECRET_ID)["SecretString"])
+os.environ["MLFLOW_TRACKING_USERNAME"] = secrets["MLFLOW_BASIC_AUTH_USER"]
+os.environ["MLFLOW_TRACKING_PASSWORD"] = secrets["MLFLOW_BASIC_AUTH_PASS"]
+del aws_secrets_client
+del secrets
+
+if os.environ.get("MLFLOW_TRACKING_URI") is None:
+    raise RuntimeError("MLFlow Tracking URI is not set, and this training run's artifacts will NOT be logged")
+
 def train(hyp, opt, device, tb_writer=None):
+    mlflow_exp = mlflow.get_experiment_by_name(opt.name)
+    # Yank in some options set in the __main__ clause we're overriding
+    opt.save_dir = increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok | opt.evolve)  # increment run
+    opt.total_batch_size = opt.batch_size
+    opt.world_size = int(os.environ['WORLD_SIZE']) if 'WORLD_SIZE' in os.environ else 1
+    opt.global_rank = int(os.environ['RANK']) if 'RANK' in os.environ else -1
+    # Okay that's all the scope pollution
+    if mlflow_exp is None:
+        warn(f"MLFlow Experiment {opt.name} not found, this run will be recorded to the default experiment.")
+        mlflow.start_run()
+    else:
+        mlflow.start_run(experiment_id=mlflow_exp.experiment_id)  # Get Experiment ID from OPT or someplace
     logger.info(colorstr('hyperparameters: ') + ', '.join(f'{k}={v}' for k, v in hyp.items()))
+    for hyperparam_name, hyperparam_val in hyp.items():
+        mlflow.log_param(hyperparam_name, hyperparam_val)
     save_dir, epochs, batch_size, total_batch_size, weights, rank, freeze = \
         Path(opt.save_dir), opt.epochs, opt.batch_size, opt.total_batch_size, opt.weights, opt.global_rank, opt.freeze
 
@@ -62,7 +95,7 @@ def train(hyp, opt, device, tb_writer=None):
     init_seeds(2 + rank)
     with open(opt.data) as f:
         data_dict = yaml.load(f, Loader=yaml.SafeLoader)  # data dict
-    is_coco = opt.data.endswith('coco.yaml')
+    is_coco = str(opt.data).endswith('coco.yaml')
 
     # Logging- Doing this before checking the dataset. Might update data_dict
     loggers = {'wandb': None}  # loggers dict
@@ -428,8 +461,6 @@ def train(hyp, opt, device, tb_writer=None):
             # Write
             with open(results_file, 'a') as f:
                 f.write(s + '%10.4g' * 7 % results + '\n')  # append metrics, val_loss
-            if len(opt.name) and opt.bucket:
-                os.system('gsutil cp %s gs://%s/results/results%s.txt' % (results_file, opt.bucket, opt.name))
 
             # Log
             tags = ['train/box_loss', 'train/obj_loss', 'train/cls_loss',  # train loss
@@ -441,6 +472,8 @@ def train(hyp, opt, device, tb_writer=None):
                     tb_writer.add_scalar(tag, x, epoch)  # tensorboard
                 if wandb_logger.wandb:
                     wandb_logger.log({tag: x})  # W&B
+                if mlflow.active_run():
+                    mlflow.log_metric(tag, x, epoch)
 
             # Update best mAP
             fi = fitness(np.array(results).reshape(1, -1))  # weighted combination of [P, R, mAP@.5, mAP@.5-.95]
@@ -475,6 +508,8 @@ def train(hyp, opt, device, tb_writer=None):
                     if ((epoch + 1) % opt.save_period == 0 and not final_epoch) and opt.save_period != -1:
                         wandb_logger.log_model(
                             last.parent, opt, epoch, fi, best_model=best_fitness == fi)
+                if mlflow.active_run():
+                    mlflow.log_artifacts(str(save_dir))
                 del ckpt
 
         # end epoch ----------------------------------------------------------------------------------------------------
@@ -489,36 +524,23 @@ def train(hyp, opt, device, tb_writer=None):
                                               if (save_dir / f).exists()]})
         # Test best.pt
         logger.info('%g epochs completed in %.3f hours.\n' % (epoch - start_epoch + 1, (time.time() - t0) / 3600))
-        if opt.data.endswith('coco.yaml') and nc == 80:  # if COCO
-            for m in (last, best) if best.exists() else (last):  # speed, mAP tests
-                results, _, _ = test.test(opt.data,
-                                          batch_size=batch_size * 2,
-                                          imgsz=imgsz_test,
-                                          conf_thres=0.001,
-                                          iou_thres=0.7,
-                                          model=attempt_load(m, device).half(),
-                                          single_cls=opt.single_cls,
-                                          dataloader=testloader,
-                                          save_dir=save_dir,
-                                          save_json=True,
-                                          plots=False,
-                                          is_coco=is_coco)
 
         # Strip optimizers
         final = best if best.exists() else last  # final model
         for f in last, best:
             if f.exists():
                 strip_optimizer(f)  # strip optimizers
-        if opt.bucket:
-            os.system(f'gsutil cp {final} gs://{opt.bucket}/weights')  # upload
         if wandb_logger.wandb and not opt.evolve:  # Log the stripped model
             wandb_logger.wandb.log_artifact(str(final), type='model',
                                             name='run_' + wandb_logger.wandb_run.id + '_model',
                                             aliases=['last', 'best', 'stripped'])
+        mlflow.log_artifacts(save_dir)
+        mlflow.end_run()
         wandb_logger.finish_run()
     else:
         dist.destroy_process_group()
     torch.cuda.empty_cache()
+    mlflow.end_run()
     return results
 
 
@@ -655,8 +677,6 @@ if __name__ == '__main__':
         opt.notest, opt.nosave = True, True  # only test/save final epoch
         # ei = [isinstance(x, (int, float)) for x in hyp.values()]  # evolvable indices
         yaml_file = Path(opt.save_dir) / 'hyp_evolved.yaml'  # save best result here
-        if opt.bucket:
-            os.system('gsutil cp gs://%s/evolve.txt .' % opt.bucket)  # download evolve.txt if exists
 
         for _ in range(300):  # generations to evolve
             if Path('evolve.txt').exists():  # if evolve.txt exists: select best hyps and mutate
@@ -700,3 +720,4 @@ if __name__ == '__main__':
         plot_evolution(yaml_file)
         print(f'Hyperparameter evolution complete. Best results saved as: {yaml_file}\n'
               f'Command to train a new model with these hyperparameters: $ python train.py --hyp {yaml_file}')
+
