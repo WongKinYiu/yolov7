@@ -1,9 +1,14 @@
 # COCO 2017 dataset http://cocodataset.org
 
 # download command/URL (optional)
-download: bash ./scripts/get_coco.sh
+# download: bash ./scripts/get_coco.sh
 
-# train and val data as 1) directory: path/images/, 2) file: path/images.txt, or 3) list: [path1/images/, path2/images/]
+# datasets format
+# 1) directory: path/images/ <- yolo format
+# 2) file: path/images.txt or path/images.json <- yolo/coco format
+# 3) list: [path1/images/, path2/images/] <- yolo format
+# 4) list: [path1/images.json, path2/images.json] <- coco format
+# Note: if using coco format, images have to be in 'images' folder in the same parent folder as json file, 'file_name' has to be relative to 'images' folder
 train: ./coco/train2017.txt  # 118287 images
 val: ./coco/val2017.txt  # 5000 images
 test: ./coco/test-dev2017.txt  # 20288 of 40670 images, submit to https://competitions.codalab.org/competitions/20794

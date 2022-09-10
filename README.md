@@ -32,7 +32,7 @@ from yolov7.yolov7 import YOLOv7
 
 ## TODO
 
-- [ ] allow usage of coco format labels
+- [x] allow usage of coco format labels
 - [ ] allow different backbone learning rate for training
 
 # Official YOLOv7
