@@ -1,0 +1,5 @@
+# Ignore everything
+**
+
+# Allow files and directories
+!requirements.txt

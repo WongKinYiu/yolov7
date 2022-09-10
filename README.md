@@ -1,3 +1,41 @@
+# YOLOv7 package
+
+## Adapted/Forked from [WongKinYiu's repo](https://github.com/WongKinYiu/yolov7)
+
+Last "merge" date: 7th Sept 2022
+
+## Changes from original repo
+
+- YOLOv7 can be used as a package
+
+## Using YOLOv7 as a package
+
+- clone YOLOv7 repository (need not be in same folder as main project) and checkout `package` branch
+- download desired weights using arguments to bash script
+```
+cd yolov7/weights
+./get_weights.sh yolov7 yolov7-e6
+```
+- make sure the requirements for YOLOv7 are installed
+- in the main project folder, install YOLOv7 as a package (--no-binary is used to skip building of the wheel as the model weights are huge, takes a long time to build)
+```
+pip3 install /path/to/yolov7 --no-binary=:all:
+```
+OR as an editable package (if you need to make changes to the code)
+```
+pip3 install -e /path/to/yolov7
+```
+- import the YOLOv7 wrapper class for inference (refer to scripts/inference.py for example usage)
+```
+from yolov7.yolov7 import YOLOv7
+```
+
+## TODO
+
+- [ ] allow usage of coco format labels
+- [ ] allow freezing of backbone layers
+- [ ] allow different backbone learning rate for training
+
 # Official YOLOv7
 
 Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors](https://arxiv.org/abs/2207.02696)
@@ -17,7 +55,7 @@ Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-t
 
 - Integrated into [Huggingface Spaces 🤗](https://huggingface.co/spaces/akhaliq/yolov7) using Gradio. Try out the Web Demo [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/akhaliq/yolov7)
 
-## Performance 
+## Performance
 
 MS COCO
 

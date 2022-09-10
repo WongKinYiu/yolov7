@@ -1,0 +1,52 @@
+# parameters
+nc: 80  # number of classes
+depth_multiple: 1.0  # model depth multiple
+width_multiple: 1.0  # layer channel multiple
+
+# anchors
+anchors:
+  - [12,16, 19,36, 40,28]  # P3/8
+  - [36,75, 76,55, 72,146]  # P4/16
+  - [142,110, 192,243, 459,401]  # P5/32
+
+# CSP-Darknet backbone
+backbone:
+  # [from, number, module, args]
+  [[-1, 1, Conv, [32, 3, 1]],  # 0
+   [-1, 1, Conv, [64, 3, 2]],  # 1-P1/2
+   [-1, 1, Bottleneck, [64]],
+   [-1, 1, Conv, [128, 3, 2]],  # 3-P2/4
+   [-1, 2, BottleneckCSPC, [128]],
+   [-1, 1, Conv, [256, 3, 2]],  # 5-P3/8
+   [-1, 8, BottleneckCSPC, [256]],
+   [-1, 1, Conv, [512, 3, 2]],  # 7-P4/16
+   [-1, 8, BottleneckCSPC, [512]],
+   [-1, 1, Conv, [1024, 3, 2]], # 9-P5/32
+   [-1, 4, BottleneckCSPC, [1024]],  # 10
+  ]
+
+# CSP-Dark-PAN head
+head:
+  [[-1, 1, SPPCSPC, [512]], # 11
+   [-1, 1, Conv, [256, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [8, 1, Conv, [256, 1, 1]], # route backbone P4
+   [[-1, -2], 1, Concat, [1]],
+   [-1, 2, BottleneckCSPB, [256]], # 16 
+   [-1, 1, Conv, [128, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [6, 1, Conv, [128, 1, 1]], # route backbone P3
+   [[-1, -2], 1, Concat, [1]],
+   [-1, 2, BottleneckCSPB, [128]], # 21
+   [-1, 1, Conv, [256, 3, 1]],
+   [-2, 1, Conv, [256, 3, 2]],
+   [[-1, 16], 1, Concat, [1]],  # cat
+   [-1, 2, BottleneckCSPB, [256]], # 25
+   [-1, 1, Conv, [512, 3, 1]],
+   [-2, 1, Conv, [512, 3, 2]],
+   [[-1, 11], 1, Concat, [1]],  # cat
+   [-1, 2, BottleneckCSPB, [512]], # 29
+   [-1, 1, Conv, [1024, 3, 1]],
+
+   [[22,26,30], 1, Detect, [nc, anchors]],   # Detect(P3, P4, P5)
+  ]
