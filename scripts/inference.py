@@ -26,10 +26,10 @@ yolov7 = YOLOv7(
 )
 
 img = cv2.imread(str(imgpath))
-bs = 64
+bs = 8
 imgs = [img for _ in range(bs)]
 
-n = 10
+n = 1
 dur = 0
 for i in range(n):
     torch.cuda.synchronize()

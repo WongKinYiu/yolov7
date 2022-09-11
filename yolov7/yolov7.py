@@ -5,10 +5,12 @@ from importlib import resources
 
 from yolov7.models.experimental import attempt_load_state_dict
 from yolov7.models.yolo import Model
+from yolov7.utils.datasets import letterbox
 from yolov7.utils.general import scale_coords, non_max_suppression, check_img_size
 from yolov7.utils.torch_utils import TracedModel
 
 
+@torch.no_grad()
 class YOLOv7:
     _defaults = {
         'conf_thresh': 0.25,
@@ -22,7 +24,6 @@ class YOLOv7:
         'trace': True,
     }
 
-    @torch.no_grad()
     def __init__(self, bgr=True, gpu_device=0, **kwargs):
         self.__dict__.update(self._defaults)  # set up default values
         self.__dict__.update(kwargs)  # update with user overrides
@@ -66,12 +67,11 @@ class YOLOv7:
     def classname_to_idx(self, classname):
         return self.class_names.index(classname)
 
-    @torch.no_grad()
     def _detect(self, list_of_imgs):
         if self.bgr:
             list_of_imgs = [cv2.cvtColor(img, cv2.COLOR_BGR2RGB) for img in list_of_imgs]
 
-        resized = [self._letterbox(img, new_shape=self.model_image_size, auto=self.same_size, stride=self.model_stride)[0] for img in list_of_imgs]
+        resized = [letterbox(img, new_shape=self.model_image_size, auto=self.same_size, stride=self.model_stride)[0] for img in list_of_imgs]
         images = np.stack(resized, axis=0)
         images = np.divide(images, 255, dtype=np.float32)
         images = np.ascontiguousarray(images.transpose(0, 3, 1, 2))
@@ -175,40 +175,6 @@ class YOLOv7:
                 detections.append({'label': label, 'confidence': confidence, 't': top, 'l': left, 'b': bot, 'r': right, 'w': width, 'h': height})
             all_detections.append(detections)
         return all_detections
-
-    @staticmethod
-    def _letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scalefill=False, scaleup=True, stride=32):
-        # Resize and pad image while meeting stride-multiple constraints
-        shape = img.shape[:2]  # current shape [height, width]
-        if isinstance(new_shape, int):
-            new_shape = (new_shape, new_shape)
-
-        # Scale ratio (new / old)
-        r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
-        if not scaleup:  # only scale down, do not scale up (for better test mAP)
-            r = min(r, 1.0)
-
-        # Compute padding
-        ratio = r, r  # width, height ratios
-        new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
-        dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]  # wh padding
-        if auto:  # minimum rectangle
-            dw, dh = np.mod(dw, stride), np.mod(dh, stride)  # wh padding
-        elif scalefill:  # stretch
-            dw, dh = 0.0, 0.0
-            new_unpad = (new_shape[1], new_shape[0])
-            ratio = new_shape[1] / shape[1], new_shape[0] / shape[0]  # width, height ratios
-
-        dw /= 2  # divide padding into 2 sides
-        dh /= 2
-
-        if shape[::-1] != new_unpad:  # resize
-            img = cv2.resize(img, new_unpad, interpolation=cv2.INTER_LINEAR)
-        top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
-        left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
-        img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # add border
-
-        return img, ratio, (dw, dh)
 
     def _postprocess(self, boxes, input_shapes, frame_shapes, box_format='ltrb', classes=None, buffer_ratio=0.0):
         class_idxs = [self.classname_to_idx(name) for name in classes] if classes is not None else None
