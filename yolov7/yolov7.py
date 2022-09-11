@@ -76,14 +76,12 @@ class YOLOv7:
         images = np.divide(images, 255, dtype=np.float32)
         images = np.ascontiguousarray(images.transpose(0, 3, 1, 2))
         input_shapes = [img.shape for img in images]
-        images = torch.from_numpy(images)
-
-        if self.half:
-            images = images.half()
 
         batches = []
         for i in range(0, len(images), self.max_batch_size):
-            these_imgs = images[i:i+self.max_batch_size]
+            these_imgs = torch.from_numpy(images[i:i+self.max_batch_size])
+            if self.half:
+                these_imgs = these_imgs.half()
             batches.append(these_imgs)
 
         preds = []
@@ -91,7 +89,8 @@ class YOLOv7:
             for batch in batches:
                 batch = batch.to(self.device)
                 features = self.model(batch)[0]
-                preds.append(features.cpu())
+                preds.append(features.detach().cpu())
+                del features
 
         predictions = torch.cat(preds, dim=0)
 

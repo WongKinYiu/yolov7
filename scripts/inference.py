@@ -18,7 +18,7 @@ yolov7 = YOLOv7(
     bgr=True,
     gpu_device=0,
     model_image_size=640,
-    max_batch_size=16,
+    max_batch_size=64,
     half=True,
     same_size=True,
     conf_thresh=0.25,
@@ -26,10 +26,10 @@ yolov7 = YOLOv7(
 )
 
 img = cv2.imread(str(imgpath))
-bs = 8
+bs = 512
 imgs = [img for _ in range(bs)]
 
-n = 1
+n = 3
 dur = 0
 for i in range(n):
     torch.cuda.synchronize()
@@ -39,7 +39,7 @@ for i in range(n):
     # print('detections: {}'.format(dets))
     torch.cuda.synchronize()
     toc = perf_counter()
-    if i > 5:
+    if i > 1:
         dur += toc - tic
 print(f'Average time taken: {(dur/n*1000):0.2f}ms')
 
