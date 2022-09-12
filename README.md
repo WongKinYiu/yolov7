@@ -7,6 +7,7 @@ Last "merge" date: 7th Sept 2022
 ## Changes from original repo
 
 - YOLOv7 can be used as a package, with minimal requirements for inference only
+- **Only Python >= 3.9 is supported**
 
 ## Using YOLOv7 as a package for inference
 
