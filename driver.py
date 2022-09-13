@@ -152,12 +152,6 @@ def parse_opt():
         default=[0],
         help="Freeze layers: backbone of yolov7=50, first3=0 1 2",
     )
-    parser.add_argument(
-        "--mlflow-experiment-name",
-        type=str,
-        default=None,
-        help="MLFlow Experiment Name"
-    )
     opt = parser.parse_args()
     if opt.image_bucket is None:
         opt.image_bucket = opt.bucket
