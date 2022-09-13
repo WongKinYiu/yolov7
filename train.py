@@ -67,9 +67,8 @@ def train(hyp, opt, device, tb_writer=None):
     # Okay that's all the scope pollution
     if mlflow_exp is None:
         warn(f"MLFlow Experiment {opt.name} not found, this run will be recorded to the default experiment.")
-        mlflow.start_run()
-    else:
-        mlflow.start_run(experiment_id=mlflow_exp.experiment_id)  # Get Experiment ID from OPT or someplace
+        mlflow_exp = mlflow.create_experiment(opt.name)
+    mlflow.start_run(experiment_id=mlflow_exp.experiment_id)  # Get Experiment ID from OPT or someplace
     logger.info(colorstr('hyperparameters: ') + ', '.join(f'{k}={v}' for k, v in hyp.items()))
     for hyperparam_name, hyperparam_val in hyp.items():
         mlflow.log_param(hyperparam_name, hyperparam_val)

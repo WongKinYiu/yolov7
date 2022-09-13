@@ -1,31 +1,18 @@
-FROM 485240561355.dkr.ecr.us-west-2.amazonaws.com/hivemapper-ml:latest
+FROM nvidia/cuda:11.7.0-base-ubuntu22.04
 
-# This would make more sense in the ML Layer but we're not rebuilding it
-# automatically right now so it's getting installed here
-# TODO please update when appropriate
-RUN pip3 install mlflow==1.27
+WORKDIR /app
 
-RUN mkdir -p /usr/src/python
-WORKDIR /usr/src/python
-COPY ./python/. .
+COPY requirements.txt /requirements.txt
 
-# Create server app directory 
-RUN mkdir -p /usr/src/server
-WORKDIR /usr/src/server
+RUN apt-get update
+RUN apt-get install python3-pip ffmpeg libsm6 libxext6 libpng-dev libjpeg-dev -y
 
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
-COPY package*.json ./
+RUN pip install -r /requirements.txt --extra-index-url https://download.pytorch.org/whl/cu116
 
-RUN npm install
-# RUN npm i phantomjs-prebuilt --unsafe-perm
-# If you are building your code for production
-# RUN npm ci --only=production
+COPY . /app/
 
-# Bundle app source
-# This assumes a fresh git clone, like from CI/CD
-COPY . .
+# Disabling MLFlow Git Integration Warnings because we're not using Git in our Training Env
+ENV GIT_PYTHON_REFRESH=silence
 
-ENTRYPOINT [ "npm", "run" ]
+ENTRYPOINT [ "bash" ]
 
