@@ -66,8 +66,7 @@ def train(hyp, opt, device, tb_writer=None):
     opt.global_rank = int(os.environ['RANK']) if 'RANK' in os.environ else -1
     # Okay that's all the scope pollution
     if mlflow_exp is None:
-        warn(f"MLFlow Experiment {opt.name} not found, this run will be recorded to the default experiment.")
-        mlflow.start_run()
+        mlflow_exp = mlflow.create_experiment(opt.name)
     else:
         mlflow.start_run(experiment_id=mlflow_exp.experiment_id)  # Get Experiment ID from OPT or someplace
     logger.info(colorstr('hyperparameters: ') + ', '.join(f'{k}={v}' for k, v in hyp.items()))
