@@ -39,7 +39,8 @@ def test(data,
          compute_loss=None,
          half_precision=True,
          trace=False,
-         is_coco=False):
+         is_coco=False,
+         v5_metric=False):
     # Initialize/load model and set device
     training = model is not None
     if training:  # called by train.py
@@ -59,7 +60,7 @@ def test(data,
         imgsz = check_img_size(imgsz, s=gs)  # check img_size
         
         if trace:
-            model = TracedModel(model, device, opt.img_size)
+            model = TracedModel(model, device, imgsz)
 
     # Half
     half = device.type != 'cpu' and half_precision  # half precision only supported on CUDA
@@ -89,6 +90,9 @@ def test(data,
         dataloader = create_dataloader(data[task], imgsz, batch_size, gs, opt, pad=0.5, rect=True,
                                        prefix=colorstr(f'{task}: '))[0]
 
+    if v5_metric:
+        print("Testing with YOLOv5 AP metric...")
+    
     seen = 0
     confusion_matrix = ConfusionMatrix(nc=nc)
     names = {k: v for k, v in enumerate(model.names if hasattr(model, 'names') else model.module.names)}
@@ -217,7 +221,7 @@ def test(data,
     # Compute statistics
     stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
     if len(stats) and stats[0].any():
-        p, r, ap, f1, ap_class = ap_per_class(*stats, plot=plots, save_dir=save_dir, names=names)
+        p, r, ap, f1, ap_class = ap_per_class(*stats, plot=plots, v5_metric=v5_metric, save_dir=save_dir, names=names)
         ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
         mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
         nt = np.bincount(stats[3].astype(np.int64), minlength=nc)  # number of targets per class
@@ -304,6 +308,7 @@ if __name__ == '__main__':
     parser.add_argument('--name', default='exp', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
+    parser.add_argument('--v5-metric', action='store_true', help='assume maximum recall as 1.0 in AP calculation')
     opt = parser.parse_args()
     opt.save_json |= opt.data.endswith('coco.yaml')
     opt.data = check_file(opt.data)  # check file
@@ -325,11 +330,12 @@ if __name__ == '__main__':
              save_hybrid=opt.save_hybrid,
              save_conf=opt.save_conf,
              trace=not opt.no_trace,
+             v5_metric=opt.v5_metric
              )
 
     elif opt.task == 'speed':  # speed benchmarks
         for w in opt.weights:
-            test(opt.data, w, opt.batch_size, opt.img_size, 0.25, 0.45, save_json=False, plots=False)
+            test(opt.data, w, opt.batch_size, opt.img_size, 0.25, 0.45, save_json=False, plots=False, v5_metric=opt.v5_metric)
 
     elif opt.task == 'study':  # run over a range of settings and save/plot
         # python test.py --task study --data coco.yaml --iou 0.65 --weights yolov7.pt
@@ -340,7 +346,7 @@ if __name__ == '__main__':
             for i in x:  # img-size
                 print(f'\nRunning {f} point {i}...')
                 r, _, t = test(opt.data, w, opt.batch_size, i, opt.conf_thres, opt.iou_thres, opt.save_json,
-                               plots=False)
+                               plots=False, v5_metric=opt.v5_metric)
                 y.append(r + t)  # results and times
             np.savetxt(f, y, fmt='%10.4g')  # save
         os.system('zip -r study.zip study_*.txt')

@@ -420,7 +420,8 @@ def train(hyp, opt, device, tb_writer=None):
                                                  plots=plots and final_epoch,
                                                  wandb_logger=wandb_logger,
                                                  compute_loss=compute_loss,
-                                                 is_coco=is_coco)
+                                                 is_coco=is_coco,
+                                                 v5_metric=opt.v5_metric)
 
             # Write
             with open(results_file, 'a') as f:
@@ -499,7 +500,8 @@ def train(hyp, opt, device, tb_writer=None):
                                           save_dir=save_dir,
                                           save_json=True,
                                           plots=False,
-                                          is_coco=is_coco)
+                                          is_coco=is_coco,
+                                          v5_metric=opt.v5_metric)
 
         # Strip optimizers
         final = best if best.exists() else last  # final model
@@ -555,6 +557,7 @@ if __name__ == '__main__':
     parser.add_argument('--bbox_interval', type=int, default=-1, help='Set bounding-box image logging interval for W&B')
     parser.add_argument('--save_period', type=int, default=-1, help='Log model after every "save_period" epoch')
     parser.add_argument('--artifact_alias', type=str, default="latest", help='version of dataset artifact to be used')
+    parser.add_argument('--v5-metric', action='store_true', help='assume maximum recall as 1.0 in AP calculation')
     opt = parser.parse_args()
 
     # Set DDP variables
