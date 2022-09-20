@@ -4,6 +4,7 @@ import datetime
 import logging
 import math
 import os
+from pickletools import optimize
 import platform
 import subprocess
 import time
@@ -454,4 +455,5 @@ def optimizer_choice(model, name='SGD', lr=0.001, momentum=0.9, decay=1e-5):
     optimizer.add_param_group({'params': pg[1], 'weight_decay': decay})  # add pg[1] with weight_decay
     optimizer.add_param_group({'params': pg[2]})  # add pg[2] (biases)
     logging.Logger.info('Optimizer groups: %g .bias, %g conv.weight, %g other' % (len(pg[2]), len(pg[1]), len(pg[0])))
-    del pg[0], pg[1], pg[2]
+    
+    return optimizer
