@@ -177,7 +177,7 @@ def main(opt):
     next_idx = 0
 
     for line in manifest:
-        labels = line.get("data")
+        labels = line.get("labels")
         for label in labels:
             labels_for_image[key] = labels
             c = label.get("class")
