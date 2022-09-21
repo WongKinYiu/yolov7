@@ -19,7 +19,7 @@ check_requirements(Path(__file__).parent / 'requirements.txt', exclude=('pycocot
 set_logging()
 
 
-def create(name, pretrained, channels, classes, autoshape):
+def create(name, pretrained, channels, classes, autoshape, device=None):
     """Creates a specified model
 
     Arguments:
@@ -27,6 +27,7 @@ def create(name, pretrained, channels, classes, autoshape):
         pretrained (bool): load pretrained weights into the model
         channels (int): number of input channels
         classes (int): number of model classes
+        device (torch.device): the device on which to load the model, if none, cuda:0 will be chosen if available, else cpu
 
     Returns:
         pytorch model
@@ -46,7 +47,8 @@ def create(name, pretrained, channels, classes, autoshape):
                 model.names = ckpt['model'].names  # set class names attribute
             if autoshape:
                 model = model.autoshape()  # for file/URI/PIL/cv2/np inputs and NMS
-        device = select_device('0' if torch.cuda.is_available() else 'cpu')  # default to GPU if available
+        if device is None:
+            device = select_device('0' if torch.cuda.is_available() else 'cpu')  # default to GPU if available
         return model.to(device)
 
     except Exception as e:
@@ -54,7 +56,7 @@ def create(name, pretrained, channels, classes, autoshape):
         raise Exception(s) from e
 
 
-def custom(path_or_model='path/to/model.pt', autoshape=True):
+def custom(path_or_model='path/to/model.pt', autoshape=True, device=None):
     """custom mode
 
     Arguments (3 options):
@@ -74,12 +76,13 @@ def custom(path_or_model='path/to/model.pt', autoshape=True):
     hub_model.names = model.names  # class names
     if autoshape:
         hub_model = hub_model.autoshape()  # for file/URI/PIL/cv2/np inputs and NMS
-    device = select_device('0' if torch.cuda.is_available() else 'cpu')  # default to GPU if available
+    if device is None:
+        device = select_device('0' if torch.cuda.is_available() else 'cpu')  # default to GPU if available
     return hub_model.to(device)
 
 
-def yolov7(pretrained=True, channels=3, classes=80, autoshape=True):
-    return create('yolov7', pretrained, channels, classes, autoshape)
+def yolov7(pretrained=True, channels=3, classes=80, autoshape=True, device=None):
+    return create('yolov7', pretrained, channels, classes, autoshape, device=device)
 
 
 if __name__ == '__main__':
