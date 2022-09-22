@@ -34,6 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--include-nms', action='store_true', help='export end2end onnx')
     parser.add_argument('--fp16', action='store_true', help='CoreML FP16 half-precision export')
     parser.add_argument('--int8', action='store_true', help='CoreML INT8 quantization')
+    parser.add_argument('--export-snapml', action='store_true', help='Export SnapML compatible model')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
     opt.dynamic = opt.dynamic and not opt.end2end
@@ -66,6 +67,9 @@ if __name__ == '__main__':
         #     m.forward = m.forward_export  # assign forward (optional)
     model.model[-1].export = not opt.grid  # set Detect() layer grid export
     y = model(img)  # dry run
+    if opt.export_snapml:
+        print("Export SnapML")
+        model.model[-1].export_snapml = True
     if opt.include_nms:
         model.model[-1].include_nms = True
         y = None
