@@ -100,6 +100,7 @@ class IDetect(nn.Module):
     end2end = False
     include_nms = False
     concat = False
+    export_snapml = False
 
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(IDetect, self).__init__()
@@ -143,6 +144,11 @@ class IDetect(nn.Module):
         self.training |= self.export
         for i in range(self.nl):
             x[i] = self.m[i](x[i])  # conv
+
+            if self.export_snapml:
+                z.append(x[i].sigmoid())
+                return z
+
             bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
             x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
