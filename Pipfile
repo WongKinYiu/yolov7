@@ -21,6 +21,7 @@ seaborn = ">=0.11.0"
 ipython = "*"
 psutil = "*"
 thop = "*"
+wandb = "*"
 
 [dev-packages]
 
