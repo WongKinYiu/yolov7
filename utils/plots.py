@@ -83,6 +83,7 @@ def plot_one_blox_with_OCR(x, img, color=None, label=None, line_thickness=3):
         # cv2.imwrite('./runs/1.jpg/', img_plate)  # cv2 save
         img_plate = prepare_photo_for_OCR(img_plate)
         img_plate_string = pt.image_to_string(img_plate)
+        img_plate_string = convert_to_string(img_plate_string)
         tf = max(tl - 1, 1)  # font thickness
         t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
         c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
@@ -99,6 +100,15 @@ def prepare_photo_for_OCR(img):
     img = cv2.threshold(cv2.GaussianBlur(img, (5, 5), 0), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
     return img
 
+
+def convert_to_string(plate_number):
+    """ 
+    remove symbols
+    """
+    plate_number = [i for i in list(a) if i.isdigit() or i.isalpha()] # list_type
+    plate_number = ''.join(plate_number)  # convert list_to_string
+    return plate_number
+    
 
 def plot_one_box_PIL(box, img, color=None, label=None, line_thickness=None):
     img = Image.fromarray(img)
