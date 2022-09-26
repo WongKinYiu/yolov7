@@ -136,7 +136,7 @@ def detect(save_img=False):
             # Stream results
             if check_imshow():
                 cv2.imshow(str(p), im0)
-                cv2.waitKey(1)  # 1 millisecond
+                cv2.waitKey(20)  # 1 millisecond
 
             # Save results (image with detections)
             print(f'save_img {save_img}')
