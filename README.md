@@ -7,7 +7,7 @@ activate virtualenv:
 `pipenv shell`
 
 download data:  
-`gdown -O data/ 'https://drive.google.com/uc?id=1tKNgO_bh0sKW4Y6h4gRjK7HzkzkfP4Tt'`
+`gdown -O data/ 'https://drive.google.com/uc?id=1nps9Cv4-kqPZAA92sDP7rnAX76ABgdhy'`
 
 download weights:  
 `gdown -O data/ 'https://drive.google.com/uc?id=1HH7ei39rPZNxYqH4TTQom01UFlYvxS04'`
