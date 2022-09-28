@@ -15,7 +15,7 @@ from utils.plots import plot_one_box, plot_one_blox_with_OCR
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 
 
-def detect(save_img=False):
+def detect():
     source, weights, view_img, save_txt, imgsz, trace = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, not opt.no_trace
     save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
@@ -133,13 +133,6 @@ def detect(save_img=False):
             # Print time (inference + NMS)
             print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
 
-            # Stream results
-            if check_imshow():
-                cv2.imshow(str(p), im0)
-                cv2.waitKey(20)  # 1 millisecond
-
-            # Save results (image with detections)
-            print(f'save_img {save_img}')
             if save_img:
                 if dataset.mode == 'image':
                     cv2.imwrite(save_path, im0)
@@ -169,7 +162,7 @@ def detect(save_img=False):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default='./data/yolov7_plate_number.pt', help='model.pt path(s)')
-    parser.add_argument('--source', type=str, default='./data/pics/11_6_2014_19_2_23_801_bmp.rf.0c00d3c33de26f83c475e532db45bf3e.jpg', help='source')  # file/folder, 0 for webcam
+    parser.add_argument('--source', type=str, default='data/License-Plate-Detector-FINISH-3/test/images', help='source')
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.45, help='IOU threshold for NMS')

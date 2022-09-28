@@ -105,7 +105,7 @@ def convert_to_string(plate_number):
     """ 
     remove symbols
     """
-    plate_number = [i for i in list(a) if i.isdigit() or i.isalpha()] # list_type
+    plate_number = [i for i in list(plate_number) if i.isdigit() or i.isalpha()]
     plate_number = ''.join(plate_number)  # convert list_to_string
     return plate_number
     
