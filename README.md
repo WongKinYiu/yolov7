@@ -6,11 +6,11 @@ create virtualenv:
 activate virtualenv:  
 `pipenv shell`
 
-download data:
+download data:  
 `gdown -O data/ 'https://drive.google.com/uc?id=1tKNgO_bh0sKW4Y6h4gRjK7HzkzkfP4Tt'`
 
-download weights:
+download weights:  
 `gdown -O data/ 'https://drive.google.com/uc?id=1HH7ei39rPZNxYqH4TTQom01UFlYvxS04'`
 
-run detection:
+run detection:  
 `python detect.py`
