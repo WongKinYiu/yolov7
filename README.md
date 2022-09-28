@@ -11,3 +11,6 @@ download data:
 
 download weights:
 `gdown -O data/ 'https://drive.google.com/uc?id=1HH7ei39rPZNxYqH4TTQom01UFlYvxS04'`
+
+run detection:
+`python detect.py`
