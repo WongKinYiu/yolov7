@@ -94,7 +94,7 @@ class WandbLogger():
         elif self.wandb:
             self.wandb_run = wandb.init(config=opt,
                                         resume="allow",
-                                        project='YOLOR' if opt.project == 'runs/train' else Path(opt.project).stem,
+                                        project='YOLOv7' if opt.project == 'runs/train' else Path(opt.project).stem,
                                         name=name,
                                         job_type=job_type,
                                         id=run_id) if not wandb.run else wandb.run
@@ -110,14 +110,14 @@ class WandbLogger():
                 self.data_dict = self.check_and_upload_dataset(opt)
         else:
             prefix = colorstr('wandb: ')
-            print(f"{prefix}Install Weights & Biases for YOLOR logging with 'pip install wandb' (recommended)")
+            print(f"{prefix}Install Weights & Biases for YOLOv7 logging with 'pip install wandb' (recommended)")
 
     def check_and_upload_dataset(self, opt):
         assert wandb, 'Install wandb to upload dataset'
         check_dataset(self.data_dict)
         config_path = self.log_dataset_artifact(opt.data,
                                                 opt.single_cls,
-                                                'YOLOR' if opt.project == 'runs/train' else Path(opt.project).stem)
+                                                'YOLOv7' if opt.project == 'runs/train' else Path(opt.project).stem)
         print("Created dataset config file ", config_path)
         with open(config_path) as f:
             wandb_data_dict = yaml.load(f, Loader=yaml.SafeLoader)
