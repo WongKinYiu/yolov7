@@ -269,7 +269,7 @@ def train(hyp, opt, device, tb_writer=None):
 
             # Anchors
             if not opt.noautoanchor:
-                check_anchors(dataset, model=model, thr=hyp['anchor_t'], imgsz=imgsz)
+                check_anchors(dataset, model=model, thr=hyp['anchor_t'], imgsz=imgsz, img_folder=opt.im_folder, lbl_folder=opt.lb_folder)
             model.half().float()  # pre-reduce anchor precision
 
     # DDP mode

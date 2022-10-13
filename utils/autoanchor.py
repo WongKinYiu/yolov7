@@ -20,7 +20,7 @@ def check_anchor_order(m):
         m.anchor_grid[:] = m.anchor_grid.flip(0)
 
 
-def check_anchors(dataset, model, thr=4.0, imgsz=640):
+def check_anchors(dataset, model, thr=4.0, imgsz=640, img_folder="images", lbl_folder="labels"):
     # Check anchor fit to data, recompute if necessary
     prefix = colorstr('autoanchor: ')
     print(f'\n{prefix}Analyzing anchors... ', end='')
@@ -44,7 +44,8 @@ def check_anchors(dataset, model, thr=4.0, imgsz=640):
         print('. Attempting to improve anchors, please wait...')
         na = m.anchor_grid.numel() // 2  # number of anchors
         try:
-            anchors = kmean_anchors(dataset, n=na, img_size=imgsz, thr=thr, gen=1000, verbose=False)
+            anchors = kmean_anchors(dataset, n=na, img_size=imgsz, thr=thr, gen=1000, verbose=False,
+                                    img_folder=img_folder, lbl_folder=lbl_folder)
         except Exception as e:
             print(f'{prefix}ERROR: {e}')
         new_bpr = metric(anchors)[0]
@@ -59,7 +60,8 @@ def check_anchors(dataset, model, thr=4.0, imgsz=640):
     print('')  # newline
 
 
-def kmean_anchors(path='./data/coco.yaml', n=9, img_size=640, thr=4.0, gen=1000, verbose=True):
+def kmean_anchors(path='./data/coco.yaml', n=9, img_size=640, thr=4.0, gen=1000, verbose=True,
+                  img_folder='images', lbl_folder='labels'):
     """ Creates kmeans-evolved anchors from training dataset
 
         Arguments:
@@ -69,6 +71,8 @@ def kmean_anchors(path='./data/coco.yaml', n=9, img_size=640, thr=4.0, gen=1000,
             thr: anchor-label wh ratio threshold hyperparameter hyp['anchor_t'] used for training, default=4.0
             gen: generations to evolve anchors using genetic algorithm
             verbose: print all results
+            img_folder: name of the folder containing images
+            lbl_folder: name of the folder containing labels
 
         Return:
             k: kmeans evolved anchors
@@ -104,7 +108,8 @@ def kmean_anchors(path='./data/coco.yaml', n=9, img_size=640, thr=4.0, gen=1000,
         with open(path) as f:
             data_dict = yaml.load(f, Loader=yaml.SafeLoader)  # model dict
         from utils.datasets import LoadImagesAndLabels
-        dataset = LoadImagesAndLabels(data_dict['train'], augment=True, rect=True)
+        dataset = LoadImagesAndLabels(data_dict['train'], augment=True, rect=True, img_folder=img_folder,
+                                      lbl_folder=lbl_folder)
     else:
         dataset = path  # dataset
 
