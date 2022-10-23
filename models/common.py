@@ -52,6 +52,7 @@ class ReOrg(nn.Module):
         super(ReOrg, self).__init__()
 
     def forward(self, x):  # x(b,c,w,h) -> y(b,4c,w/2,h/2)
+        return x
         return torch.cat([x[..., ::2, ::2], x[..., 1::2, ::2], x[..., ::2, 1::2], x[..., 1::2, 1::2]], 1)
 
 
@@ -66,10 +67,13 @@ class Conv(nn.Module):
         super(Conv, self).__init__()
         self.conv = nn.Conv2d(c1, c2, k, s, autopad(k, p), groups=g, bias=False)
         self.bn = nn.BatchNorm2d(c2)
-        if act != "ReLU":
-            self.act = nn.SiLU() if act is True else (act if isinstance(act, nn.Module) else nn.Identity())
-        else:
-            self.act = nn.ReLU(inplace=True)
+        self.act = nn.LeakyReLU(0.1, inplace=True) if act else nn.Identity()
+        # if act == "ReLU":
+        #     self.act = nn.ReLU(inplace=True)   
+        # elif act == "leaky":
+        #     self.act = nn.LeakyReLU(0.1, inplace=True) if act else nn.Identity()
+        # else:
+        #     self.act = nn.SiLU() if act is True else (act if isinstance(act, nn.Module) else nn.Identity())
 
     def forward(self, x):
         return self.act(self.bn(self.conv(x)))

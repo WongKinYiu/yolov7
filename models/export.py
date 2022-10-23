@@ -83,16 +83,16 @@ if __name__ == '__main__':
     print(f"\n{colorstr('PyTorch:')} starting from {opt.weights} ({file_size(opt.weights):.1f} MB)")
 
     # TorchScript export -----------------------------------------------------------------------------------------------
-    prefix = colorstr('TorchScript:')
-    try:
-        print(f'\n{prefix} starting export with torch {torch.__version__}...')
-        f = opt.weights.replace('.pt', '.torchscript.pt')  # filename
-        ts = torch.jit.trace(model, img, strict=False)
-        ts = optimize_for_mobile(ts)  # https://pytorch.org/tutorials/recipes/script_optimized.html
-        ts.save(f)
-        print(f'{prefix} export success, saved as {f} ({file_size(f):.1f} MB)')
-    except Exception as e:
-        print(f'{prefix} export failure: {e}')
+    # prefix = colorstr('TorchScript:')
+    # try:
+    #     print(f'\n{prefix} starting export with torch {torch.__version__}...')
+    #     f = opt.weights.replace('.pt', '.torchscript.pt')  # filename
+    #     ts = torch.jit.trace(model, img, strict=False)
+    #     ts = optimize_for_mobile(ts)  # https://pytorch.org/tutorials/recipes/script_optimized.html
+    #     ts.save(f)
+    #     print(f'{prefix} export success, saved as {f} ({file_size(f):.1f} MB)')
+    # except Exception as e:
+    #     print(f'{prefix} export failure: {e}')
 
     # ONNX export ------------------------------------------------------------------------------------------------------
     prefix = colorstr('ONNX:')
