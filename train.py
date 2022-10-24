@@ -299,6 +299,13 @@ def train(hyp, opt, device, tb_writer=None):
     scaler = amp.GradScaler(enabled=cuda)
     compute_loss_ota = ComputeLossOTA(model)  # init loss class
     compute_loss = ComputeLoss(model)  # init loss class
+
+    # Use OTA in test loss if loss_ota=1 or not defined
+    if 'loss_ota' not in hyp or hyp['loss_ota'] == 1:
+        compute_loss_test = compute_loss_ota
+    else:
+        compute_loss_test = compute_loss
+
     logger.info(f'Image sizes {imgsz} train, {imgsz_test} test\n'
                 f'Using {dataloader.num_workers} dataloader workers\n'
                 f'Logging results to {save_dir}\n'
@@ -422,7 +429,7 @@ def train(hyp, opt, device, tb_writer=None):
                                                  verbose=nc < 50 and final_epoch,
                                                  plots=plots and final_epoch,
                                                  wandb_logger=wandb_logger,
-                                                 compute_loss=compute_loss,
+                                                 compute_loss=compute_loss_test,
                                                  is_coco=is_coco,
                                                  v5_metric=opt.v5_metric)
 

@@ -16,7 +16,7 @@ from utils.general import coco80_to_coco91_class, check_dataset, check_file, che
 from utils.metrics import ap_per_class, ConfusionMatrix
 from utils.plots import plot_images, output_to_target, plot_study_txt
 from utils.torch_utils import select_device, time_synchronized, TracedModel
-
+from utils.loss import ComputeLoss, ComputeLossOTA
 
 def test(data,
          weights=None,
@@ -61,6 +61,12 @@ def test(data,
         
         if trace:
             model = TracedModel(model, device, imgsz)
+
+    # Define compute_loss if it was given as a string parameter
+    if compute_loss == 'ota':
+        compute_loss = ComputeLossOTA(model)
+    elif compute_loss == 'no-ota':
+        compute_loss = ComputeLoss(model)
 
     # Half
     half = device.type != 'cpu' and half_precision  # half precision only supported on CUDA
@@ -114,10 +120,12 @@ def test(data,
             out, train_out = model(img, augment=augment)  # inference and training outputs
             t0 += time_synchronized() - t
 
-            # Compute loss
-            if compute_loss:
+            # Compute loss without optimal transport assignment
+            if type(compute_loss) == ComputeLoss:
                 loss += compute_loss([x.float() for x in train_out], targets)[1][:3]  # box, obj, cls
-
+            # Compute loss with optimal transport assignment
+            elif type(compute_loss) == ComputeLossOTA:
+                loss += compute_loss([x.float() for x in train_out], targets, img)[1][:3]
             # Run NMS
             targets[:, 2:] *= torch.Tensor([width, height, width, height]).to(device)  # to pixels
             lb = [targets[targets[:, 0] == i, 1:] for i in range(nb)] if save_hybrid else []  # for autolabelling
@@ -309,6 +317,7 @@ if __name__ == '__main__':
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
     parser.add_argument('--v5-metric', action='store_true', help='assume maximum recall as 1.0 in AP calculation')
+    parser.add_argument('--compute-loss', default=False, choices=[False, 'ota', 'no-ota'], help='If and which loss to compute (with or without OTA). By default no loss is computed.')
     opt = parser.parse_args()
     opt.save_json |= opt.data.endswith('coco.yaml')
     opt.data = check_file(opt.data)  # check file
@@ -329,13 +338,15 @@ if __name__ == '__main__':
              save_txt=opt.save_txt | opt.save_hybrid,
              save_hybrid=opt.save_hybrid,
              save_conf=opt.save_conf,
+             compute_loss=opt.compute_loss,
              trace=not opt.no_trace,
              v5_metric=opt.v5_metric
              )
 
     elif opt.task == 'speed':  # speed benchmarks
         for w in opt.weights:
-            test(opt.data, w, opt.batch_size, opt.img_size, 0.25, 0.45, save_json=False, plots=False, v5_metric=opt.v5_metric)
+            test(opt.data, w, opt.batch_size, opt.img_size, 0.25, 0.45, save_json=False, plots=False,
+                 compute_loss=opt.compute_loss, v5_metric=opt.v5_metric)
 
     elif opt.task == 'study':  # run over a range of settings and save/plot
         # python test.py --task study --data coco.yaml --iou 0.65 --weights yolov7.pt
@@ -346,7 +357,7 @@ if __name__ == '__main__':
             for i in x:  # img-size
                 print(f'\nRunning {f} point {i}...')
                 r, _, t = test(opt.data, w, opt.batch_size, i, opt.conf_thres, opt.iou_thres, opt.save_json,
-                               plots=False, v5_metric=opt.v5_metric)
+                               plots=False, compute_loss=opt.compute_loss, v5_metric=opt.v5_metric)
                 y.append(r + t)  # results and times
             np.savetxt(f, y, fmt='%10.4g')  # save
         os.system('zip -r study.zip study_*.txt')
