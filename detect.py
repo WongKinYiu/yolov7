@@ -8,14 +8,14 @@ import torch
 import torch.backends.cudnn as cudnn
 from numpy import random
 
-from .models.experimental import attempt_load
-from .utils.datasets import LoadStreams, LoadImages, letterbox
-from .utils.general import check_img_size, check_requirements, check_imshow, non_max_suppression, apply_classifier, \
+from yolov7.models.experimental import attempt_load
+from yolov7.utils.datasets import LoadStreams, LoadImages, letterbox
+from yolov7.utils.general import check_img_size, check_requirements, check_imshow, non_max_suppression, apply_classifier, \
     scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
-from .utils.plots import plot_one_box
-from .utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
+from yolov7.utils.plots import plot_one_box
+from yolov7.utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 
-class Detect():
+class DetectObjects():
     def __init__(self,weights, imgsz, conf_thres, iou_thres=0.45, device_name='cpu') -> None:
         self.weights     = weights
         self.imgsz       = imgsz
@@ -111,7 +111,7 @@ class Detect():
 
 
 # with torch.no_grad():
-#     yolo = Detect('yolov7.pt',640,0.25)
+#     yolo = DetectObjects('yolov7.pt',640,0.25)
 
 #     img = cv2.imread('./inference/images/horses.jpg')
 #     yolo.predict(img)

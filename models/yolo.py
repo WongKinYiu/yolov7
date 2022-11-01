@@ -6,13 +6,13 @@ from copy import deepcopy
 sys.path.append('./')  # to run '$ python *.py' files in subdirectories
 logger = logging.getLogger(__name__)
 import torch
-from .common import *
-from .experimental import *
-from ..utils.autoanchor import check_anchor_order
-from ..utils.general import make_divisible, check_file, set_logging
-from ..utils.torch_utils import time_synchronized, fuse_conv_and_bn, model_info, scale_img, initialize_weights, \
+from yolov7.models.common import *
+from yolov7.models.experimental import *
+from yolov7.utils.autoanchor import check_anchor_order
+from yolov7.utils.general import make_divisible, check_file, set_logging
+from yolov7.utils.torch_utils import time_synchronized, fuse_conv_and_bn, model_info, scale_img, initialize_weights, \
     select_device, copy_attr
-from ..utils.loss import SigmoidBin
+from yolov7.utils.loss import SigmoidBin
 
 try:
     import thop  # for FLOPS computation
@@ -509,6 +509,7 @@ class Model(nn.Module):
     def __init__(self, cfg='yolor-csp-c.yaml', ch=3, nc=None, anchors=None):  # model, input channels, number of classes
         super(Model, self).__init__()
         self.traced = False
+        # cfg = './yolov7/cfg/baseline/' + cfg
         if isinstance(cfg, dict):
             self.yaml = cfg  # model dict
         else:  # is *.yaml
