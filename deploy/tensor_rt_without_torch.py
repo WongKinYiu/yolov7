@@ -263,7 +263,7 @@ class Yolov7TensorRTDetector:
 
 
 if __name__ == "__main__":
-    detector = Yolov7TensorRTDetector(engine="yolov7-tiny-nms.trt")
+    detector = Yolov7TensorRTDetector(engine_path="yolov7-tiny-nms.trt")
 
     image_np = np.random.randint(low=0, high=255, size=(1080, 1920, 3), dtype=np.uint8)
     bboxes = detector.detect(image_np)
