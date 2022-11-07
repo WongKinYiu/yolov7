@@ -551,7 +551,7 @@ class DetectMultiBackend(nn.Module):
             y = self.net.forward()
         elif self.onnx:  # ONNX Runtime
             im = im.cpu().numpy()  # torch to numpy
-            #y = self.session.run([self.session.get_outputs()[0].name], {self.session.get_inputs()[0].name: im})[0]
+            y = self.session.run([self.session.get_outputs()[0].name], {self.session.get_inputs()[0].name: im})[0]
             y = self.session.run(self.output_names, {self.session.get_inputs()[0].name: im})
             pred, *others, proto = [torch.tensor(i, device=self.device) for i in y] # return to torch
             y = (pred, (others, proto)) # change output shape like `pt` output
