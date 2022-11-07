@@ -428,6 +428,7 @@ class DetectMultiBackend(nn.Module):
             import onnxruntime
             providers = ['CUDAExecutionProvider', 'CPUExecutionProvider'] if cuda else ['CPUExecutionProvider']
             session = onnxruntime.InferenceSession(w, providers=providers)
+            output_names = [x.name for x in session.get_outputs()]
             meta = session.get_modelmeta().custom_metadata_map  # metadata
             if 'stride' in meta:
                 stride, names = int(meta['stride']), eval(meta['names'])
@@ -551,6 +552,9 @@ class DetectMultiBackend(nn.Module):
         elif self.onnx:  # ONNX Runtime
             im = im.cpu().numpy()  # torch to numpy
             y = self.session.run([self.session.get_outputs()[0].name], {self.session.get_inputs()[0].name: im})[0]
+            y = self.session.run(self.output_names, {self.session.get_inputs()[0].name: im})
+            pred, *others, proto = [torch.tensor(i, device=self.device) for i in y] # return to torch
+            y = (pred, (others, proto)) # change output shape like `pt` output
         elif self.xml:  # OpenVINO
             im = im.cpu().numpy()  # FP32
             y = self.executable_network([im])[self.output_layer]
