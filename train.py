@@ -390,6 +390,7 @@ def train(hyp, opt, device, tb_writer=None):
                 # Plot
                 if plots and ni < 10:
                     f = save_dir / f'train_batch{ni}.jpg'  # filename
+                    tb_writer.add_image(str(f), np.moveaxis(plot_images(images=imgs, targets=targets, paths=paths, fname=f, names=names), -1, 0), ni)
                     Thread(target=plot_images, args=(imgs, targets, paths, f, names), daemon=True).start()
                     # if tb_writer:
                     #     tb_writer.add_image(f, result, dataformats='HWC', global_step=epoch)
