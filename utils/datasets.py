@@ -32,7 +32,7 @@ from utils.torch_utils import torch_distributed_zero_first
 
 # Parameters
 help_url = 'https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'
-img_formats = ['bmp', 'jpg', 'jpeg', 'png', 'tif', 'tiff', 'dng', 'webp', 'mpo']  # acceptable image suffixes
+img_formats = ['bmp', 'jpg', 'jpeg', 'png', 'tif', 'tiff', 'dng', 'webp', 'mpo', 'PNG', 'JPG']  # acceptable image suffixes
 vid_formats = ['mov', 'avi', 'mp4', 'mpg', 'mpeg', 'm4v', 'wmv', 'mkv']  # acceptable video suffixes
 logger = logging.getLogger(__name__)
 
@@ -363,7 +363,6 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         self.stride = stride
         self.path = path        
         #self.albumentations = Albumentations() if augment else None
-
         try:
             f = []  # image files
             for p in path if isinstance(path, list) else [path]:
