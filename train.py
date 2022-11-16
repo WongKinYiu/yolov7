@@ -390,7 +390,6 @@ def train(hyp, opt, device, tb_writer=None):
                 # Plot
                 if plots and ni < 10:
                     f = save_dir / f'train_batch{ni}.jpg'  # filename
-                    tb_writer.add_image(str(f), np.moveaxis(plot_images(images=imgs, targets=targets, paths=paths, fname=f, names=names), -1, 0), ni)
                     Thread(target=plot_images, args=(imgs, targets, paths, f, names), daemon=True).start()
                     # if tb_writer:
                     #     tb_writer.add_image(f, result, dataformats='HWC', global_step=epoch)
@@ -421,11 +420,13 @@ def train(hyp, opt, device, tb_writer=None):
                                                  dataloader=testloader,
                                                  save_dir=save_dir,
                                                  verbose=nc < 50 and final_epoch,
-                                                 plots=plots and final_epoch,
+                                                 plots=True,
                                                  wandb_logger=wandb_logger,
                                                  compute_loss=compute_loss,
                                                  is_coco=is_coco,
-                                                 v5_metric=opt.v5_metric)
+                                                 v5_metric=opt.v5_metric,
+                                                 tb_writer=tb_writer,
+                                            )
 
             # Write
             with open(results_file, 'a') as f:
@@ -503,9 +504,10 @@ def train(hyp, opt, device, tb_writer=None):
                                           dataloader=testloader,
                                           save_dir=save_dir,
                                           save_json=True,
-                                          plots=False,
+                                          plots=True,
                                           is_coco=is_coco,
-                                          v5_metric=opt.v5_metric)
+                                          v5_metric=opt.v5_metric,
+                                          tb_writer=tb_writer)
 
         # Strip optimizers
         final = best if best.exists() else last  # final model
@@ -527,11 +529,11 @@ def train(hyp, opt, device, tb_writer=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default='yolo7.pt', help='initial weights path')
+    parser.add_argument('--weights', type=str, default='/home/xintian/git/yolov7/runs/train/yolov7-custom/weights/best.pt ', help='initial weights path')
     parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
     parser.add_argument('--data', type=str, default='data/coco.yaml', help='data.yaml path')
     parser.add_argument('--hyp', type=str, default='data/hyp.scratch.p5.yaml', help='hyperparameters path')
-    parser.add_argument('--epochs', type=int, default=300)
+    parser.add_argument('--epochs', type=int, default=3000)
     parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs')
     parser.add_argument('--img-size', nargs='+', type=int, default=[640, 640], help='[train, test] image sizes')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
@@ -656,7 +658,7 @@ if __name__ == '__main__':
                 hyp['anchors'] = 3
                 
         assert opt.local_rank == -1, 'DDP mode not implemented for --evolve'
-        opt.notest, opt.nosave = True, True  # only test/save final epoch
+        # opt.notest, opt.nosave = True, True  # only test/save final epoch
         # ei = [isinstance(x, (int, float)) for x in hyp.values()]  # evolvable indices
         yaml_file = Path(opt.save_dir) / 'hyp_evolved.yaml'  # save best result here
         if opt.bucket:
