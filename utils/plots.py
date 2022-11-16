@@ -170,13 +170,13 @@ def plot_images(images, targets, paths=None, fname='images.jpg', names=None, max
                 cls = names[cls] if names else cls
                 if labels or conf[j] > 0.25:  # 0.25 conf thresh
                     label = '%s' % cls if labels else '%s %.1f' % (cls, conf[j])
-                    plot_one_box(box, mosaic, label=label, color=color, line_thickness=tl)
+                    plot_one_box(box, mosaic, label=label, color=color, line_thickness=1 if boxes.shape[1] > 10 else tl)
 
         # Draw image filename labels
         if paths:
-            label = Path(paths[i]).name[:40]  # trim to 40 char
+            label = Path(paths[i]).stem[:40]  # trim to 40 char
             t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
-            cv2.putText(mosaic, label, (block_x + 5, block_y + t_size[1] + 5), 0, tl / 3, [220, 220, 220], thickness=tf,
+            cv2.putText(mosaic, label, (block_x + 5, block_y + t_size[1] + 5), 0, 0.2, [220, 220, 220], thickness=1,
                         lineType=cv2.LINE_AA)
 
         # Image border
