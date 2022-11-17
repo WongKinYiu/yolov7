@@ -20,6 +20,7 @@ from torch.cuda import amp
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import cv2
 
 import test  # import test.py to get mAP after each epoch
 from models.experimental import attempt_load
@@ -230,7 +231,9 @@ def train(hyp, opt, device, tb_writer=None):
     # Image sizes
     gs = max(int(model.stride.max()), 32)  # grid size (max stride)
     nl = model.model[-1].nl  # number of detection layers (used for scaling hyp['obj'])
-    imgsz, imgsz_test = [check_img_size(x, gs) for x in opt.img_size]  # verify imgsz are gs-multiples
+    
+    train_img_size_h, train_img_size_w = [check_img_size(x, gs) for x in opt.img_size_train]  # verify image sizes are gs-multiples
+    test_img_size_h, test_img_size_w = [check_img_size(x, gs) for x in opt.img_size_test]  # verify image sizes are gs-multiples
 
     # DP mode
     if cuda and rank == -1 and torch.cuda.device_count() > 1:
@@ -242,7 +245,7 @@ def train(hyp, opt, device, tb_writer=None):
         logger.info('Using SyncBatchNorm()')
 
     # Trainloader
-    dataloader, dataset = create_dataloader(train_path, imgsz, batch_size, gs, opt,
+    dataloader, dataset = create_dataloader(train_path, (train_img_size_h, train_img_size_w), batch_size, gs, opt,
                                             hyp=hyp, augment=True, cache=opt.cache_images, rect=opt.rect, rank=rank,
                                             world_size=opt.world_size, workers=opt.workers,
                                             image_weights=opt.image_weights, quad=opt.quad, prefix=colorstr('train: '))
@@ -252,8 +255,8 @@ def train(hyp, opt, device, tb_writer=None):
 
     # Process 0
     if rank in [-1, 0]:
-        testloader = create_dataloader(test_path, imgsz_test, batch_size * 2, gs, opt,  # testloader
-                                       hyp=hyp, cache=opt.cache_images and not opt.notest, rect=True, rank=-1,
+        testloader = create_dataloader(test_path, (test_img_size_h, test_img_size_w), batch_size * 2, gs, opt,  # testloader
+                                       hyp=hyp, cache=opt.cache_images and not opt.notest, rect=opt.rect, rank=-1,
                                        world_size=opt.world_size, workers=opt.workers,
                                        pad=0.5, prefix=colorstr('val: '))[0]
 
@@ -269,7 +272,7 @@ def train(hyp, opt, device, tb_writer=None):
 
             # Anchors
             if not opt.noautoanchor:
-                check_anchors(dataset, model=model, thr=hyp['anchor_t'], imgsz=imgsz)
+                check_anchors(dataset, model=model, thr=hyp['anchor_t'], imgsz_h=train_img_size_h, imgsz_w=train_img_size_w)
             model.half().float()  # pre-reduce anchor precision
 
     # DDP mode
@@ -281,7 +284,7 @@ def train(hyp, opt, device, tb_writer=None):
     # Model parameters
     hyp['box'] *= 3. / nl  # scale to layers
     hyp['cls'] *= nc / 80. * 3. / nl  # scale to classes and layers
-    hyp['obj'] *= (imgsz / 640) ** 2 * 3. / nl  # scale to image size and layers
+    hyp['obj'] *= (train_img_size_w / 640) ** 2 * 3. / nl  # scale to image size and layers
     hyp['label_smoothing'] = opt.label_smoothing
     model.nc = nc  # attach number of classes to model
     model.hyp = hyp  # attach hyperparameters to model
@@ -299,11 +302,12 @@ def train(hyp, opt, device, tb_writer=None):
     scaler = amp.GradScaler(enabled=cuda)
     compute_loss_ota = ComputeLossOTA(model)  # init loss class
     compute_loss = ComputeLoss(model)  # init loss class
-    logger.info(f'Image sizes {imgsz} train, {imgsz_test} test\n'
+    logger.info(f'Image sizes {(train_img_size_h, train_img_size_w)} train, {(test_img_size_h, train_img_size_w)} test\n'
                 f'Using {dataloader.num_workers} dataloader workers\n'
                 f'Logging results to {save_dir}\n'
                 f'Starting training for {epochs} epochs...')
     torch.save(model, wdir / 'init.pt')
+    saved_debug_imgs = False
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
         model.train()
 
@@ -335,6 +339,25 @@ def train(hyp, opt, device, tb_writer=None):
         optimizer.zero_grad()
         for i, (imgs, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
             ni = i + nb * epoch  # number integrated batches (since train start)
+
+            # <FRED debug save image with labels>
+            if not saved_debug_imgs:
+                for j in range(64):
+                    save_img = imgs[j,...].cpu().detach().numpy().copy()
+                    save_img = cv2.cvtColor(save_img.transpose((1, 2, 0)), cv2.COLOR_RGB2BGR)
+                    img_h, img_w = save_img.shape[:2]
+                    # labels_img = targets[j, :] # img_id?, clss, x,y,w,h 0-1
+                    for item in targets:
+                        if item[0] == j:
+                            x1 = int(item[2] * img_w)
+                            y1 = int(item[3] * img_h)
+                            x2 = int(item[2] * img_w + item[4] * img_w)
+                            y2 = int(item[3] * img_h + item[5] * img_h)
+                            cv2.rectangle(save_img, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                    cv2.imwrite(f"{save_dir}/{i}_{j}.jpg", save_img)
+                saved_debug_imgs = True
+            # </FRED debug save image with labels>
+
             imgs = imgs.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
 
             # Warmup
@@ -350,7 +373,8 @@ def train(hyp, opt, device, tb_writer=None):
 
             # Multi-scale
             if opt.multi_scale:
-                sz = random.randrange(imgsz * 0.5, imgsz * 1.5 + gs) // gs * gs  # size
+                raise ValueError(f'FRED: wat moeten hier de afmetingen zijn? Dit zijn ze nu door alleen de width te pakken: {train_img_size_w}')
+                sz = random.randrange(train_img_size_w * 0.5, train_img_size_w * 1.5 + gs) // gs * gs  # size
                 sf = sz / max(imgs.shape[2:])  # scale factor
                 if sf != 1:
                     ns = [math.ceil(x * sf / gs) * gs for x in imgs.shape[2:]]  # new shape (stretched to gs-multiple)
@@ -414,7 +438,7 @@ def train(hyp, opt, device, tb_writer=None):
                 wandb_logger.current_epoch = epoch + 1
                 results, maps, times = test.test(data_dict,
                                                  batch_size=batch_size * 2,
-                                                 imgsz=imgsz_test,
+                                                 imgsz=(test_img_size_h, test_img_size_w),
                                                  model=ema.ema,
                                                  single_cls=opt.single_cls,
                                                  dataloader=testloader,
@@ -494,7 +518,7 @@ def train(hyp, opt, device, tb_writer=None):
             for m in (last, best) if best.exists() else (last):  # speed, mAP tests
                 results, _, _ = test.test(opt.data,
                                           batch_size=batch_size * 2,
-                                          imgsz=imgsz_test,
+                                          imgsz=(test_img_size_h, test_img_size_w),
                                           conf_thres=0.001,
                                           iou_thres=0.7,
                                           model=attempt_load(m, device).half(),
@@ -532,7 +556,8 @@ if __name__ == '__main__':
     parser.add_argument('--hyp', type=str, default='data/hyp.scratch.p5.yaml', help='hyperparameters path')
     parser.add_argument('--epochs', type=int, default=300)
     parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs')
-    parser.add_argument('--img-size', nargs='+', type=int, default=[640, 640], help='[train, test] image sizes')
+    parser.add_argument('--img-size-train', nargs='+', type=int, default=[640, 640], help='train image height width')
+    parser.add_argument('--img-size-test', nargs='+', type=int, default=[0, 0], help='test image height width')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
     parser.add_argument('--resume', nargs='?', const=True, default=False, help='resume most recent training')
     parser.add_argument('--nosave', action='store_true', help='only save final checkpoint')
@@ -572,6 +597,9 @@ if __name__ == '__main__':
     #    check_git_status()
     #    check_requirements()
 
+    if opt.img_size_test == [0, 0]:
+        opt.img_size_test = opt.img_size_train
+
     # Resume
     wandb_run = check_wandb_resume(opt)
     if opt.resume and not wandb_run:  # resume an interrupted run
@@ -586,7 +614,6 @@ if __name__ == '__main__':
         # opt.hyp = opt.hyp or ('hyp.finetune.yaml' if opt.weights else 'hyp.scratch.yaml')
         opt.data, opt.cfg, opt.hyp = check_file(opt.data), check_file(opt.cfg), check_file(opt.hyp)  # check files
         assert len(opt.cfg) or len(opt.weights), 'either --cfg or --weights must be specified'
-        opt.img_size.extend([opt.img_size[-1]] * (2 - len(opt.img_size)))  # extend to 2 sizes (train, test)
         opt.name = 'evolve' if opt.evolve else opt.name
         opt.save_dir = increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok | opt.evolve)  # increment run
 

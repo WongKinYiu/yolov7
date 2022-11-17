@@ -36,7 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--int8', action='store_true', help='CoreML INT8 quantization')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
-    opt.dynamic = opt.dynamic and not opt.end2end
+    # opt.dynamic = opt.dynamic and not opt.end2end
     opt.dynamic = False if opt.dynamic_batch else opt.dynamic
     print(opt)
     set_logging()
@@ -123,8 +123,13 @@ if __name__ == '__main__':
         output_names = ['classes', 'boxes'] if y is None else ['output']
         dynamic_axes = None
         if opt.dynamic:
-            dynamic_axes = {'images': {0: 'batch', 2: 'height', 3: 'width'},  # size(1,3,640,640)
-             'output': {0: 'batch', 2: 'y', 3: 'x'}}
+            dynamic_axes = {
+                'images': {0: 'batch', 2: 'height', 3: 'width'},  # size(1,3,640,640)
+                'num_dets': {0: 'batch'},
+                'det_boxes': {0: 'batch'},
+                'det_scores': {0: 'batch'},
+                'det_classes': {0: 'batch'},
+            }
         if opt.dynamic_batch:
             opt.batch_size = 'batch'
             dynamic_axes = {
