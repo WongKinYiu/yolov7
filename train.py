@@ -20,7 +20,6 @@ from torch.cuda import amp
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-import cv2
 
 import test  # import test.py to get mAP after each epoch
 from models.experimental import attempt_load
@@ -284,7 +283,7 @@ def train(hyp, opt, device, tb_writer=None):
     # Model parameters
     hyp['box'] *= 3. / nl  # scale to layers
     hyp['cls'] *= nc / 80. * 3. / nl  # scale to classes and layers
-    hyp['obj'] *= (train_img_size_w / 640) ** 2 * 3. / nl  # scale to image size and layers
+    hyp['obj'] *= ((train_img_size_w / 640) * (train_img_size_h / 640)) ** 2 * 3. / nl  # scale to image size and layers
     hyp['label_smoothing'] = opt.label_smoothing
     model.nc = nc  # attach number of classes to model
     model.hyp = hyp  # attach hyperparameters to model
@@ -339,25 +338,6 @@ def train(hyp, opt, device, tb_writer=None):
         optimizer.zero_grad()
         for i, (imgs, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
             ni = i + nb * epoch  # number integrated batches (since train start)
-
-            # <FRED debug save image with labels>
-            if not saved_debug_imgs:
-                for j in range(64):
-                    save_img = imgs[j,...].cpu().detach().numpy().copy()
-                    save_img = cv2.cvtColor(save_img.transpose((1, 2, 0)), cv2.COLOR_RGB2BGR)
-                    img_h, img_w = save_img.shape[:2]
-                    # labels_img = targets[j, :] # img_id?, clss, x,y,w,h 0-1
-                    for item in targets:
-                        if item[0] == j:
-                            x1 = int(item[2] * img_w)
-                            y1 = int(item[3] * img_h)
-                            x2 = int(item[2] * img_w + item[4] * img_w)
-                            y2 = int(item[3] * img_h + item[5] * img_h)
-                            cv2.rectangle(save_img, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                    cv2.imwrite(f"{save_dir}/{i}_{j}.jpg", save_img)
-                saved_debug_imgs = True
-            # </FRED debug save image with labels>
-
             imgs = imgs.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
 
             # Warmup
@@ -373,7 +353,6 @@ def train(hyp, opt, device, tb_writer=None):
 
             # Multi-scale
             if opt.multi_scale:
-                raise ValueError(f'FRED: wat moeten hier de afmetingen zijn? Dit zijn ze nu door alleen de width te pakken: {train_img_size_w}')
                 sz = random.randrange(train_img_size_w * 0.5, train_img_size_w * 1.5 + gs) // gs * gs  # size
                 sf = sz / max(imgs.shape[2:])  # scale factor
                 if sf != 1:
