@@ -30,6 +30,7 @@ import platform
 import sys
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 
@@ -165,7 +166,8 @@ def run(
                 # Mask plotting ----------------------------------------------------------------------------------------
 
                 # Write results
-                for *xyxy, conf, cls in reversed(det[:, :6]):
+                for (*xyxy, conf, cls), mask in zip(reversed(det[:, :6]),
+                                                    reversed(masks)):
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                         line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
@@ -177,7 +179,17 @@ def run(
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
                     if save_crop:
-                        save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                        #save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+
+                        #obj_seg = (im[i]*mask.long())
+                        #obj_seg = obj_seg.transpose(0, 2)
+                        #obj_seg = obj_seg.transpose(0, 1)
+                        #scaled_obj_seg = scale_masks(im.shape[2:], obj_seg.numpy(), im0.shape)
+                        #save_one_box(xyxy, scaled_obj_seg, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+
+                        scaled_mask = scale_masks(im.shape[2:], mask.numpy(), im0.shape)
+
+                        save_one_box(xyxy, (im0*scaled_mask).astype(np.uint8), file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
             # Stream results
             im0 = annotator.result()
