@@ -183,7 +183,9 @@ if __name__ == '__main__':
                 import onnxsim
 
                 print('\nStarting to simplify ONNX...')
-                onnx_model, check = onnxsim.simplify(onnx_model)
+                onnx_model, check = onnxsim.simplify(onnx_model,
+                                                     dynamic_input_shape=opt.dynamic,
+                                                     input_shapes={'images': list(img.shape)} if opt.dynamic else None)
                 assert check, 'assert check failed'
             except Exception as e:
                 print(f'Simplifier failure: {e}')
