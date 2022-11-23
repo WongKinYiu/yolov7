@@ -1,0 +1,5 @@
+[core]
+    autostage = true
+    remote = cb-detect
+['remote "cb-detect"']
+    url = https://drive.google.com/drive/folders/1VO7vAPy7HCZS07MdCbtNfevBnS_Rqd6j?usp=share_link
