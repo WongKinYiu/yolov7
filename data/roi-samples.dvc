@@ -1,0 +1,5 @@
+outs:
+- md5: b12a7ca300090e89ebee8f6eed792296.dir
+  size: 32989949
+  nfiles: 517
+  path: roi-samples
