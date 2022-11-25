@@ -22,17 +22,18 @@ def test_tflite(
     iou_thres: float,
 ):
     print("-" * 100 + "\nLoading TFLite model...")
+    # assertion is not working for some reason
+    assert tflite_model_path.is_file(), f"{tflite_model_path} is not a file."
     interpreter = _load_tflite_model(tflite_model_path)
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
+    input_shape = interpreter.get_input_details()[0]["shape"]
+    my_signature = interpreter.get_signature_runner()
     output_dir.mkdir(exist_ok=True, parents=True)
+    assert input_data_path.is_dir(), f"{input_data_path} is not a directory."
     for img_path in Path(input_data_path).glob("*.*[Gg]"):
         print("-" * 100 + f"\nLoading input data from {img_path} ...")
         img = cv2.imread(str(img_path))
-        input_data = _preprocess_input(img, input_details[0]["shape"])
-        interpreter.set_tensor(input_details[0]["index"], (input_data / 255))
-        interpreter.invoke()
-        output_tensor = interpreter.get_tensor(output_details[1]["index"])
+        input_data = _preprocess_input(img, input_shape)
+        output_tensor = my_signature(input=input_data / 255)["output"]
         output = _post_process(output_tensor, conf_thres, iou_thres, True)
         plot_images(input_data, output, None, str(output_dir / img_path.name), NAMES)
 
@@ -89,7 +90,7 @@ def parse_args(cli_args=sys.argv[1:]):
         "--input-data-path",
         type=Path,
         required=True,
-        help="The path to a test image or a folder of test images.",
+        help="The path to a folder of test images. Allowing a path to a single image is not supported yet.",
     )
     parser.add_argument(
         "-o",
