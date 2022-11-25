@@ -2,14 +2,19 @@
 
 Implementation of "YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors"
 
-This implimentation is for [darknet](https://github.com/AlexeyAB/darknet).
+This implimentation is based on [yolov5](https://github.com/ultralytics/yolov5) and [yolov6](https://github.com/meituan/YOLOv6).
 
-## Usage
+All of installation, data preparation, and usage are as same as yolov5.
 
-[`yolov7-tiny.weights`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.weights) [`yolov7.weights`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7.weights) [`yolov7x.weights`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7x.weights) 
+## Training
 
 ``` shell
-./darknet detector demo cfg/coco.data cfg/yolov7-tiny_darknet.cfg yolov7-tiny.weights test.mp4
-./darknet detector demo cfg/coco.data cfg/yolov7_darknet.cfg yolov7.weights test.mp4
-./darknet detector demo cfg/coco.data cfg/yolov7x_darknet.cfg yolov7x.weights test.mp4
+python train.py --data coco.yaml --batch 16 --weights '' --cfg cfg/yolov7.yaml --epochs 300 --name yolov7 --img 640 --hyp hyp.scratch.yaml --min-items 0
+```
+
+## Results
+
+[`yolov7-u6.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-u6.pt)
+
+```
 ```
