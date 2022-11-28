@@ -12,6 +12,9 @@ imgpath = Path('test.jpg')
 if not imgpath.is_file():
     raise AssertionError(f'{str(imgpath)} not found')
 
+output_folder = 'inference'
+Path(output_folder).mkdir(parents=True, exist_ok=True)
+
 yolov7 = YOLOv7(
     weights=resources.files('yolov7').joinpath('weights/yolov7_state.pt'),
     cfg=resources.files('yolov7').joinpath('cfg/deploy/yolov7.yaml'),
@@ -23,6 +26,7 @@ yolov7 = YOLOv7(
     same_size=True,
     conf_thresh=0.25,
     trace=False,
+    cudnn_benchmark=False,
 )
 
 img = cv2.imread(str(imgpath))
@@ -51,4 +55,5 @@ for det in dets:
     cv2.rectangle(draw_frame, (l, t), (r, b), (255, 255, 0), 1)
     cv2.putText(draw_frame, class_, (l, t-8), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0))
 
-cv2.imwrite('test_out.jpg', draw_frame)
+output_path = Path(output_folder) / 'test_out.jpg'
+cv2.imwrite(str(output_path), draw_frame)

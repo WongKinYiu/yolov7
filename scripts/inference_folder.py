@@ -21,6 +21,7 @@ yolov7 = YOLOv7(
     same_size=False,
     conf_thresh=0.25,
     trace=False,
+    cudnn_benchmark=False,
 )
 
 all_imgpaths = [imgpath for imgpath in Path(src_folder).rglob("*.jpg")]

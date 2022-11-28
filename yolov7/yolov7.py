@@ -22,6 +22,7 @@ class YOLOv7:
         'weights': resources.files('yolov7').joinpath('weights/yolov7_state.pt'),
         'cfg': resources.files('yolov7').joinpath('cfg/deploy/yolov7.yaml'),
         'trace': True,
+        'cudnn_benchmark': False,
     }
 
     def __init__(self, bgr=True, gpu_device=0, **kwargs):
@@ -46,8 +47,10 @@ class YOLOv7:
         if self.half:
             self.model.half()
 
-        if self.same_size:
-            torch.backends.cudnn.benchmark = True  # set True to speed up constant image size inference
+        if self.cudnn_benchmark:
+            # set True to speed up constant image size inference. Beware: GPU memory hogger
+            torch.backends.cudnn.benchmark = True
+            torch.backends.cudnn.enabled = True
 
         # warm up
         self._detect([np.zeros((10, 10, 3), dtype=np.uint8)])
