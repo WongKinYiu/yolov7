@@ -182,17 +182,16 @@ def run(
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
                     if save_crop:
-                        #save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
-
-                        #obj_seg = (im[i]*mask.long())
-                        #obj_seg = obj_seg.transpose(0, 2)
-                        #obj_seg = obj_seg.transpose(0, 1)
-                        #scaled_obj_seg = scale_masks(im.shape[2:], obj_seg.numpy(), im0.shape)
-                        #save_one_box(xyxy, scaled_obj_seg, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
-
-                        scaled_mask = scale_masks(im.shape[2:], mask.numpy(), im0.shape)
-
-                        save_one_box(xyxy, (im0*scaled_mask).astype(np.uint8), file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                        scaled_mask = scale_masks(im.shape[2:], mask.cpu().numpy(), im0.shape)
+                        # Set the background to white based on the mask.
+                        # This commmented code doesn't work
+                        #im0[(scaled_mask == 0).squeeze()] = 255
+                        #mask = np.concatenate(((scaled_mask == 0), (scaled_mask ==0), (scaled_mask ==0)), axis=2)
+                        #im0[mask] = 0
+                        #save_one_box(xyxy, im0.astype(np.uint8), file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                        # But this does:
+                        white_background = (1 - scaled_mask)*255
+                        save_one_box(xyxy, (im0*scaled_mask + white_background).astype(np.uint8), file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
             # Stream results
             im0 = annotator.result()
