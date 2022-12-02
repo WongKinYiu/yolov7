@@ -208,6 +208,26 @@ See [instance.ipynb](https://github.com/WongKinYiu/yolov7/blob/main/tools/instan
     </a>
 </div>
 
+## Instance segmentation
+
+[`code`](https://github.com/WongKinYiu/yolov7/tree/u7/seg) [`yolov7-seg.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-seg.pt)
+
+YOLOv7 for instance segmentation (YOLOR + YOLOv5 + YOLACT)
+
+| Model | Test Size | AP<sup>box</sup> | AP<sub>50</sub><sup>box</sup> | AP<sub>75</sub><sup>box</sup> | AP<sup>mask</sup> | AP<sub>50</sub><sup>mask</sup> | AP<sub>75</sub><sup>mask</sup> |
+| :-- | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| **YOLOv7-seg** | 640 | **51.4%** | **69.4%** | **55.8%** | **41.5%** | **65.5%** | **43.7%** |
+
+## Anchor free detection head
+
+[`code`](https://github.com/WongKinYiu/yolov7/tree/u6) [`yolov7-u6.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-u6.pt)
+
+YOLOv7 with decoupled TAL head (YOLOR + YOLOv5 + YOLOv6)
+
+| Model | Test Size | AP<sup>val</sup> | AP<sub>50</sub><sup>val</sup> | AP<sub>75</sub><sup>val</sup> |
+| :-- | :-: | :-: | :-: | :-: |
+| [**YOLOv7-u6**](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-u6.pt) | 640 | **52.3%** | **69.5%** | **57.1%** |
+
 
 ## Citation
 
