@@ -11,8 +11,8 @@ import numpy as np
 import torchvision.transforms as T
 import torchvision.transforms.functional as TF
 
-from utils.general import LOGGER, check_version, colorstr, resample_segments, segment2box
-from utils.metrics import bbox_ioa
+from yolov7.seg.utils.general import LOGGER, check_version, colorstr, resample_segments, segment2box
+from yolov7.seg.utils.metrics import bbox_ioa
 
 IMAGENET_MEAN = 0.485, 0.456, 0.406  # RGB mean
 IMAGENET_STD = 0.229, 0.224, 0.225  # RGB standard deviation

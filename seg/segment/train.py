@@ -44,21 +44,21 @@ import torch.nn.functional as F
 import segment.val as validate  # for end-of-epoch mAP
 from models.experimental import attempt_load
 from models.yolo import SegmentationModel
-from utils.autoanchor import check_anchors
-from utils.autobatch import check_train_batch_size
-from utils.callbacks import Callbacks
-from utils.downloads import attempt_download, is_url
-from utils.general import (LOGGER, check_amp, check_dataset, check_file, check_git_status, check_img_size,
+from yolov7.seg.utils.autoanchor import check_anchors
+from yolov7.seg.utils.autobatch import check_train_batch_size
+from yolov7.seg.utils.callbacks import Callbacks
+from yolov7.seg.utils.downloads import attempt_download, is_url
+from yolov7.seg.utils.general import (LOGGER, check_amp, check_dataset, check_file, check_git_status, check_img_size,
                            check_requirements, check_suffix, check_yaml, colorstr, get_latest_run, increment_path,
                            init_seeds, intersect_dicts, labels_to_class_weights, labels_to_image_weights, one_cycle,
                            print_args, print_mutation, strip_optimizer, yaml_save)
-from utils.loggers import GenericLogger
-from utils.plots import plot_evolve, plot_labels
-from utils.segment.dataloaders import create_dataloader
-from utils.segment.loss import ComputeLoss
-from utils.segment.metrics import KEYS, fitness
-from utils.segment.plots import plot_images_and_masks, plot_results_with_masks
-from utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel, select_device, smart_DDP, smart_optimizer,
+from yolov7.seg.utils.loggers import GenericLogger
+from yolov7.seg.utils.plots import plot_evolve, plot_labels
+from yolov7.seg.utils.segment.dataloaders import create_dataloader
+from yolov7.seg.utils.segment.loss import ComputeLoss
+from yolov7.seg.utils.segment.metrics import KEYS, fitness
+from yolov7.seg.utils.segment.plots import plot_images_and_masks, plot_results_with_masks
+from yolov7.seg.utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel, select_device, smart_DDP, smart_optimizer,
                                smart_resume, torch_distributed_zero_first)
 
 LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html

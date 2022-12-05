@@ -40,17 +40,17 @@ import torch.nn.functional as F
 
 from models.common import DetectMultiBackend
 from models.yolo import SegmentationModel
-from utils.callbacks import Callbacks
-from utils.general import (LOGGER, NUM_THREADS, Profile, check_dataset, check_img_size, check_requirements, check_yaml,
+from yolov7.seg.utils.callbacks import Callbacks
+from yolov7.seg.utils.general import (LOGGER, NUM_THREADS, Profile, check_dataset, check_img_size, check_requirements, check_yaml,
                            coco80_to_coco91_class, colorstr, increment_path, non_max_suppression, print_args,
                            scale_coords, xywh2xyxy, xyxy2xywh)
-from utils.metrics import ConfusionMatrix, box_iou
-from utils.plots import output_to_target, plot_val_study
-from utils.segment.dataloaders import create_dataloader
-from utils.segment.general import mask_iou, process_mask, process_mask_upsample, scale_masks
-from utils.segment.metrics import Metrics, ap_per_class_box_and_mask
-from utils.segment.plots import plot_images_and_masks
-from utils.torch_utils import de_parallel, select_device, smart_inference_mode
+from yolov7.seg.utils.metrics import ConfusionMatrix, box_iou
+from yolov7.seg.utils.plots import output_to_target, plot_val_study
+from yolov7.seg.utils.segment.dataloaders import create_dataloader
+from yolov7.seg.utils.segment.general import mask_iou, process_mask, process_mask_upsample, scale_masks
+from yolov7.seg.utils.segment.metrics import Metrics, ap_per_class_box_and_mask
+from yolov7.seg.utils.segment.plots import plot_images_and_masks
+from yolov7.seg.utils.torch_utils import de_parallel, select_device, smart_inference_mode
 
 
 def save_one_txt(predn, save_conf, shape, file):

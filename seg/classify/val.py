@@ -34,9 +34,9 @@ if str(ROOT) not in sys.path:
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 from models.common import DetectMultiBackend
-from utils.dataloaders import create_classification_dataloader
-from utils.general import LOGGER, Profile, check_img_size, check_requirements, colorstr, increment_path, print_args
-from utils.torch_utils import select_device, smart_inference_mode
+from yolov7.seg.utils.dataloaders import create_classification_dataloader
+from yolov7.seg.utils.general import LOGGER, Profile, check_img_size, check_requirements, colorstr, increment_path, print_args
+from yolov7.seg.utils.torch_utils import select_device, smart_inference_mode
 
 
 @smart_inference_mode()

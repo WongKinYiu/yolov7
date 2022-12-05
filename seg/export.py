@@ -66,10 +66,10 @@ if platform.system() != 'Windows':
 
 from models.experimental import attempt_load
 from models.yolo import Detect
-from utils.dataloaders import LoadImages
-from utils.general import (LOGGER, Profile, check_dataset, check_img_size, check_requirements, check_version,
+from yolov7.seg.utils.dataloaders import LoadImages
+from yolov7.seg.utils.general import (LOGGER, Profile, check_dataset, check_img_size, check_requirements, check_version,
                            check_yaml, colorstr, file_size, get_default_args, print_args, url2file)
-from utils.torch_utils import select_device, smart_inference_mode
+from yolov7.seg.utils.torch_utils import select_device, smart_inference_mode
 
 
 def export_formats():

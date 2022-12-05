@@ -31,8 +31,8 @@ from models.common import (C3, SPP, SPPF, Bottleneck, BottleneckCSP, C3x, Concat
                            DWConvTranspose2d, Focus, autopad)
 from models.experimental import MixConv2d, attempt_load
 from models.yolo import Detect
-from utils.activations import SiLU
-from utils.general import LOGGER, make_divisible, print_args
+from yolov7.seg.utils.activations import SiLU
+from yolov7.seg.utils.general import LOGGER, make_divisible, print_args
 
 
 class TFBN(keras.layers.Layer):
