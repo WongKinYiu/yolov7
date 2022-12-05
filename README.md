@@ -4,7 +4,10 @@
 
 docker build -f docker/Dockerfile -t yolov7 .
 
-# sample usage 
+# for inference
+docker build -f docker/inference.Dockerfile -t yolov7:inference .
+
+# sample training 
 
 docker run \
     --gpus all \
@@ -17,7 +20,7 @@ docker run \
 python test.py \
     --data /cfg/coco128.yaml \
     --weights /weights/yolov7-w6.pt \
-    --img 1280 \
+    --img 1080 \
     --batch 16 \
     --iou 0.65 \
     --device 0 \
@@ -26,6 +29,27 @@ python test.py \
 
 # coco128 is obtained from https://github.com/ultralytics/yolov5
 
+# sample detection on webcam
+
+xhost +local:docker
+
+docker run \
+    --gpus all \
+    --shm-size=64g \
+    --privileged \
+    -v /home/ernestlwt/data/coco128:/data/coco128 \
+    -v /home/ernestlwt/workspace/github/yolov7/data:/cfg \
+    -v /home/ernestlwt/workspace/github/yolov7/weights:/weights \
+    -v /home/ernestlwt/workspace/github/yolov7/results:/results \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -v /dev/video0:/dev/video0 \
+    -e DISPLAY=$DISPLAY \
+    yolov7:inference \
+python detect.py \
+    --weights /weights/yolov7-w6.pt \
+    --conf 0.25 \
+    --view-img \
+    --source 0
 ```
 
 # Instruction for transfering to private network
