@@ -169,6 +169,7 @@ def run(
                 # Mask plotting ----------------------------------------------------------------------------------------
 
                 # Write results
+                crop_images = []
                 for (*xyxy, conf, cls), mask in zip(reversed(det[:, :6]),
                                                     reversed(masks)):
                     if save_txt:  # Write to file
@@ -191,7 +192,10 @@ def run(
                         #save_one_box(xyxy, im0.astype(np.uint8), file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
                         # But this does:
                         white_background = (1 - scaled_mask)*255
-                        save_one_box(xyxy, (im0*scaled_mask + white_background).astype(np.uint8), file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                        masked_image = (im0*scaled_mask + white_background).astype(np.uint8)
+                        crop_image = save_one_box(xyxy, masked_image, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                        crop_images.append(crop_image)
+
 
             # Stream results
             im0 = annotator.result()
@@ -233,6 +237,8 @@ def run(
         LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
+
+    return im0, crop_images
 
 
 def parse_opt():
