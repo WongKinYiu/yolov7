@@ -410,6 +410,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
                 logger.log_images(files, "Validation", epoch)
 
             dvc_out = Path(opt.dvc_out)
+            dvc_out.mkdir(exist_ok=True, parents=True)
             metrics_json = prepare_metrics_json(metrics_dict)
             with open(dvc_out / 'metrics.json', 'w') as f:
                 print(metrics_json, file=f)
@@ -429,7 +430,6 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
                 # Save last, best and delete
                 torch.save(ckpt, last)
-                dvc_out.mkdir(exist_ok=True, parents=True)
                 torch.save(ckpt, dvc_out / 'model_last.pt')
                 if best_fitness == fi:
                     torch.save(ckpt, best)
