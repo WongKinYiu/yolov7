@@ -16,6 +16,7 @@ Tutorial:   https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data
 """
 
 import argparse
+import json
 import math
 import os
 import random
@@ -64,6 +65,16 @@ from yolov7.seg.utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel, 
 LOCAL_RANK = int(os.getenv('LOCAL_RANK', -1))  # https://pytorch.org/docs/stable/elastic/run.html
 RANK = int(os.getenv('RANK', -1))
 WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))
+
+
+def prepare_metrics_json(metrics_dict):
+    """ Converts the metrics dictionary in to a JSON object compatible with DVC. """
+
+    for key in metrics_dict:
+        if isinstance(metrics_dict[key], torch.Tensor):
+            metrics_dict[key] = metrics_dict[key].item()
+
+    return json.dumps(metrics_dict)
 
 
 def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictionary
@@ -398,6 +409,11 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
                 files = sorted(save_dir.glob('val*.jpg'))
                 logger.log_images(files, "Validation", epoch)
 
+            dvc_out = Path(opt.dvc_out)
+            metrics_json = prepare_metrics_json(metrics_dict)
+            with open(dvc_out / 'metrics.json', 'w') as f:
+                print(metrics_json, file=f)
+
             # Save model
             if (not nosave) or (final_epoch and not evolve):  # if save
                 ckpt = {
@@ -413,6 +429,8 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
                 # Save last, best and delete
                 torch.save(ckpt, last)
+                dvc_out.mkdir(exist_ok=True, parents=True)
+                torch.save(ckpt, dvc_out / 'model_last.pt')
                 if best_fitness == fi:
                     torch.save(ckpt, best)
                 if opt.save_period > 0 and epoch % opt.save_period == 0:
@@ -512,6 +530,7 @@ def parse_opt(known=False):
     parser.add_argument('--save-period', type=int, default=-1, help='Save checkpoint every x epochs (disabled if < 1)')
     parser.add_argument('--seed', type=int, default=0, help='Global training seed')
     parser.add_argument('--local_rank', type=int, default=-1, help='Automatic DDP Multi-GPU argument, do not modify')
+    parser.add_argument('--dvc-out', default=None, help='Directory to store model and metrics for DVC experiment tracking')
 
     # Instance Segmentation Args
     parser.add_argument('--mask-ratio', type=int, default=4, help='Downsample the truth masks to saving memory')
