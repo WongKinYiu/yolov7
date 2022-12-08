@@ -170,11 +170,14 @@ def run(
 
                 # Write results
                 crop_images = []
+                crop_images_paths = []
+                labels = []
                 for (*xyxy, conf, cls), mask in zip(reversed(det[:, :6]),
                                                     reversed(masks)):
+                    xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                    line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
+                    labels.append(line)
                     if save_txt:  # Write to file
-                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                        line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
                         with open(f'{txt_path}.txt', 'a') as f:
                             f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
@@ -182,19 +185,23 @@ def run(
                         c = int(cls)  # integer class
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
+
+                    # Generate the crop images
+                    scaled_mask = scale_masks(im.shape[2:], mask.cpu().numpy(), im0.shape)
+                    # Set the background to white based on the mask.
+                    white_background = (1 - scaled_mask)*255
+                    masked_image = (im0*scaled_mask + white_background).astype(np.uint8)
                     if save_crop:
-                        scaled_mask = scale_masks(im.shape[2:], mask.cpu().numpy(), im0.shape)
-                        # Set the background to white based on the mask.
-                        # This commmented code doesn't work
-                        #im0[(scaled_mask == 0).squeeze()] = 255
-                        #mask = np.concatenate(((scaled_mask == 0), (scaled_mask ==0), (scaled_mask ==0)), axis=2)
-                        #im0[mask] = 0
-                        #save_one_box(xyxy, im0.astype(np.uint8), file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
-                        # But this does:
-                        white_background = (1 - scaled_mask)*255
-                        masked_image = (im0*scaled_mask + white_background).astype(np.uint8)
-                        crop_image = save_one_box(xyxy, masked_image, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
-                        crop_images.append(crop_image)
+                        image_path = save_dir / 'crops' / names[c] / f'{p.stem}.jpg'
+                        crop_image, crop_image_path = save_one_box(xyxy, masked_image, file=image_path, BGR=True, save=True)
+                        crop_images_paths.append(crop_image_path)
+                        if save_txt:
+                            crop_label_path = Path(crop_image_path).with_suffix('.txt')
+                            with open(crop_label_path, 'w') as f:
+                                f.write(('%g ' * len(line)).rstrip() % line + '\n')
+                    else:
+                        crop_image, _ = save_one_box(xyxy, masked_image, BGR=True, save=False)
+                    crop_images.append(crop_image)
 
 
             # Stream results
@@ -238,7 +245,7 @@ def run(
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
 
-    return im0, crop_images
+    return crop_images, labels, crop_images_paths
 
 
 def parse_opt():
