@@ -31,6 +31,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+from PIL import Image
 import torch
 import torch.backends.cudnn as cudnn
 
@@ -188,19 +189,25 @@ def run(
 
                     # Generate the crop images
                     scaled_mask = scale_masks(im.shape[2:], mask.cpu().numpy(), im0.shape)
+                    crop_mask, _ = save_one_box(xyxy, scaled_mask, save=False, BGR=False)
+                    crop_img, _ = save_one_box(xyxy, im0, BGR=True, save=False)
                     # Set the background to white based on the mask.
-                    white_background = (1 - scaled_mask)*255
-                    masked_image = (im0*scaled_mask + white_background).astype(np.uint8)
+                    white_background = (1 - crop_mask)*255
+                    masked = crop_img*crop_mask
+                    masked_white_bg = masked + white_background
+                    masked_image = masked_white_bg.astype(np.uint8)
+                    crop_image = masked_image
+                    #masked_image = (im0*scaled_mask + white_background).astype(np.uint8)
                     if save_crop:
-                        image_path = save_dir / 'crops' / names[c] / f'{p.stem}.jpg'
-                        crop_image, crop_image_path = save_one_box(xyxy, masked_image, file=image_path, BGR=True, save=True)
-                        crop_images_paths.append(crop_image_path)
+                        file = save_dir / 'crops' / names[c] / f'{p.stem}.jpg'
+                        file.parent.mkdir(parents=True, exist_ok=True)
+                        f = str(increment_path(file).with_suffix('.jpg'))
+                        Image.fromarray(crop_image[..., ::-1]).save(f, quality=95, subsampling=0)
+                        crop_images_paths.append(file)
                         if save_txt:
-                            crop_label_path = Path(crop_image_path).with_suffix('.txt')
+                            crop_label_path = file.with_suffix('.txt')
                             with open(crop_label_path, 'w') as f:
                                 f.write(('%g ' * len(line)).rstrip() % line + '\n')
-                    else:
-                        crop_image, _ = save_one_box(xyxy, masked_image, BGR=True, save=False)
                     crop_images.append(crop_image)
 
 
