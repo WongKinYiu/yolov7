@@ -172,6 +172,22 @@ def check_dataset(dict):
             else:
                 raise Exception('Dataset not found.')
 
+def process_datafile(file_data: dict):
+    path, train, test, val, nc = file_data.get('path'), file_data.get('train'), file_data.get('test'), file_data.get('val'), file_data.get('nc')
+    path = Path(path if path is not None else '.').resolve()
+    file_data['path'] = path
+    file_data['nc'] = int(nc) if nc is not None else len(file_data['names'])
+    if train is not None:
+        file_data['train']: list[str] = train if isinstance(train, list) else [train]
+        file_data['train'] = [(path / train_path).resolve() for train_path in file_data['train']]
+    if test is not None:
+        file_data['test']: list[str] = test if isinstance(test, list) else [test]
+        file_data['test'] = [(path / test_path).resolve() for test_path in file_data['test']]
+    if val is not None:
+        file_data['val']: list[str] = val if isinstance(val, list) else [val]
+        file_data['val'] = [(path / val_path).resolve() for val_path in file_data['val']]
+    
+    
 
 def make_divisible(x, divisor):
     # Returns x evenly divisible by divisor
