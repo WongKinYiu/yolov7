@@ -1,3 +1,18 @@
+## Steps to create YOLOv7 Model with 4D tensors
+Execute following scripts to create the YOLOv7 Model to be compatible with XNNC
+
+```bash
+wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7.pt # download yolov7 trained weight file
+
+python save_yolo_pt.py --cfg_file cfg/deploy/yolov7.yaml --save_file yolov7-4d-640-nms.pt # create yolov7 model with 4D tensors
+
+python load_pretrained.py --model_file yolov7-4d-640-nms.pt --pretrained_model_file yolov7.pt --trained_save_file yolov7-4d-trained-640-nms.pt # load weights from downloaded yolov7.pt to yolov7 4D model created previously
+
+python export.py --weights yolov7-4d-trained-640-nms.pt --grid --end2end --simplify --topk-all 100 --iou-thres 0.65 --conf-thres 0.35 --img-size 640 640 --max-wh 640 # export YOLOv7 model to ONNX
+
+python extract_subgraph.py --input_path yolov7-4d-trained-640-nms.onnx --output_path yolov7-4d-trained-640.onnx # Remove NMS nodes from the YOLOv7 model (modify script for input_names/output_names if required)
+```
+
 # Official YOLOv7
 
 Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors](https://arxiv.org/abs/2207.02696)
