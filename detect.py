@@ -14,8 +14,9 @@ from utils.general import check_img_size, check_requirements, check_imshow, non_
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 
+from model_singleton import ModelSingleton
 
-def detect(save_img=False):
+def detect(opt: argparse.Namespace, save_img=False):
     source, weights, view_img, save_txt, imgsz, trace = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, not opt.no_trace
     save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
@@ -27,12 +28,17 @@ def detect(save_img=False):
 
     # Initialize
     set_logging()
+
+    ms = ModelSingleton(weights, opt.device)
+    model = ms.get_model()
+    stride = ms.get_stride()
+
     device = select_device(opt.device)
     half = device.type != 'cpu'  # half precision only supported on CUDA
 
     # Load model
-    model = attempt_load(weights, map_location=device)  # load FP32 model
-    stride = int(model.stride.max())  # model stride
+    #model = attempt_load(weights, map_location=device)  # load FP32 model
+    #stride = int(model.stride.max())  # model stride
     imgsz = check_img_size(imgsz, s=stride)  # check img_size
 
     if trace:
@@ -162,8 +168,7 @@ def detect(save_img=False):
 
     print(f'Done. ({time.time() - t0:.3f}s)')
 
-
-if __name__ == '__main__':
+def make_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default='yolov7.pt', help='model.pt path(s)')
     parser.add_argument('--source', type=str, default='inference/images', help='source')  # file/folder, 0 for webcam
@@ -183,14 +188,17 @@ if __name__ == '__main__':
     parser.add_argument('--name', default='exp', help='save results to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
-    opt = parser.parse_args()
+    return parser
+
+if __name__ == '__main__':
+    opt = make_parser().parse_args()
     print(opt)
     #check_requirements(exclude=('pycocotools', 'thop'))
 
     with torch.no_grad():
         if opt.update:  # update all models (to fix SourceChangeWarning)
             for opt.weights in ['yolov7.pt']:
-                detect()
+                detect(otp)
                 strip_optimizer(opt.weights)
         else:
-            detect()
+            detect(opt)
