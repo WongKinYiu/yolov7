@@ -26,6 +26,7 @@ class Detect(nn.Module):
     end2end = False
     include_nms = False
     concat = False
+    dynamic = False
 
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(Detect, self).__init__()
@@ -49,7 +50,7 @@ class Detect(nn.Module):
             x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
             if not self.training:  # inference
-                if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                if dynamic or self.grid[i].shape[2:4] != x[i].shape[2:4]:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
                 y = x[i].sigmoid()
                 if not torch.onnx.is_in_onnx_export():
@@ -100,6 +101,7 @@ class IDetect(nn.Module):
     end2end = False
     include_nms = False
     concat = False
+    dynamic = False
 
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(IDetect, self).__init__()
@@ -127,7 +129,7 @@ class IDetect(nn.Module):
             x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
             if not self.training:  # inference
-                if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                if dynamic or self.grid[i].shape[2:4] != x[i].shape[2:4]:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
 
                 y = x[i].sigmoid()
@@ -210,6 +212,7 @@ class IDetect(nn.Module):
 class IKeypoint(nn.Module):
     stride = None  # strides computed during build
     export = False  # onnx export
+    dynamic = False
 
     def __init__(self, nc=80, anchors=(), nkpt=17, ch=(), inplace=True, dw_conv_kpt=False):  # detection layer
         super(IKeypoint, self).__init__()
@@ -261,7 +264,7 @@ class IKeypoint(nn.Module):
             x_kpt = x[i][..., 6:]
 
             if not self.training:  # inference
-                if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                if dynamic or self.grid[i].shape[2:4] != x[i].shape[2:4]:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
                 kpt_grid_x = self.grid[i][..., 0:1]
                 kpt_grid_y = self.grid[i][..., 1:2]
@@ -314,6 +317,7 @@ class IAuxDetect(nn.Module):
     end2end = False
     include_nms = False
     concat = False
+    dynamic = False
 
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(IAuxDetect, self).__init__()
@@ -345,7 +349,7 @@ class IAuxDetect(nn.Module):
             x[i+self.nl] = x[i+self.nl].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
             if not self.training:  # inference
-                if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                if dynamic or self.grid[i].shape[2:4] != x[i].shape[2:4]:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
 
                 y = x[i].sigmoid()
@@ -433,6 +437,7 @@ class IAuxDetect(nn.Module):
 class IBin(nn.Module):
     stride = None  # strides computed during build
     export = False  # onnx export
+    dynamic = False
 
     def __init__(self, nc=80, anchors=(), ch=(), bin_count=21):  # detection layer
         super(IBin, self).__init__()
@@ -474,7 +479,7 @@ class IBin(nn.Module):
             x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
             if not self.training:  # inference
-                if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                if dynamic or self.grid[i].shape[2:4] != x[i].shape[2:4]:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
 
                 y = x[i].sigmoid()
