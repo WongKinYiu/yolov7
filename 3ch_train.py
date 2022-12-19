@@ -22,7 +22,7 @@ anchors:
 # yolov7 backbone
 backbone:
     # [from, number, module, args]
-    [[-1, 1, Conv, [32, 3, 1]],  # 0 ## 4ch
+    [[-1, 1, Conv, [32, 3, 1]],  # 0
 
     [-1, 1, Conv, [64, 3, 2]],  # 1-P1/2
     [-1, 1, Conv, [64, 3, 1]],
@@ -149,9 +149,25 @@ head:
     [[102,103,104], 1, IDetect, [nc, anchors]],   # Detect(P3, P4, P5)
     ]
     """
-    f = open("yolov7-4ch.yaml", "w")
+    f = open("yolov7-3ch.yaml", "w")
     f.write(yolov7yaml)
     f.close()
 
+def create_data_yaml():
+    yaml = """train: test_dataset/train_origin/images
+val: test_dataset/valid_origin/images
+test: test_dataset/test_origin/images
+
+nc: 3
+names: ['Ball', 'Player', 'Ref']
+    """
+    f = open('test_dataset/data.yaml', 'w')
+    f.write(yaml)
+    f.close()
+    shutil.copytree("test_dataset/train/labels", "test_dataset/train_origin/labels", dirs_exist_ok=True)
+    shutil.copytree("test_dataset/test/labels", "test_dataset/test_origin/labels", dirs_exist_ok=True)
+    shutil.copytree("test_dataset/valid/labels", "test_dataset/valid_origin/labels", dirs_exist_ok=True)
+
 if __name__ == "__main__":
     create_cfg()
+    create_data_yaml()
