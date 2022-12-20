@@ -16,3 +16,5 @@ test: val.txt  # 20288 of 40670 images, submit to https://competitions.codalab.o
 # Classes
 names:
   0: box
+  1: can
+  2: carrier

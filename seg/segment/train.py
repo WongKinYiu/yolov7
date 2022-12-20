@@ -409,11 +409,12 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
                 files = sorted(save_dir.glob('val*.jpg'))
                 logger.log_images(files, "Validation", epoch)
 
-            dvc_out = Path(opt.dvc_out)
-            dvc_out.mkdir(exist_ok=True, parents=True)
-            metrics_json = prepare_metrics_json(metrics_dict)
-            with open(dvc_out / 'metrics.json', 'w') as f:
-                print(metrics_json, file=f)
+            if opt.dvc_out:
+                dvc_out = Path(opt.dvc_out)
+                dvc_out.mkdir(exist_ok=True, parents=True)
+                metrics_json = prepare_metrics_json(metrics_dict)
+                with open(dvc_out / 'metrics.json', 'w') as f:
+                    print(metrics_json, file=f)
 
             # Save model
             if (not nosave) or (final_epoch and not evolve):  # if save
@@ -430,7 +431,8 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
                 # Save last, best and delete
                 torch.save(ckpt, last)
-                torch.save(ckpt, dvc_out / 'model_last.pt')
+                if opt.dvc_out:
+                    torch.save(ckpt, dvc_out / 'model_last.pt')
                 if best_fitness == fi:
                     torch.save(ckpt, best)
                 if opt.save_period > 0 and epoch % opt.save_period == 0:
