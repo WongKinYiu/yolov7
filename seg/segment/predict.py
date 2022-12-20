@@ -32,7 +32,6 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
-
 import torch
 import torch.backends.cudnn as cudnn
 
