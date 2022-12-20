@@ -32,7 +32,6 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
-import cv2 # TODO figure out why this wasn't needed to yolov7.seg.segment.predict.run()
 
 import torch
 import torch.backends.cudnn as cudnn
