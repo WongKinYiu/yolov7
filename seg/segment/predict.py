@@ -200,7 +200,7 @@ def run(
                     masked_white_bg = masked + white_background
                     masked_image = masked_white_bg.astype(np.uint8)
                     crop_image = masked_image
-                    crop_image = cv2.cvtColor(crop_image, cv2.COLOR_BGR2RGB) # convert to proper RGB color
+                    crop_image = cv2.cvtColor(crop_image, cv2.COLOR_BGR2RGB) # convert image proper RGB color
                     #masked_image = (im0*scaled_mask + white_background).astype(np.uint8)
                     if save_crop:
                         file = save_dir / 'crops' / names[c] / f'{p.stem}.jpg'
