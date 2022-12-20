@@ -1,0 +1,9 @@
+train: ../autogosling-tool/model/data/splits/split-42-0.2-0.1/yolov7-42-0.2-0.1/images/train
+val: ../autogosling-tool/model/data/splits/split-42-0.2-0.1/yolov7-42-0.2-0.1/images/valid
+test: ../autogosling-tool/model/data/splits/split-42-0.2-0.1/yolov7-42-0.2-0.1/images/test
+ 
+# Classes
+nc: 17 # number of classes
+
+# names: [] # class names
+names: ["area", "bar", "brush", "circular", "heatmap", "horizontal", "line", "linear", "point", "rect", "rule", "text", "triangleBottom", "triangleLeft", "triangleRight", "vertical", "withinLink"] # class names
