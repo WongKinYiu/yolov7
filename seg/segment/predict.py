@@ -32,6 +32,8 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
+import cv2 # TODO figure out why this wasn't needed to yolov7.seg.segment.predict.run()
+
 import torch
 import torch.backends.cudnn as cudnn
 
@@ -198,6 +200,7 @@ def run(
                     masked_white_bg = masked + white_background
                     masked_image = masked_white_bg.astype(np.uint8)
                     crop_image = masked_image
+                    crop_image = cv2.cvtColor(crop_image, cv2.COLOR_BGR2RGB) # convert to proper RGB color
                     #masked_image = (im0*scaled_mask + white_background).astype(np.uint8)
                     if save_crop:
                         file = save_dir / 'crops' / names[c] / f'{p.stem}.jpg'
