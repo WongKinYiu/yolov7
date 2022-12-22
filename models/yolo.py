@@ -115,8 +115,9 @@ class IDetect(nn.Module):
         
         self.ia = nn.ModuleList(ImplicitA(x) for x in ch)
         self.im = nn.ModuleList(ImplicitM(self.no * self.na) for _ in ch)
-
+        self.temp = False
     def forward(self, x):
+        
         # x = x.copy()  # for profiling
         z = []  # inference output
         self.training |= self.export
@@ -129,12 +130,13 @@ class IDetect(nn.Module):
             if not self.training:  # inference
                 if self.grid[i].shape[2:4] != x[i].shape[2:4]:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
-
+                y = x[i]
                 y = x[i].sigmoid()
                 y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
                 y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
                 z.append(y.view(bs, -1, self.no))
-
+        # return x
+        # return z
         return x if self.training else (torch.cat(z, 1), x)
     
     def fuseforward(self, x):
@@ -506,8 +508,10 @@ class IBin(nn.Module):
 
 
 class Model(nn.Module):
-    def __init__(self, cfg='yolor-csp-c.yaml', ch=3, nc=None, anchors=None):  # model, input channels, number of classes
+    def __init__(self, cfg='yolor-csp-c.yaml', ch=3, nc=None, anchors=None,graphmodule=False):  # model, input channels, number of classes
         super(Model, self).__init__()
+        self.augment = False
+        self.profile = False
         self.traced = False
         if isinstance(cfg, dict):
             self.yaml = cfg  # model dict
@@ -579,7 +583,7 @@ class Model(nn.Module):
         logger.info('')
 
     def forward(self, x, augment=False, profile=False):
-        if augment:
+        if self.augment:
             img_size = x.shape[-2:]  # height, width
             s = [1, 0.83, 0.67]  # scales
             f = [None, 3, None]  # flips (2-ud, 3-lr)
@@ -611,7 +615,7 @@ class Model(nn.Module):
                 if isinstance(m, Detect) or isinstance(m, IDetect) or isinstance(m, IAuxDetect) or isinstance(m, IKeypoint):
                     break
 
-            if profile:
+            if self.profile:
                 c = isinstance(m, (Detect, IDetect, IAuxDetect, IBin))
                 o = thop.profile(m, inputs=(x.copy() if c else x,), verbose=False)[0] / 1E9 * 2 if thop else 0  # FLOPS
                 for _ in range(10):
@@ -626,7 +630,7 @@ class Model(nn.Module):
             
             y.append(x if m.i in self.save else None)  # save output
 
-        if profile:
+        if self.profile:
             print('%.1fms total' % sum(dt))
         return x
 

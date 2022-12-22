@@ -251,12 +251,20 @@ def attempt_load(weights, load_mode='eval', fuse=True, map_location=None):
         attempt_download(w)
         ckpt = torch.load(w, map_location=map_location)  # load
         temp_model = ckpt['ema' if ckpt.get('ema') else 'model']
-        temp_model.float()
+        temp_model.float()    
+        
+        temp_model.augment = False
+        temp_model.profile = False
+        temp_model.traced = False    
         if fuse:
             temp_model.fuse()
         if load_mode=='eval':
             temp_model.eval()
+        else:
+            temp_model.train()
         model.append(temp_model)
+
+    
     # Compatibility updates
     for m in model.modules():
         if type(m) in [nn.Hardswish, nn.LeakyReLU, nn.ReLU, nn.ReLU6, nn.SiLU]:

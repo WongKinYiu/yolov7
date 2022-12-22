@@ -48,6 +48,7 @@ def test(data,
         device = next(model.parameters()).device  # get model device
 
     else:  # called directly
+            
         set_logging()
         device = select_device(opt.device, batch_size=batch_size)
 
@@ -56,11 +57,94 @@ def test(data,
         (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
         # Load model
-        model = attempt_load(weights,load_mode='eval',fuse=True, map_location=device)  # load FP32 model
+        model = attempt_load(weights,load_mode='train',fuse=False, map_location=device)  # load FP32 model
+        import torch.nn as nn
+        class detectConfig(nn.Module):
+            def __init__(self,na,nc,nl,anchors,stride,anchor_grid, grid, no):
+                super(detectConfig, self).__init__()
+                self.na = na
+                self.nc = nc
+                self.nl = nl
+                self.anchors = anchors
+                self.stride = stride
+                self.anchor_grid = anchor_grid
+                self.grid = grid
+                self.no = no
+            @staticmethod
+            def _make_grid(nx=20, ny=20):
+                yv, xv = torch.meshgrid([torch.arange(ny), torch.arange(nx)])
+                return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
+            
+            def forward(self, x):
+                z = []
+                for i in range(self.nl):
+                    bs, _, ny, nx, _  = x[i].shape
+                    # print(x[i].shape)
+                    if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                        self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
+                    y = x[i].sigmoid()
+                    y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
+                    y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+
+                    z.append(y.view(bs, -1, self.no))      
+                
+                return (torch.cat(z,1), x)
+        # save configurations
+        stride = model.stride
+        names = model.names
+        idetect = model.model[-1]
+        dconfig = detectConfig(na=idetect.na, nc=idetect.nc, nl=idetect.nl, anchors=idetect.anchors, stride=idetect.stride,
+                                    anchor_grid=idetect.anchor_grid, grid=idetect.grid, no=idetect.no)
+        if opt.graphmodule:
+            import torch.nn as nn
+            class detectConfig(nn.Module):
+                def __init__(self,na,nc,nl,anchors,stride,anchor_grid, grid, no):
+                    super(detectConfig, self).__init__()
+                    self.na = na
+                    self.nc = nc
+                    self.nl = nl
+                    self.anchors = anchors
+                    self.stride = stride
+                    self.anchor_grid = anchor_grid
+                    self.grid = grid
+                    self.no = no
+                @staticmethod
+                def _make_grid(nx=20, ny=20):
+                    yv, xv = torch.meshgrid([torch.arange(ny), torch.arange(nx)])
+                    return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
+                
+                def forward(self, x):
+                    z = []
+                    for i in range(self.nl):
+                        bs, _, ny, nx, _  = x[i].shape
+                        # print(x[i].shape)
+                        if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                            self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
+                        y = x[i].sigmoid()
+                        y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
+                        y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+
+                        z.append(y.view(bs, -1, self.no))      
+                    
+                    return (torch.cat(z,1), x)
+            # save configurations
+            stride = model.stride
+            names = model.names
+            idetect = model.model[-1]
+            dconfig = detectConfig(na=idetect.na, nc=idetect.nc, nl=idetect.nl, anchors=idetect.anchors, stride=idetect.stride,
+                                        anchor_grid=idetect.anchor_grid, grid=idetect.grid, no=idetect.no)
+            # load graphmodule model
+            model = torch.load(opt.graphmodule, map_location=device)
+            # attach configurations
+            model.stride = stride
+            model.names = names
+            model.model = nn.Sequential(dconfig)
+            
         gs = max(int(model.stride.max()), 32)  # grid size (max stride)
         imgsz = check_img_size(imgsz, s=gs)  # check img_size
         if trace:
             model = TracedModel(model, device, imgsz)
+        
 
     # Half
     half = device.type != 'cpu' and half_precision  # half precision only supported on CUDA
@@ -68,7 +152,7 @@ def test(data,
         model.half()
 
     # Configure
-    model.eval()
+    # model.eval()
     if isinstance(data, str):
         is_coco = data.endswith('coco.yaml')
         with open(data) as f:
@@ -84,8 +168,8 @@ def test(data,
         log_imgs = min(wandb_logger.log_imgs, 100)
     # Dataloader
     if not training:
-        if device.type != 'cpu':
-            model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
+        # if device.type != 'cpu':
+            # model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
         task = opt.task if opt.task in ('train', 'val', 'test') else 'val'  # path to train/val/test images
         dataloader = create_dataloader(data[task], imgsz, batch_size, gs, opt, pad=0.5, rect=True,
                                        prefix=colorstr(f'{task}: '))[0]
@@ -111,7 +195,10 @@ def test(data,
         with torch.no_grad():
             # Run model
             t = time_synchronized()
-            out, train_out = model(img, augment=augment)  # inference and training outputs
+            if opt.graphmodule:
+                out, train_out = dconfig(model(img))  # inference and training outputs
+            else:
+                out, train_out = dconfig(model(img, augment=augment))  # inference and training outputs
             t0 += time_synchronized() - t
 
             # Compute loss
@@ -307,10 +394,12 @@ if __name__ == '__main__':
     parser.add_argument('--project', default='runs/test', help='save to project/name')
     parser.add_argument('--name', default='exp', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
-    parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
+    parser.add_argument('--no-trace', action='store_false', help='don`t trace model')
     parser.add_argument('--v5-metric', action='store_true', help='assume maximum recall as 1.0 in AP calculation')
     parser.add_argument('--cfg', type=str, default='/root/workspace/workspace_yolov7/yolov7/cfg/training/yolov7.yaml', help='model.yaml path')
     parser.add_argument('--hyp', type=str, default='/root/workspace/workspace_yolov7/yolov7/data/hyp.scratch.p5.yaml', help='hyperparameters path')
+    # parser.add_argument('--graphmodule', type=str, default='/root/workspace/workspace_yolov7/yolov7_training_graphmodule_1221_after_npmc.pt', help='hyperparameters path')
+    parser.add_argument('--graphmodule', type=str, default=None, help='hyperparameters path')
     opt = parser.parse_args()
     opt.save_json |= opt.data.endswith('coco.yaml')
     opt.data = check_file(opt.data)  # check file
