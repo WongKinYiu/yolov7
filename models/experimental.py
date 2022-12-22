@@ -244,7 +244,7 @@ class End2End(nn.Module):
 
 
 
-def attempt_load(weights, load_mode='eval', fuse=True, map_location=None):
+def attempt_load(weights, load_mode='eval',graphmodule=None, fuse=True, map_location=None):
     # Loads an ensemble of models weights=[a,b,c] or a single model weights=[a] or weights=a
     model = Ensemble()
     for w in weights if isinstance(weights, list) else [weights]:
@@ -273,8 +273,23 @@ def attempt_load(weights, load_mode='eval', fuse=True, map_location=None):
             m.recompute_scale_factor = None  # torch 1.11.0 compatibility
         elif type(m) is Conv:
             m._non_persistent_buffers_set = set()  # pytorch 1.6.0 compatibility
-    
-    if len(model) == 1:
+    if graphmodule is not None:
+        # save configurations
+        stride = temp_model.stride
+        names = temp_model.names
+        idetect = temp_model.model[-1]
+        dconfig = detectConfig(na=idetect.na, nc=idetect.nc, nl=idetect.nl, anchors=idetect.anchors, stride=idetect.stride,
+                                    anchor_grid=idetect.anchor_grid, grid=idetect.grid, no=idetect.no)
+        # load graphmodule model
+        gm_model = torch.load(graphmodule, map_location=map_location)
+        # attach configurations
+        gm_model.stride = stride
+        gm_model.names = names
+        gm_model.model = nn.Sequential(dconfig)
+        
+        return gm_model
+        
+    elif len(model) == 1:
         return model[-1]  # return model
     else:
         print('Ensemble created with %s\n' % weights)
@@ -283,3 +298,33 @@ def attempt_load(weights, load_mode='eval', fuse=True, map_location=None):
         return model  # return ensemble
 
 
+class detectConfig(nn.Module):
+                def __init__(self,na,nc,nl,anchors,stride,anchor_grid, grid, no):
+                    super(detectConfig, self).__init__()
+                    self.na = na
+                    self.nc = nc
+                    self.nl = nl
+                    self.anchors = anchors
+                    self.stride = stride
+                    self.anchor_grid = anchor_grid
+                    self.grid = grid
+                    self.no = no
+                @staticmethod
+                def _make_grid(nx=20, ny=20):
+                    yv, xv = torch.meshgrid([torch.arange(ny), torch.arange(nx)])
+                    return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
+                
+                def forward(self, x):
+                    z = []
+                    for i in range(self.nl):
+                        bs, _, ny, nx, _  = x[i].shape
+                        # print(x[i].shape)
+                        if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                            self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
+                        y = x[i].sigmoid()
+                        y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
+                        y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+
+                        z.append(y.view(bs, -1, self.no))      
+                    
+                    return (torch.cat(z,1), x)
