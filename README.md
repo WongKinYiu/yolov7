@@ -1,6 +1,8 @@
-# Official YOLOv7
+# ~~Official YOLOv7~~ MAVRC YOLOv7
 
 Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors](https://arxiv.org/abs/2207.02696)
+
+Specfically tuned for TGSSE 
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/yolov7-trainable-bag-of-freebies-sets-new/real-time-object-detection-on-coco)](https://paperswithcode.com/sota/real-time-object-detection-on-coco?p=yolov7-trainable-bag-of-freebies-sets-new)
 [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/akhaliq/yolov7)
@@ -12,6 +14,38 @@ Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-t
         <img src="./figure/performance.png" width="79%"/>
     </a>
 </div>
+
+## Downloading MAVRC Data from Google Drive
+
+Copy link and file name:
+<div align="center">
+    <a href="./">
+        <img src="./figure/google_drive_link.png" width="79%"/>
+    </a>
+</div>
+
+Paste into `scripts/get_from_gdrive.sh`
+``` shell
+# Settings
+url=https://drive.google.com/file/d/1BAVSo4oTvzmiBvPrUsCVfhdS4JSqWLeO/view?usp=share_link
+FILENAME=small_set.zip 
+``` 
+
+Run 
+
+``` shell
+bash scripts/get_from_gdrive.sh
+```
+
+## 
+
+## Testing
+
+[`yolov7.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7.pt) [`yolov7x.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7x.pt) [`yolov7-w6.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-w6.pt) [`yolov7-e6.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-e6.pt) [`yolov7-d6.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-d6.pt) [`yolov7-e6e.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-e6e.pt)
+
+``` shell
+python test.py --data data/coco.yaml --img 640 --batch 32 --conf 0.001 --iou 0.65 --device 0 --weights yolov7.pt --name yolov7_640_val
+```
 
 ## Web Demo
 
