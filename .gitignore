@@ -55,6 +55,8 @@ val2017.zip
 # Neural Network weights -----------------------------------------------------------------------------------------------
 *.weights
 *.pt
+!weights/best.pt
+!weights/yolov7-tiny.pt
 *.pb
 *.onnx
 *.engine
