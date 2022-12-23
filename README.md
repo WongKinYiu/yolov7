@@ -2,7 +2,7 @@
 
 Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors](https://arxiv.org/abs/2207.02696)
 
-Specfically tuned for TGSSE 
+Specifically tuned for TGSSE 
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/yolov7-trainable-bag-of-freebies-sets-new/real-time-object-detection-on-coco)](https://paperswithcode.com/sota/real-time-object-detection-on-coco?p=yolov7-trainable-bag-of-freebies-sets-new)
 [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/akhaliq/yolov7)
@@ -37,7 +37,9 @@ Run
 bash scripts/get_from_gdrive.sh
 ```
 
-## 
+## Other Scripts
+
+Read through the scripts folder to see how to train and test using MAVRC data and weights.
 
 ## Testing
 
