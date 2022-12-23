@@ -277,8 +277,14 @@ Yolov7-semantic & YOLOv7-panoptic & YOLOv7-caption
 * [https://github.com/TexasInstruments/edgeai-yolov5/tree/yolo-pose](https://github.com/TexasInstruments/edgeai-yolov5/tree/yolo-pose)
 
 </details>
+
 ### Testing
 
 ```
 python test.py --data data/coco.yaml --img 640 --batch 1 --conf 0.001 --iou 0.65 --device 7 --weights yolov7_training.pt --name yolov7_640_val --graphmodule /root/workspace/workspace_yolov7/yolov7_training_graphmodule_1221_after_npmc.pt
+```
+
+### Training
+```
+python -m torch.distributed.launch --nproc_per_node 4 --master_port 9999 train.py --workers 8 --device 4,5,6,7 --sync-bn --batch-size 4 --data data/coco.yaml --img 640 640 --cfg cfg/training/yolov7.yaml --weights yolov7_training.pt --name yolov7_nptk_fixed --hyp data/hyp.scratch.p5.yaml --epochs 50 --graphmodule /root/workspace/for_nota_codes/yolov7/coco_pretrained-yolo-graphmodule_after_npmc.pt
 ```
