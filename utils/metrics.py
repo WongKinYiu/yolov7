@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from . import general
-
 
 def fitness(x):
     # Model fitness as a weighted combination of metrics
@@ -109,7 +107,7 @@ def compute_ap(recall, precision, v5_metric=False):
 
     return ap, mpre, mrec
 
-
+from . import general
 class ConfusionMatrix:
     # Updated version of https://github.com/kaanakan/object_detection_confusion_matrix
     def __init__(self, nc, conf=0.25, iou_thres=0.45):
