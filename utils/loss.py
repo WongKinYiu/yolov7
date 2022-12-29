@@ -682,7 +682,7 @@ class ComputeLossOTA:
                 all_gj.append(gj)
                 all_gi.append(gi)
                 all_anch.append(anch[i][idx])
-                from_which_layer.append((torch.ones(size=(len(b),)) * i).to(device)
+                from_which_layer.append((torch.ones(size=(len(b),)) * i).to(device))
                 
                 fg_pred = pi[b, a, gj, gi]                
                 p_obj.append(fg_pred[:, 4:5])
