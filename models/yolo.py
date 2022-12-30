@@ -220,6 +220,35 @@ class Segment(Detect):
         return (x, p) if self.training else (x[0], p) if self.export else (x[0], p, x[1])
 
 
+class V6Segment(V6Detect):
+    # yulin010101
+    def __init__(self, nc=80, anchors=(), nm=32, npr=256, ch=(), inplace=True):
+        super().__init__(nc, ch, inplace)
+        self.nm = nm  # number of masks
+        self.npr = npr  # number of protos
+        self.no = self.reg_max * 4 + nc + self.nm  # number of outputs per anchor
+        self.proto = Proto(ch[0], self.npr, self.nm)  # protos
+
+        c3 = max(ch[0], self.no - 4)
+        self.cv4 = nn.ModuleList(
+                nn.Sequential(Conv(x, c3, 3), Conv(c3, c3, 3), nn.Conv2d(c3, self.nm, 1)) for x in ch)
+
+    def forward(self, x):
+        p = self.proto(x[0])
+        shape = x[0].shape  # BCHW
+        for i in range(self.nl):
+            x[i] = torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i]), self.cv4[i](x[i])), 1)
+        box, cls, seg = torch.cat([xi.view(shape[0], self.no, -1) for xi in x], 2).split((self.reg_max * 4, self.nc, self.nm), 1)
+        if self.dynamic or self.shape != shape:
+            self.anchors, self.strides = (x.transpose(0, 1) for x in make_anchors(x, self.stride, 0.5))
+            self.shape = shape
+
+        dbox = dist2bbox(self.dfl(box), self.anchors.unsqueeze(0), xywh=True, dim=1) * self.strides
+        y = torch.cat((dbox, cls.sigmoid()), 1)
+
+        return ((x, box, cls, seg), p) if self.training else (y, p) if self.export else (y, ((x, box, cls, seg), p))
+
+
 class BaseModel(nn.Module):
     # YOLOv5 base model
     def forward(self, x, profile=False, visualize=False):
