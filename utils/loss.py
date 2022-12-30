@@ -739,7 +739,7 @@ class ComputeLossOTA:
                 + 3.0 * pair_wise_iou_loss
             )
 
-            matching_matrix = torch.zeros_like(cost, device="cpu")
+            matching_matrix = torch.zeros_like(cost, device=device)
 
             for gt_idx in range(num_gt):
                 _, pos_idx = torch.topk(
