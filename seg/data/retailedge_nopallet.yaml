@@ -8,7 +8,7 @@
 
 
 # Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
-path: /media/cat/oadams/JSON2YOLO/new_dir/ # dataset root dir
+path: /media/cat/lbeatty/JSON2YOLO/new_dir/ # dataset root dir
 train: trainval.txt  # train images (relative to 'path') 118287 images
 val: trainval.txt  # val images (relative to 'path') 5000 images
 test: trainval.txt  # 20288 of 40670 images, submit to https://competitions.codalab.org/competitions/20794
