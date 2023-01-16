@@ -1,7 +1,7 @@
 # YOLOv7
 
 # Parameters
-nc: 4 # number of classes
+nc: 5 # number of classes
 depth_multiple: 1.0  # model depth multiple
 width_multiple: 1.0  # layer channel multiple
 anchors:
