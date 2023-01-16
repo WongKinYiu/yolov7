@@ -131,10 +131,17 @@ def detect(save_img=False):
 
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
-                    c = int(cls)  # integer class
-                    label = f'{names[c]} {conf:.2f}'
-                    plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=2)
-                    plot_one_box(xyxy, depth_colormap, label=label, color=colors[int(cls)], line_thickness=2)             
+                    if names[int(cls)] == "person":
+                        x_top = float(xyxy[0])
+                        y_top = float(xyxy[1])
+                        width = float(xyxy[2] - xyxy[0])
+                        height = float(xyxy[3] - xyxy[1])
+                        print("x_top: ", x_top, "y_top: ",y_top, "width: ", width, "height: ", height)
+
+                        c = int(cls)  # integer class
+                        label = f'{names[c]} {conf:.2f}'
+                        plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=2)
+                        plot_one_box(xyxy, depth_colormap, label=label, color=colors[int(cls)], line_thickness=2)             
 
             # Print time (inference + NMS)
             #print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
