@@ -292,7 +292,6 @@ class GhostSPPCSPC(SPPCSPC):
         self.cv6 = GhostConv(c_, c_, 3, 1)
         self.cv7 = GhostConv(2 * c_, c2, 1, 1)
 
-
         
 class SPPFCSPC(nn.Module):
     # CSP https://github.com/WongKinYiu/CrossStagePartialNetworks
