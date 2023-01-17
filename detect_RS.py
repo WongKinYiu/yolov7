@@ -132,16 +132,43 @@ def detect(save_img=False):
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
                     if names[int(cls)] == "person":
-                        x_top = float(xyxy[0])
-                        y_top = float(xyxy[1])
-                        width = float(xyxy[2] - xyxy[0])
-                        height = float(xyxy[3] - xyxy[1])
-                        print("x_top: ", x_top, "y_top: ",y_top, "width: ", width, "height: ", height)
+                        # https://albumentations.ai/docs/getting_started/bounding_boxes_augmentation/
+                        # Yolo coordinates array - normalized [×_center, _center, width, height]
+                        # In yolo, a bounding box is represented by four values [x_center, y_center, width, height].
+                        # x_center and y_center are the normalized coordinates of the center of the bounding box.
+                        # To make coordinates normalized, we take pixel values of x and y, which marks the center
+                        # of the bounding box on the x- and y-axis. Then we divide the value of x by the width of
+                        # the image and value of y by the height of the image. width and height represent the width
+                        # and the height of the bounding box. They are normalized as well.
+                        #
+                        #                  (0,0)                         (640,0)
+                        #                        -----------------------Y
+                        #                       |                       |
+                        #                       |                       |   ^
+                        #                       |                       |   |
+                        #                       |                       |   (y)
+                        #                       |                       |   |
+                        #                       |                       |   ∀
+                        #                       |                       |
+                        #                        -----------------------
+                        #                (0,480)                         (640,480)
+                        #                              <---(x)--->
+
+                        x = float(xyxy[0])
+                        y = float(xyxy[1])
+                        w = float(xyxy[2])
+                        h = float(xyxy[3])
+
+                        hit_x = float( (xyxy[0] + w)/2 )
+                        hit_y = float( (xyxy[1] + h)/2 )
 
                         c = int(cls)  # integer class
-                        label = f'{names[c]} {conf:.2f}'
+                        label = f'({x},{y}) - {names[c]}'
+
+                        cv2.circle(im0, (int(hit_x), int(hit_y)), int(15), (0,255,0), 5)
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=2)
-                        plot_one_box(xyxy, depth_colormap, label=label, color=colors[int(cls)], line_thickness=2)             
+                        plot_one_box(xyxy, depth_colormap, label=label, color=colors[int(cls)], line_thickness=2)
+
 
             # Print time (inference + NMS)
             #print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
