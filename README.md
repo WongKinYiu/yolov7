@@ -226,7 +226,7 @@ YOLOv7 with decoupled TAL head (YOLOR + YOLOv5 + YOLOv6)
 
 | Model | Test Size | AP<sup>val</sup> | AP<sub>50</sub><sup>val</sup> | AP<sub>75</sub><sup>val</sup> |
 | :-- | :-: | :-: | :-: | :-: |
-| [**YOLOv7-u6**](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-u6.pt) | 640 | **52.3%** | **69.5%** | **57.1%** |
+| **YOLOv7-u6** | 640 | **52.6%** | **69.7%** | **57.3%** |
 
 
 ## Citation

@@ -642,7 +642,7 @@ class ComputeLossOTA:
         #indices, anch = self.find_4_positive(p, targets)
         #indices, anch = self.find_5_positive(p, targets)
         #indices, anch = self.find_9_positive(p, targets)
-
+        device = torch.device(targets.device)
         matching_bs = [[] for pp in p]
         matching_as = [[] for pp in p]
         matching_gjs = [[] for pp in p]
@@ -739,7 +739,7 @@ class ComputeLossOTA:
                 + 3.0 * pair_wise_iou_loss
             )
 
-            matching_matrix = torch.zeros_like(cost)
+            matching_matrix = torch.zeros_like(cost, device=device)
 
             for gt_idx in range(num_gt):
                 _, pos_idx = torch.topk(
