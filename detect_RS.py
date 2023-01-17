@@ -153,6 +153,9 @@ def detect(save_img=False):
                         #                        -----------------------
                         #                (0,480)                         (640,480)
                         #                              <---(x)--->
+                        #
+                        # These coordinates are seemingly NOT stored in the above mentioned format, rather in
+                        # [x_topleft, y_topleft, width, height] format. These are COCO style detection coordinates
 
                         x = float(xyxy[0])
                         y = float(xyxy[1])
