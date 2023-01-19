@@ -17,6 +17,18 @@ from utils.torch_utils import select_device, load_classifier, time_synchronized,
 import pyrealsense2 as rs
 import numpy as np
 
+from dynio import *
+
+dxl_io = dxl.DynamixelIO('/dev/ttyUSB0', baud_rate=57600)
+mx_28_y = dxl_io.new_mx28(1, 1)  # MX-64 protocol 1 with ID 2
+mx_28_x = dxl_io.new_mx28(2, 1)  # MX-64 protocol 1 with ID 2
+
+mx_28_y.torque_enable()
+mx_28_x.torque_enable()
+
+mx_28_y.set_position(2021)
+mx_28_x.set_position(2863)
+
 def detect(save_img=False):
     source, weights, view_img, save_txt, imgsz, trace = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, not opt.no_trace
 
@@ -67,6 +79,8 @@ def detect(save_img=False):
     align = rs.align(align_to)
 
     while(True):
+        nohuman = 0
+
         #t0 = time.time()
         frames = pipeline.wait_for_frames()
 
@@ -172,6 +186,27 @@ def detect(save_img=False):
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=2)
                         plot_one_box(xyxy, depth_colormap, label=label, color=colors[int(cls)], line_thickness=2)
 
+                        print("I see you! At coords:")
+                        print("X: " + str(hit_x))
+                        print("Y: " + str(hit_y))
+
+                        positiony = mx_28_y.get_position()
+                        positionx = mx_28_x.get_position()
+                        angley = mx_28_y.get_angle()
+                        anglex = mx_28_x.get_angle()
+
+                        print("Y pos: " + str(positiony))
+                        print("X pos: " + str(positionx))
+                        print("Angle y: " + str(angley))
+                        print("Angle x: " + str(anglex))
+
+                    else:
+                        nohuman=nohuman+1
+                       print("no human")
+                        if nohuman >= 150:
+                            mx_28_y.set_position(2021)
+                            mx_28_x.set_position(2863)
+                            nohuman=0
 
             # Print time (inference + NMS)
             #print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
