@@ -1,5 +1,5 @@
 import math
-from importlib import resources
+from importlib_resources import files
 from pathlib import Path
 
 import cv2
@@ -17,8 +17,8 @@ out_fp = output_dir / f'{vid_path.stem}_inference.avi'
 display_video = False
 
 yolov7 = YOLOv7(
-    weights=resources.files('yolov7').joinpath('weights/yolov7_state.pt'),
-    cfg=resources.files('yolov7').joinpath('cfg/deploy/yolov7.yaml'),
+    weights=files('yolov7').joinpath('weights/yolov7_state.pt'),
+    cfg=files('yolov7').joinpath('cfg/deploy/yolov7.yaml'),
     bgr=True,
     gpu_device=0,
     model_image_size=640,

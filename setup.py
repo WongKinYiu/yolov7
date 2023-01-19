@@ -1,10 +1,6 @@
-from setuptools import setup, find_packages
+#!/usr/bin/env python
 
-setup(name='yolov7',
-      version='1.0',
-      python_requires='>3.9.0',
-      packages=find_packages(),
-      include_package_data = True,
-      package_data={
-        'yolov7': ['cfg/*/*.yaml', 'data/*.yaml', 'weights/*.pt'],
-      })
+import setuptools
+
+if __name__ == "__main__":
+  setuptools.setup()

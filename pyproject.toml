@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yolov7"
+version = "1.0"
+
+[tool.setuptools.packages]
+find = {}
+
+[tool.setuptools.package-data]
+yolov7 = ['cfg/*/*.yaml', 'data/*.yaml', 'weights/*.pt']

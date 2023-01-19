@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import torch
-from importlib import resources
+from importlib_resources import files
 
 from yolov7.models.experimental import attempt_load_state_dict
 from yolov7.models.yolo import Model
@@ -19,8 +19,8 @@ class YOLOv7:
         'max_batch_size': 4,
         'half': True,
         'same_size': True,
-        'weights': resources.files('yolov7').joinpath('weights/yolov7_state.pt'),
-        'cfg': resources.files('yolov7').joinpath('cfg/deploy/yolov7.yaml'),
+        'weights': files('yolov7').joinpath('weights/yolov7_state.pt'),
+        'cfg': files('yolov7').joinpath('cfg/deploy/yolov7.yaml'),
         'trace': True,
         'cudnn_benchmark': False,
     }

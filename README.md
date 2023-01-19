@@ -7,7 +7,6 @@ Last "merge" date: 7th Sept 2022
 ## Changes from original repo
 
 - YOLOv7 can be used as a package, with minimal requirements for inference only
-- **Only Python >= 3.9 is supported**
 
 ## Using YOLOv7 as a package for inference
 
@@ -18,13 +17,13 @@ cd yolov7/weights
 ./get_weights.sh yolov7 yolov7-e6
 ```
 - make sure the requirements for YOLOv7 are installed
-- in the main project folder, install YOLOv7 as a package (`--no-binary` is used to skip building of the wheel as the model weights are huge, takes a long time to build)
+- in the main project folder, install YOLOv7 as a package (takes some time to build)
 ```
-pip3 install /path/to/yolov7 --no-binary=:all:
+python3 -m pip install --no-cache-dir /path/to/yolov7
 ```
-OR as an editable package (if you need to make changes to the code)
+OR as an editable package (if you need to make changes to the code, faster to build)
 ```
-pip3 install -e /path/to/yolov7
+python3 -m pip install -e /path/to/yolov7
 ```
 - import the YOLOv7 wrapper class for inference (refer to `scripts/inference.py` for example usage)
 ```
