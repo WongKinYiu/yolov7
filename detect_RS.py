@@ -29,6 +29,13 @@ mx_28_x.torque_enable()
 mx_28_y.set_position(2021)
 mx_28_x.set_position(2863)
 
+def fire():
+    print("start firing")
+    GPIO.output(21, GPIO.HIGH)
+    sleep(.3)
+    GPIO.output(21, GPIO.LOW)
+    print("stop firing")
+
 def detect(save_img=False):
     source, weights, view_img, save_txt, imgsz, trace = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, not opt.no_trace
 
@@ -78,8 +85,8 @@ def detect(save_img=False):
     align_to = rs.stream.color
     align = rs.align(align_to)
 
+    nohuman = 0
     while(True):
-        nohuman = 0
 
         #t0 = time.time()
         frames = pipeline.wait_for_frames()
@@ -195,15 +202,38 @@ def detect(save_img=False):
                         angley = mx_28_y.get_angle()
                         anglex = mx_28_x.get_angle()
 
-                        print("Y pos: " + str(positiony))
-                        print("X pos: " + str(positionx))
-                        print("Angle y: " + str(angley))
-                        print("Angle x: " + str(anglex))
+#                        print("Y pos: " + str(positiony))
+#                        print("X pos: " + str(positionx))
+#                        print("Angle y: " + str(angley))
+#                        print("Angle x: " + str(anglex))
+
+                        if hit_x >= 480:
+                             mx_28_x.set_angle(anglex-10)
+                             print("Clockwise")
+
+                        elif hit_x <= 160:
+                             mx_28_x.set_angle(anglex+10)
+                             print("Counter clockwise")
+
+                        elif hit_y > 240:
+                             mx_28_y.set_angle(angley-10)
+                             print("Down")
+
+                        elif hit_y < 120:
+                             mx_28_y.set_angle(angley+10)
+                             print("Up")
+                        else:
+                             print("Locked")
+                             thread = Thread(target=fire)
+                             thread.start()
+                             thread.join()
+
 
                     else:
                         nohuman=nohuman+1
-                       print("no human")
-                        if nohuman >= 150:
+                        print("no human count: " + str(nohuman))
+                        print("saw a: " + names[int(cls)])
+                        if nohuman >= 25:
                             mx_28_y.set_position(2021)
                             mx_28_x.set_position(2863)
                             nohuman=0
