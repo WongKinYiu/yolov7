@@ -100,7 +100,9 @@ def detect(save_img=False):
         img = np.asanyarray(color_frame.get_data())
         depth_image = np.asanyarray(depth_frame.get_data())
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.08), cv2.COLORMAP_JET)
-        
+        depth = frames.get_depth_frame()
+        if not depth: continue
+            
         # Letterbox
         im0 = img.copy()
         img = img[np.newaxis, :, :, :]        
@@ -193,19 +195,25 @@ def detect(save_img=False):
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=2)
                         plot_one_box(xyxy, depth_colormap, label=label, color=colors[int(cls)], line_thickness=2)
 
+                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                        d1, d2 = int((int(xyxy[0])+int(xyxy[2]))/2), int((int(xyxy[1])+int(xyxy[3]))/2)
+                        target_depth = depth.get_distance(int(d1),int(d2))
+
                         print("I see you! At coords:")
                         print("X: " + str(hit_x))
                         print("Y: " + str(hit_y))
+                        print("Depth: " + str(round((target_depth* 39.3701 ),2))+"in "+str(round((target_depth* 100 ),2))+" cm")
 
                         positiony = mx_28_y.get_position()
                         positionx = mx_28_x.get_position()
                         angley = mx_28_y.get_angle()
                         anglex = mx_28_x.get_angle()
 
-#                        print("Y pos: " + str(positiony))
-#                        print("X pos: " + str(positionx))
-#                        print("Angle y: " + str(angley))
-#                        print("Angle x: " + str(anglex))
+#                        print("Servo position info:")                        
+#                        print("Servo X: " + str(positionx))
+#                        print("Servo Y: " + str(positiony))
+#                        print("Servo Angle x: " + str(anglex))
+#                        print("Servo Angle y: " + str(angley))
 
                         if hit_x >= 480:
                              mx_28_x.set_angle(anglex-10)
