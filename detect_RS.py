@@ -191,18 +191,24 @@ def detect(save_img=False):
                         c = int(cls)  # integer class
                         label = f'({x},{y}) - {names[c]}'
 
+                        # Draw green circle around center pixel.
                         cv2.circle(im0, (int(hit_x), int(hit_y)), int(15), (0,255,0), 5)
+                        
+                        # Draw bounding box around target on regular camera view, label as class such as "person".
                         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=2)
-                        plot_one_box(xyxy, depth_colormap, label=label, color=colors[int(cls)], line_thickness=2)
-
+                        
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                         d1, d2 = int((int(xyxy[0])+int(xyxy[2]))/2), int((int(xyxy[1])+int(xyxy[3]))/2)
                         target_depth = depth.get_distance(int(d1),int(d2))
 
+                        # Draw bounding box around target on depth camera view, label with depth of class in question.
+                        depthlabel = str(round((target_depth* 39.3701 ),2))+"in "+str(round((target_depth* 100 ),2))+" cm"
+                        plot_one_box(xyxy, depth_colormap, label=label, color=colors[int(cls)], line_thickness=2)
+
                         print("I see you! At coords:")
                         print("X: " + str(hit_x))
                         print("Y: " + str(hit_y))
-                        print("Depth: " + str(round((target_depth* 39.3701 ),2))+"in "+str(round((target_depth* 100 ),2))+" cm")
+                        print("Depth: " + depthlabel)
 
                         positiony = mx_28_y.get_position()
                         positionx = mx_28_x.get_position()
@@ -250,8 +256,14 @@ def detect(save_img=False):
             #print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
 
             # Stream results
+            cv2.namedWindow("Recognition result", cv2.WINDOW_KEEPRATIO)
+            cv2.resizeWindow("Recognition result", 640,480)
             cv2.imshow("Recognition result", im0)
+            cv2.namedWindow("Recognition result depth", cv2.WINDOW_KEEPRATIO)
+            cv2.resizeWindow("Recognition result depth", 640,480)
             cv2.imshow("Recognition result depth",depth_colormap)
+            cv2.moveWindow("Recognition result depth", 0, 480)
+            
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
