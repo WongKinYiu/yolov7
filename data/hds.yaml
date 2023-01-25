@@ -1,0 +1,9 @@
+path: ../../../data/Koutsoubn8/ijcnn_v7data/high_density_100k # dataset root dir
+train: ../../../data/Koutsoubn8/ijcnn_v7data/high_density_100k/train/images  # train images (relative to 'path') 128 images
+val: ../../../data/Koutsoubn8/ijcnn_v7data/high_density_100k/val/images  # val images (relative to 'path') 128 images
+test: ../../../data/Koutsoubn8/ijcnn_v7data/Real_world_test/images
+
+
+# Classes
+nc: 2  # Num Clases
+names: ['AIRPLANE', 'DRONE'] # Class Names
