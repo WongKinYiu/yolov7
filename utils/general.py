@@ -341,10 +341,88 @@ def clip_coords(boxes, img_shape):
     boxes[:, 3].clamp_(0, img_shape[0])  # y2
 
 
-def bbox_iou(box1, box2, x1y1x2y2=True, GIoU=False, DIoU=False, CIoU=False, eps=1e-7):
+def get_mu_cov_wh(box):
+    # calculate mean and covariance of bounding box
+
+    x,y,w,h=box[0],box[1],box[2],box[3]
+    mus=[]
+    covs=[]
+    eps=1.0e-4
+    for i, boxes in enumerate(box.T):
+        mu = torch.stack((x,y))
+        mu=mu[:,i]
+        mu=mu.reshape(2,1)
+        cov_w =(w**2)/4
+        cov_h  =  h**2/4
+        cov=torch.stack((cov_w,cov_h))
+        cov=cov[:,i]
+        cov=torch.diag(cov)
+        cov[0,0] = cov[0,0]+eps
+        cov[1,1] = cov[1,1]+eps
+        mus.append(mu)
+        covs.append(cov)
+    mus=torch.stack(mus)
+    covs=torch.stack(covs) 
+      
+
+    return mus, covs
+    
+
+def calculate_nwd(anchor, ground_truth):
+    # Value recommened in paper
+    C = 12.7
+   
+    # obtain mean and covariances
+    anchor_mu, anchor_cov = get_mu_cov_wh(anchor)
+    ground_truth_mu, ground_truth_cov = get_mu_cov_wh(ground_truth)
+    # if anchor_mu.isnan().any():
+    #     print("anchor mu is nan",anchor_mu)
+    # if anchor_cov.isnan().any():
+    #     print("anchor cov is nan",anchor_cov)
+    # if ground_truth_mu.isnan().any():
+    #     print("groundtruthmu is nan",ground_truth_mu)
+    # if ground_truth_cov.isnan().any():
+    #     print("groundtruthcov is nan",ground_truth_cov)
+
+
+
+    #calcualte the difference between the means
+    mu_diff = torch.linalg.norm(torch.subtract(anchor_mu, ground_truth_mu), ord=2, dim=1,keepdim=False)
+    # if mu_diff.isnan().any():
+        # print("mu diff is nan",mu_diff)
+    #calculate the difference between the covariances
+    cov_diff = torch.linalg.norm(torch.subtract(anchor_cov**(1/2), ground_truth_cov**(1/2)), ord ='fro', dim=(2,1),keepdim=False)
+    # if cov_diff.isnan().any():
+        # print("cov diff is nan",cov_diff)
+
+    # print("================variables======================================================")
+    # print("=========================================================")
+    # print("anchor_mu",  anchor_mu.max())
+    # print("=========================================================")
+    # print("anchor_cov",  anchor_cov.max())
+    # print("=========================================================")
+    # print("ground_truth_mu", ground_truth_mu.max())
+    # print("=========================================================")
+    # print("ground_truth_cov", ground_truth_cov.max())
+    # print("=========================================================")
+    # print("mu_diff",   mu_diff.max())
+    # print("=========================================================")
+    # print("cov_diff",   cov_diff.max())
+    # print("=========================================================")
+    # print("NWD", torch.exp(-torch.sqrt(mu_diff.T + cov_diff)/C))
+    # print("==========================================================")
+
+    return torch.exp(-torch.sqrt(mu_diff.T + cov_diff)/C)
+
+def bbox_iou(box1, box2, x1y1x2y2=True, GIoU=False, DIoU=False, CIoU=False,NWD = False, eps=1e-7):
     # Returns the IoU of box1 to box2. box1 is 4, box2 is nx4
     box2 = box2.T
-
+    # print(box1.shape)
+    # print(box1)
+    # print("====================================")
+    # print(box2.shape)
+    # print(box2)
+    
     # Get the coordinates of bounding boxes
     if x1y1x2y2:  # x1, y1, x2, y2 = box1
         b1_x1, b1_y1, b1_x2, b1_y2 = box1[0], box1[1], box1[2], box1[3]
@@ -354,7 +432,7 @@ def bbox_iou(box1, box2, x1y1x2y2=True, GIoU=False, DIoU=False, CIoU=False, eps=
         b1_y1, b1_y2 = box1[1] - box1[3] / 2, box1[1] + box1[3] / 2
         b2_x1, b2_x2 = box2[0] - box2[2] / 2, box2[0] + box2[2] / 2
         b2_y1, b2_y2 = box2[1] - box2[3] / 2, box2[1] + box2[3] / 2
-
+ 
     # Intersection area
     inter = (torch.min(b1_x2, b2_x2) - torch.max(b1_x1, b2_x1)).clamp(0) * \
             (torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)).clamp(0)
@@ -365,7 +443,7 @@ def bbox_iou(box1, box2, x1y1x2y2=True, GIoU=False, DIoU=False, CIoU=False, eps=
     union = w1 * h1 + w2 * h2 - inter + eps
 
     iou = inter / union
-
+  
     if GIoU or DIoU or CIoU:
         cw = torch.max(b1_x2, b2_x2) - torch.min(b1_x1, b2_x1)  # convex (smallest enclosing box) width
         ch = torch.max(b1_y2, b2_y2) - torch.min(b1_y1, b2_y1)  # convex height
@@ -379,12 +457,17 @@ def bbox_iou(box1, box2, x1y1x2y2=True, GIoU=False, DIoU=False, CIoU=False, eps=
                 v = (4 / math.pi ** 2) * torch.pow(torch.atan(w2 / (h2 + eps)) - torch.atan(w1 / (h1 + eps)), 2)
                 with torch.no_grad():
                     alpha = v / (v - iou + (1 + eps))
-                return iou - (rho2 / c2 + v * alpha)  # CIoU
+                return iou - (rho2 / c2 + v * alpha)# CIoU
+                  
         else:  # GIoU https://arxiv.org/pdf/1902.09630.pdf
             c_area = cw * ch + eps  # convex area
             return iou - (c_area - union) / c_area  # GIoU
+    elif NWD:
+       return calculate_nwd(box1,box2)
+
     else:
         return iou  # IoU
+
 
 
 
