@@ -659,7 +659,7 @@ class ComputeLossOTA:
             if this_target.shape[0] == 0:
                 continue
                 
-            txywh = this_target[:, 2:6] * imgs[batch_idx].shape[1]
+            txywh = this_target[:, 2:6] * imgs[batch_idx].shape[1] #change index to -4:
             txyxy = xywh2xyxy(txywh)
 
             pxyxys = []
@@ -722,6 +722,10 @@ class ComputeLossOTA:
                 .repeat(1, pxyxys.shape[0], 1)
             )
 
+            # gt_layout_cls_perimage = [ F.one_hot(this_target[:, 1].to(torch.int64), 2).float()...
+            # gt_orientation_cls_perimage = [ F.one_hot(this_target[:, 2].to(torch.int64), 2).float()...
+            # gt_mark_cls_perimage = [ this_target[:, 3:-4]...
+
             num_gt = this_target.shape[0]
             cls_preds_ = (
                 p_cls.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
@@ -729,14 +733,22 @@ class ComputeLossOTA:
             )
 
             y = cls_preds_.sqrt_()
+
             pair_wise_cls_loss = F.binary_cross_entropy_with_logits(
                torch.log(y/(1-y)) , gt_cls_per_image, reduction="none"
             ).sum(-1)
+
+            # layout_cls_loss = F.binary_cross_entropy_with_logits(
+            #   torch.log(y[:, 1]/(1-y[:, 1])) , gt_layout_cls_per_imamge, reduction="none"
+            #).sum(-1)
+
+            # orientation_cls_loss =
+            # mark_cls_loss = 
             del cls_preds_
         
             cost = (
-                pair_wise_cls_loss
-                + 3.0 * pair_wise_iou_loss
+                pair_wise_cls_loss #layout_cls_loss*beta3 + orientaion_cls_loss*beta2 +mark_cls_loss * beta1
+                 + 3.0 * pair_wise_iou_loss
             )
 
             matching_matrix = torch.zeros_like(cost)
