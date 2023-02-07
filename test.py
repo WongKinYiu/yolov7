@@ -186,7 +186,7 @@ def test(data,
                     kpts = full_kpts[5+5*3:5+7*3]
                     conf_l = kpts[2]
                     conf_r = kpts[5]
-                    print(kpts)
+
                     if conf_l > conf_thres and conf_r > conf_thres:
                         # левое плечо правее правого
                         if kpts[0] > kpts[3]:
