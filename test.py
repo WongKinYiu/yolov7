@@ -183,9 +183,10 @@ def test(data,
                     xyxy = p[:4]
                     full_kpts = p[6:]
                     # detect class from position of the skeleton
-                    kpts = p[5+5*3:5+7*3]
+                    kpts = full_kpts[5+5*3:5+7*3]
                     conf_l = kpts[2]
                     conf_r = kpts[5]
+                    print(kpts)
                     if conf_l > conf_thres and conf_r > conf_thres:
                         # левое плечо правее правого
                         if kpts[0] > kpts[3]:
