@@ -177,13 +177,10 @@ def run(
                 for (*xyxy, conf, cls), mask in zip(reversed(det[:, :6]),
                                                     reversed(masks)):
                     xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                    line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
                     if save_txt:  # Write to file
-                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                        line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
-                        labels.append(line)
+                        save_line = (cls, *xywh, conf) if save_conf else (cls, *xywh)
                         with open(f'{txt_path}.txt', 'a') as f:
-                            f.write(('%g ' * len(line)).rstrip() % line + '\n')
+                            f.write(('%g ' * len(save_line)).rstrip() % line + '\n')
 
                     if save_img or save_crop or view_img:  # Add bbox to image
                         c = int(cls)  # integer class
@@ -192,6 +189,8 @@ def run(
 
                     # Generate the crop images
                     scaled_mask = scale_masks(im.shape[2:], mask.cpu().numpy(), im0.shape)
+                    line = (cls.item(), *xywh, mask == 1, conf.item()) if save_conf else (cls, *xywh, mask == 1)  # label format
+                    labels.append(line)
                     crop_mask, _ = save_one_box(xyxy, scaled_mask, save=False, BGR=False)
                     crop_img, _ = save_one_box(xyxy, im0, BGR=True, save=False)
                     # Set the background to white based on the mask.
@@ -200,7 +199,7 @@ def run(
                     masked_white_bg = masked + white_background
                     masked_image = masked_white_bg.astype(np.uint8)
                     crop_image = masked_image
-                    
+
                     #masked_image = (im0*scaled_mask + white_background).astype(np.uint8)
                     if save_crop:
                         file = save_dir / 'crops' / names[c] / f'{p.stem}.jpg'
@@ -258,7 +257,6 @@ def run(
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
 
-    labels = [tuple(float(val) for val in lst) for lst in labels]
     return crop_images, labels, crop_images_paths
 
 
