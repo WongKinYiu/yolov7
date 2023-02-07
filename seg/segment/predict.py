@@ -198,7 +198,7 @@ def run(
                     masked_white_bg = masked + white_background
                     masked_image = masked_white_bg.astype(np.uint8)
                     crop_image = masked_image
-                    crop_image = cv2.cvtColor(crop_image, cv2.COLOR_BGR2RGB) # convert image proper RGB color
+                    
                     #masked_image = (im0*scaled_mask + white_background).astype(np.uint8)
                     if save_crop:
                         file = save_dir / 'crops' / names[c] / f'{p.stem}.jpg'
@@ -210,6 +210,8 @@ def run(
                             crop_label_path = file.with_suffix('.txt')
                             with open(crop_label_path, 'w') as f:
                                 f.write(('%g ' * len(line)).rstrip() % line + '\n')
+
+                    crop_image = cv2.cvtColor(crop_image, cv2.COLOR_BGR2RGB) # convert image proper RGB color
                     crop_images.append(crop_image)
 
 
@@ -254,6 +256,7 @@ def run(
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
 
+    labels = [tuple(float(val) for val in lst) for lst in labels]
     return crop_images, labels, crop_images_paths
 
 
