@@ -177,7 +177,11 @@ def run(
                 for (*xyxy, conf, cls), mask in zip(reversed(det[:, :6]),
                                                     reversed(masks)):
                     xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                    line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
                     if save_txt:  # Write to file
+                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                        line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
+                        labels.append(line)
                         with open(f'{txt_path}.txt', 'a') as f:
                             f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
@@ -188,8 +192,6 @@ def run(
 
                     # Generate the crop images
                     scaled_mask = scale_masks(im.shape[2:], mask.cpu().numpy(), im0.shape)
-                    line = (cls, *xywh, mask == 1, conf) if save_conf else (cls, *xywh, mask == 1)  # label format
-                    labels.append(line)
                     crop_mask, _ = save_one_box(xyxy, scaled_mask, save=False, BGR=False)
                     crop_img, _ = save_one_box(xyxy, im0, BGR=True, save=False)
                     # Set the background to white based on the mask.
