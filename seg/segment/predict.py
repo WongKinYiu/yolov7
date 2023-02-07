@@ -178,8 +178,9 @@ def run(
                                                     reversed(masks)):
                     xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                     if save_txt:  # Write to file
+                        save_line = (cls, *xywh, conf) if save_conf else (cls, *xywh)
                         with open(f'{txt_path}.txt', 'a') as f:
-                            f.write(('%g ' * len(line)).rstrip() % line + '\n')
+                            f.write(('%g ' * len(save_line)).rstrip() % line + '\n')
 
                     if save_img or save_crop or view_img:  # Add bbox to image
                         c = int(cls)  # integer class
@@ -188,7 +189,7 @@ def run(
 
                     # Generate the crop images
                     scaled_mask = scale_masks(im.shape[2:], mask.cpu().numpy(), im0.shape)
-                    line = (cls, *xywh, mask == 1, conf) if save_conf else (cls, *xywh, mask == 1)  # label format
+                    line = (cls.item(), *xywh, mask == 1, conf.item()) if save_conf else (cls, *xywh, mask == 1)  # label format
                     labels.append(line)
                     crop_mask, _ = save_one_box(xyxy, scaled_mask, save=False, BGR=False)
                     crop_img, _ = save_one_box(xyxy, im0, BGR=True, save=False)
@@ -198,7 +199,6 @@ def run(
                     masked_white_bg = masked + white_background
                     masked_image = masked_white_bg.astype(np.uint8)
                     crop_image = masked_image
-                    crop_image = cv2.cvtColor(crop_image, cv2.COLOR_BGR2RGB) # convert image proper RGB color
                     #masked_image = (im0*scaled_mask + white_background).astype(np.uint8)
                     if save_crop:
                         file = save_dir / 'crops' / names[c] / f'{p.stem}.jpg'
@@ -210,6 +210,7 @@ def run(
                             crop_label_path = file.with_suffix('.txt')
                             with open(crop_label_path, 'w') as f:
                                 f.write(('%g ' * len(line)).rstrip() % line + '\n')
+                    crop_image = cv2.cvtColor(crop_image, cv2.COLOR_BGR2RGB) # convert image proper RGB color
                     crop_images.append(crop_image)
 
 
