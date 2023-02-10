@@ -1,0 +1,12 @@
+# train and val data as:
+#     1) directory: path/images/
+#     2) file: path/images.txt or
+#     3) list: [path1/images/, path2/images/]
+train: ./data/train
+val: ./data/val
+
+# number of classes
+nc: 5
+
+# class names
+names: ['Assault Rifle', 'Machine Gun', 'Revolver', 'Semi Auto Pistol', 'Shotgun']
