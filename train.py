@@ -399,6 +399,8 @@ def train(hyp, opt, device, tb_writer=None):
                                                   save_dir.glob('train*.jpg') if x.exists()]})
 
             # end batch ------------------------------------------------------------------------------------------------
+            gc.collect()
+            torch.cuda.empty_cache()
         # end epoch ----------------------------------------------------------------------------------------------------
 
         # Scheduler
