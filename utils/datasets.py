@@ -35,6 +35,7 @@ help_url = 'https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'
 img_formats = ['bmp', 'jpg', 'jpeg', 'png', 'tif', 'tiff', 'dng', 'webp', 'mpo', 'PNG', 'JPG']  # acceptable image suffixes
 vid_formats = ['mov', 'avi', 'mp4', 'mpg', 'mpeg', 'm4v', 'wmv', 'mkv']  # acceptable video suffixes
 logger = logging.getLogger(__name__)
+TRAIN_WITH_RECT_INPUT = False
 
 # Get orientation exif tag
 for orientation in ExifTags.TAGS.keys():
@@ -382,6 +383,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             self.img_files = sorted([x.replace('/', os.sep) for x in f if x.split('.')[-1].lower() in img_formats])
             # self.img_files = sorted([x for x in f if x.suffix[1:].lower() in img_formats])  # pathlib
             assert self.img_files, f'{prefix}No images found'
+            self.resize_scale = img_size / max([cv2.imread(img_path).shape[0] for img_path in self.img_files])
         except Exception as e:
             raise Exception(f'{prefix}Error loading data from {path}: {e}\nSee {help_url}')
 
@@ -981,8 +983,9 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
     # Resize and pad image while meeting stride-multiple constraints
     shape = img.shape[:2]  # current shape [height, width]
     if isinstance(new_shape, int):
-        new_shape = (new_shape, new_shape)
-
+        new_shape = [new_shape, new_shape]
+    if TRAIN_WITH_RECT_INPUT:
+        new_shape[1] = 256
     # Scale ratio (new / old)
     r = resize_scale
     if not scaleup:  # only scale down, do not scale up (for better test mAP)

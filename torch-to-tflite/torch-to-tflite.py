@@ -62,6 +62,7 @@ def parse_args(cli_args=sys.argv[1:]):
     parser.add_argument(
         "--img-size",
         nargs="+",
+        type=int,
         default=(640, 640),
         help="Image size for creating sample input for torch model.",
     )
