@@ -13,7 +13,8 @@ obj_pw: 1.0  # obj BCELoss positive_weight
 iou_t: 0.20  # IoU training threshold
 anchor_t: 4.0  # anchor-multiple threshold
 # anchors: 3  # anchors per output layer (0 to ignore)
-fl_gamma: 0.0  # focal loss gamma (efficientDet default gamma=1.5)
+fl_gamma: 0.0  # gamma value for focal and varifocal loss (default: 2.0 in retinanet and vfnet)
+fl_alpha: 0.25 # alpha value for focal and varifocal loss (default: 0.25 in retinanet, 0.75 in vfnet)
 hsv_h: 0.015  # image HSV-Hue augmentation (fraction)
 hsv_s: 0.7  # image HSV-Saturation augmentation (fraction)
 hsv_v: 0.4  # image HSV-Value augmentation (fraction)
