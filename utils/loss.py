@@ -182,7 +182,7 @@ def varifocal_loss(
     gamma: float=2.0,
     iou_weighted: bool=True,
 ):
-    assert logits.size == labels.size()
+    assert logits.size() == labels.size()
     logits_prob = logits.sigmoid()
     labels = labels.type_as(logits)
     if iou_weighted:
