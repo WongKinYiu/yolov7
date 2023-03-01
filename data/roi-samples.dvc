@@ -1,5 +1,5 @@
 outs:
-- md5: b12a7ca300090e89ebee8f6eed792296.dir
-  size: 32989949
-  nfiles: 517
+- md5: ec7916ba78fbc29b79af971a9e0c8f57.dir
+  size: 221569772
+  nfiles: 3862
   path: roi-samples
