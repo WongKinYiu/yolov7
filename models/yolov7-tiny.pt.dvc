@@ -1,0 +1,4 @@
+outs:
+- md5: 270dd0378bf0612e532a7038a1dbb49c
+  size: 12639769
+  path: yolov7-tiny.pt

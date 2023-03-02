@@ -9,7 +9,7 @@ val: ./data/roi-samples/val/images  # 128 images
 test: ./data/roi-samples/test/images  # 20288 of 40670 images, submit to https://competitions.codalab.org/competitions/20794
 
 # number of classes
-nc: 5
+nc: 4
 
 # class names
-names: ["empty", "yes", "no", "both", "invalid"]
+names: ["empty", "yes", "no", "both"]
