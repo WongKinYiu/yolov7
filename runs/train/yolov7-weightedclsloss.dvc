@@ -1,5 +1,0 @@
-outs:
-- md5: ec4951ea02683f4d80133b50c8892c8b.dir
-  size: 1346901588
-  nfiles: 46
-  path: yolov7-weightedclsloss
