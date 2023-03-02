@@ -1,0 +1,5 @@
+outs:
+- md5: deaef1edbe6bcfb9c41ba01cb21829ae.dir
+  size: 4190300195
+  nfiles: 102
+  path: yolov7-new-weights-with-obj-weights
