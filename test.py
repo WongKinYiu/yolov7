@@ -3,12 +3,10 @@ import json
 import os
 from pathlib import Path
 from threading import Thread
-
 import numpy as np
 import torch
 import yaml
 from tqdm import tqdm
-
 from models.experimental import attempt_load
 from utils.datasets import create_dataloader
 from utils.general import coco80_to_coco91_class, check_dataset, check_file, check_img_size, check_requirements, \
@@ -40,7 +38,8 @@ def test(data,
          half_precision=True,
          trace=False,
          is_coco=False,
-         v5_metric=False):
+         v5_metric=False,
+         loss_metric="CIoU"):
     # Initialize/load model and set device
     training = model is not None
     if training:  # called by train.py
@@ -116,7 +115,7 @@ def test(data,
 
             # Compute loss
             if compute_loss:
-                loss += compute_loss([x.float() for x in train_out], targets)[1][:3]  # box, obj, cls
+                loss += compute_loss([x.float() for x in train_out], targets,metric=loss_metric)[1][:3]  # box, obj, cls
 
             # Run NMS
             targets[:, 2:] *= torch.Tensor([width, height, width, height]).to(device)  # to pixels
@@ -231,7 +230,7 @@ def test(data,
     # Print results
     pf = '%20s' + '%12i' * 2 + '%12.3g' * 4  # print format
     print(pf % ('all', seen, nt.sum(), mp, mr, map50, map))
-
+  
     # Print results per class
     if (verbose or (nc < 50 and not training)) and nc > 1 and len(stats):
         for i, c in enumerate(ap_class):
