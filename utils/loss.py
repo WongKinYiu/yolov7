@@ -447,7 +447,7 @@ class ComputeLoss:
         for k in 'na', 'nc', 'nl', 'anchors':
             setattr(self, k, getattr(det, k))
 
-    def __call__(self, p, targets):  # predictions, targets, model
+    def __call__(self, p, targets,metric="CIoU"):  # predictions, targets, model
         device = targets.device
         lcls, lbox, lobj = torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device)
         tcls, tbox, indices, anchors = self.build_targets(p, targets)  # targets
@@ -467,7 +467,7 @@ class ComputeLoss:
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
                 if pbox.T.isnan().any():
                     print("pbox is nan", pbox.T)
-                iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, NWD=True)  # iou(prediction, target)
+                iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, metric=metric)  # iou(prediction, target)
                 lbox += (1.0 - iou).mean()  # iou loss
 
                 # Objectness
@@ -581,7 +581,7 @@ class ComputeLossOTA:
         for k in 'na', 'nc', 'nl', 'anchors', 'stride':
             setattr(self, k, getattr(det, k))
 
-    def __call__(self, p, targets, imgs):  # predictions, targets, model   
+    def __call__(self, p, targets, imgs,metric='CIoU'):  # predictions, targets, model   
         device = targets.device
         lcls, lbox, lobj = torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device)
         bs, as_, gjs, gis, targets, anchors = self.build_targets(p, targets, imgs)
@@ -606,8 +606,10 @@ class ComputeLossOTA:
                 selected_tbox = targets[i][:, 2:6] * pre_gen_gains[i]
                 selected_tbox[:, :2] -= grid
                 if pbox.T.isnan().any():
-                    print("pbox is nan", pbox.T)            #OTA
-                iou = bbox_iou(pbox.T, selected_tbox, x1y1x2y2=False, NWD=True)  # iou(prediction, target)             
+                    print("pbox is nan", pbox.T)            #OTA!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                iou = bbox_iou(pbox.T, selected_tbox, x1y1x2y2=False, metric=metric)
+                # print("iou",iou.min(),iou.shape)
+                  # iou(prediction, target)             
                 lbox += (1.0 - iou).mean()  # iou loss
 
                 # Objectness
@@ -625,7 +627,12 @@ class ComputeLossOTA:
                 #     [file.write('%11.5g ' * 4 % tuple(x) + '\n') for x in torch.cat((txy[i], twh[i]), 1)]
 
             obji = self.BCEobj(pi[..., 4], tobj)
-            lobj += obji * self.balance[i]  # obj loss
+            if obji > 1.0:
+                print("obji",obji)
+            obji=obji.clamp(max=1.0)
+            lobj += obji * self.balance[i] 
+            if lobj > 1.0: # obj loss
+                print("lobj",lobj)
             if self.autobalance:
                 self.balance[i] = self.balance[i] * 0.9999 + 0.0001 / obji.detach().item()
 
@@ -635,8 +642,9 @@ class ComputeLossOTA:
         lobj *= self.hyp['obj']
         lcls *= self.hyp['cls']
         bs = tobj.shape[0]  # batch size
-
-        loss = lbox + lobj + lcls
+        lobj=lobj.clamp(max=2)
+        loss_r = lbox + lobj + lcls
+        loss=loss_r.clamp(max=2)
         return loss * bs, torch.cat((lbox, lobj, lcls, loss)).detach()
 
     def build_targets(self, p, targets, imgs):
@@ -948,6 +956,7 @@ class ComputeLossBinOTA:
                 #     [file.write('%11.5g ' * 4 % tuple(x) + '\n') for x in torch.cat((txy[i], twh[i]), 1)]
 
             obji = self.BCEobj(pi[..., obj_idx], tobj)
+            
             lobj += obji * self.balance[i]  # obj loss
             if self.autobalance:
                 self.balance[i] = self.balance[i] * 0.9999 + 0.0001 / obji.detach().item()
