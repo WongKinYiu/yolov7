@@ -7,7 +7,7 @@ warmup_momentum: 0.8  # warmup initial momentum
 warmup_bias_lr: 0.1  # warmup initial bias lr
 box: 0.05  # box loss gain
 cls: 0.5  # cls loss gain
-cls_pw: 0.16 0.34 0.34 0.16  # cls BCELoss positive_weight
+cls_pw: 0.125 0.375 0.375 0.125  # cls BCELoss positive_weight
 obj: 1.0  # obj loss gain (scale with pixels)
 obj_pw: 1.0  # obj BCELoss positive_weight
 iou_t: 0.5  # IoU training threshold

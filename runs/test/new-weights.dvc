@@ -1,0 +1,5 @@
+outs:
+- md5: 135a98231612aa443125051f333c5ead.dir
+  size: 899360
+  nfiles: 11
+  path: new-weights
