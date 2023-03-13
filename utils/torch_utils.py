@@ -1,5 +1,4 @@
 # YOLOv7 PyTorch utils
->>>>>>> Stashed changes
 
 import datetime
 import logging
