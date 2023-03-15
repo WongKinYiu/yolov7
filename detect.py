@@ -6,13 +6,17 @@ import cv2
 import torch
 import torch.backends.cudnn as cudnn
 from numpy import random
-
+import numpy as np
+from PIL import Image
 from models.experimental import attempt_load
 from utils.datasets import LoadStreams, LoadImages
 from utils.general import check_img_size, check_requirements, check_imshow, non_max_suppression, apply_classifier, \
     scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
+from pytorch_grad_cam import EigenCAM
+from pytorch_grad_cam.utils.image import show_cam_on_image, scale_cam_image
+from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 
 
 def detect(save_img=False):
@@ -68,6 +72,10 @@ def detect(save_img=False):
 
     t0 = time.time()
     for path, img, im0s, vid_cap in dataset:
+        # print(type(im0s))
+        # im0s=Image.open(im0s)convert("L")
+        # Image.fromarray(im0s).convert("L").save("dtest.png")
+        # exit()
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
@@ -136,6 +144,31 @@ def detect(save_img=False):
                 cv2.imshow(str(p), im0)
                 cv2.waitKey(1)  # 1 millisecond
 
+            #eigen cam
+            cam=opt.cam
+            if cam:
+            
+                target_layers = [model.model[2]]
+                targets = [ClassifierOutputTarget(1)]
+                cam = EigenCAM(model, target_layers, use_cuda=False)          # exit()
+                grayscale_cam = cam(input_tensor=img,targets=targets,eigen_smooth=True,aug_smooth=False)
+                grayscale_cam = grayscale_cam[0, :]
+                # im0=Image.open(source).convert("L")
+                # im0=Image.fromarray(im0s).convert("L")
+                im0copy=im0.copy()
+                # print("before",type(im0),im0.shape)
+                im0=np.float32(im0) / 255
+                im0=cv2.resize(im0,(img.shape[3],img.shape[2]))
+               
+                im0 = show_cam_on_image(im0, grayscale_cam, use_rgb=True)
+                Image.fromarray(im0).save("eigenout_d.png")
+                im0=cv2.cvtColor(im0, cv2.COLOR_RGB2BGR)
+                # print(type(im0),im0.shape)
+                im0=cv2.resize(im0,(im0copy.shape[1],im0copy.shape[0]))
+                # print("final",type(im0),im0.shape)
+                # exit()
+
+
             # Save results (image with detections)
             if save_img:
                 if dataset.mode == 'image':
@@ -150,6 +183,7 @@ def detect(save_img=False):
                             fps = vid_cap.get(cv2.CAP_PROP_FPS)
                             w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                             h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                            
                         else:  # stream
                             fps, w, h = 30, im0.shape[1], im0.shape[0]
                             save_path += '.mp4'
@@ -183,6 +217,7 @@ if __name__ == '__main__':
     parser.add_argument('--name', default='exp', help='save results to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
+    parser.add_argument('--cam',action="store_true", help='enable eigencam view')
     opt = parser.parse_args()
     print(opt)
     #check_requirements(exclude=('pycocotools', 'thop'))
