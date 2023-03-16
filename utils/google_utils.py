@@ -27,7 +27,7 @@ def attempt_download(file, repo='WongKinYiu/yolov7'):
             tag = response['tag_name']  # i.e. 'v1.0'
         except:  # fallback plan
             try:
-                response = requests.get(f'https://api.github.com/repos/{repo}/yolov7/tags').json()  # github api
+                response = requests.get(f'https://api.github.com/repos/{repo}/tags').json()  # github api
                 assets = ['yolov7.pt', 'yolov7-tiny.pt', 'yolov7x.pt', 'yolov7-d6.pt', 'yolov7-e6.pt', 
                           'yolov7-e6e.pt', 'yolov7-w6.pt']
                 tag = response[0]['name']
