@@ -1222,13 +1222,23 @@ class Albumentations:
         import albumentations as A
 
         self.transform = A.Compose([
-            A.CLAHE(p=0.01),
+            A.CLAHE(p=0.5),
             A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
             A.RandomGamma(gamma_limit=[80, 120], p=0.5),
             A.Blur(p=0.5),
             A.MedianBlur(p=0.5),
             A.ToGray(p=0.1),
             A.ImageCompression(quality_lower=75, p=0.5),
+            A.Downscale (scale_min=0.08, scale_max=0.7, interpolation=0, always_apply=False, p=0.5),
+            A.MotionBlur(blur_limit=21, p=0.5),
+            A.Perspective (scale=(0.12, 0.1), 
+                            keep_size=True, 
+                            pad_mode=0, 
+                            pad_val=0, 
+                            mask_pad_val=0, 
+                            fit_output=False, 
+                            interpolation=1,
+                            always_apply=False, p=0.5),
             # New
             #A.Downscale (scale_min=0.08, scale_max=0.7, interpolation=0, always_apply=True, p=0.5),
             #A.MotionBlur(blur_limit=19, p=0.5),
