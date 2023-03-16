@@ -47,10 +47,17 @@ def attempt_download(file, repo='WongKinYiu/yolov7'):
                 assert file.exists() and file.stat().st_size > 1E6  # check
             except Exception as e:  # GCP
                 print(f'Download error: {e}')
-                assert redundant, 'No secondary mirror'
-                url = f'https://storage.googleapis.com/{repo}/ckpt/{name}'
-                print(f'Downloading {url} to {file}...')
-                os.system(f'curl -L {url} -o {file}')  # torch.hub.download_url_to_file(url, weights)
+                try:
+                    msg = f'{file} missing, try downloading from https://raw.githubusercontent.com/{repo}'
+                    url = f'https://raw.githubusercontent.com/{repo}/{tag}/{name}'
+                    print(f'Downloading {url} to {file}...')
+                    torch.hub.download_url_to_file(url, file)
+                    assert file.exists() and file.stat().st_size > 1E6  # check
+                except:
+                    assert redundant, 'No secondary mirror'
+                    url = f'https://storage.googleapis.com/{repo}/ckpt/{name}'
+                    print(f'Downloading {url} to {file}...')
+                    os.system(f'curl -L {url} -o {file}')  # torch.hub.download_url_to_file(url, weights)
             finally:
                 if not file.exists() or file.stat().st_size < 1E6:  # check
                     file.unlink(missing_ok=True)  # remove partial downloads
