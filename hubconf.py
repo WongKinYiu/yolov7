@@ -13,7 +13,7 @@ from models.yolo import Model
 from utils.general import check_requirements, set_logging
 from utils.google_utils import attempt_download
 from utils.torch_utils import select_device
-import utils.loss
+from utils.loss import ComputeLoss
 
 dependencies = ['torch', 'yaml']
 check_requirements(Path(__file__).parent / 'requirements.txt', exclude=('pycocotools', 'thop'))
