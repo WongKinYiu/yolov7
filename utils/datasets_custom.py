@@ -1229,7 +1229,7 @@ class Albumentations:
             A.MedianBlur(p=0.5),
             A.ToGray(p=0.1),
             A.ImageCompression(quality_lower=75, p=0.5),
-            A.Downscale (scale_min=0.08, scale_max=0.7, interpolation=0, always_apply=False, p=0.5),
+            A.Downscale (scale_min=0.08, scale_max=0.2, interpolation=0, always_apply=False, p=0.5),
             A.MotionBlur(blur_limit=21, p=0.5),
             A.Perspective (scale=(0.12, 0.1), 
                             keep_size=True, 
