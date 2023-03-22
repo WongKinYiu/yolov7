@@ -573,6 +573,8 @@ if __name__ == '__main__':
     parser.add_argument('--v5-metric', action='store_true', help='assume maximum recall as 1.0 in AP calculation')
     
     parser.add_argument('--patience', type=int, default=100, help='EarlyStopping patience (epochs without improvement)')
+    parser.add_argument('--albumen', action='store_false', help='use Albumentations augments')
+    
     opt = parser.parse_args()
 
     # Set DDP variables
