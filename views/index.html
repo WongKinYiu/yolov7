@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Cargar imagen desde el disco</title>
+</head>
+<body>
+	<form>
+		<input type="file" id="inputFile" onchange="loadFile(event)">
+		<img id="outputImg">
+<br>
+    <input type="button" id="btnProcess" value="Procesar" onclick="processImg()">
+
+	</form>
+	<script>
+    let imgBase64;
+		const xhr = new XMLHttpRequest();
+    const endpoint = "http://127.0.0.1:5000/imagen";
+
+    function loadFile(event) {
+			let input = event.target;
+			let reader = new FileReader();
+			reader.onload = function(){
+				let output = document.getElementById('outputImg');
+				output.src = reader.result;
+        imgBase64 = reader.result;
+			};
+			reader.readAsDataURL(input.files[0]);
+		}
+
+    function processImg() {
+      xhr.open('POST', endpoint);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.onload = () => {
+        // procesar la respuesta
+        const response = JSON.parse(xhr.responseText);
+        let output = document.getElementById('outputImg');
+        output.src = response.imagen;
+      };
+      xhr.send(JSON.stringify({ imagen: imgBase64 }));
+    }
+
+	</script>
+</body>
+</html>
