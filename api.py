@@ -4,7 +4,7 @@ import base64
 import numpy as np
 import cv2
 import sys
-import detect
+import detectar
 
 app = Flask(__name__, template_folder='views')
 CORS(app)
@@ -25,13 +25,12 @@ def procesar_imagen():
     numpy_immage = np.frombuffer(decoded_image, dtype=np.uint8)
 
     cv_image = cv2.imdecode(numpy_immage, cv2.IMREAD_COLOR)
-    cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
-    
-    _, result_base64 = cv2.imencode('.png', cv_image)
+
+    img = detectar.detect(cv_image, 'yolov7.pt')
+
+    _, result_base64 = cv2.imencode('.png', img)
     result_base64 = base64.b64encode(result_base64).decode()
     result_base64 = f"data:image/png;base64,{result_base64}"
-
-    detect()
 
     return jsonify({'imagen':  result_base64})
 
