@@ -49,7 +49,8 @@ def check_anchors(dataset, model, thr=4.0, imgsz=640):
             print(f'{prefix}ERROR: {e}')
         new_bpr = metric(anchors)[0]
         if new_bpr > bpr:  # replace anchors
-            anchors = torch.tensor(anchors, device=m.anchors.device).type_as(m.anchors)
+            device = m.anchors.device if m.anchors.device.type != 'mps' else 'cpu'
+            anchors = torch.tensor(anchors, device=device).type_as(m.anchors)
             m.anchor_grid[:] = anchors.clone().view_as(m.anchor_grid)  # for inference
             check_anchor_order(m)
             m.anchors[:] = anchors.clone().view_as(m.anchors) / m.stride.to(m.anchors.device).view(-1, 1, 1)  # loss
