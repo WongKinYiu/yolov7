@@ -1,17 +1,70 @@
 <!DOCTYPE html>
 <html>
 <head>
+
+  <style>
+      h1 {
+    margin: 0 auto;
+    margin-top: 5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.image-preview-container {
+    width: 50%;
+    margin: 0 auto;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 3rem;
+    border-radius: 20px;
+}
+
+.image-preview-container img {
+    width: 100%;
+    display: none;
+    margin-bottom: 30px;
+}
+.image-preview-container input {
+    display: none;
+}
+
+.image-preview-container label {
+    display: block;
+    width: 45%;
+    height: 45px;
+    margin-left: 25%;
+    text-align: center;
+    background: #8338ec;
+    color: #fff;
+    font-size: 15px;
+    text-transform: Uppercase;
+    font-weight: 400;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+  </style> 
+
 	<title>Cargar imagen desde el disco</title>
 </head>
 <body>
 	<form>
-		<input type="file" id="inputFile" onchange="loadFile(event)">
-		<img id="outputImg">
-<br>
-    <input type="button" id="btnProcess" value="Procesar" onclick="processImg()">
+    <h1>Predicción PAP usando yolo-v7</h1>
+    <div class="image-preview-container">
+        <div class="preview">
+            <img id="outputImg" />
+        </div>
+        <label for="file_upload">Seleccionar imagen</label>
+        <input type="file" id="file_upload" onchange="loadFile(event)" />
+        
+        <label for="btnProcess" style="margin-top: 2em;">Procesar</label>
+        <input type="button" id="btnProcess" onclick="processImg()">
+    </div>
+  </form>
 
-	</form>
-	<script>
+  <script>
     let imgBase64;
 		const xhr = new XMLHttpRequest();
     const endpoint = "http://127.0.0.1:5000/imagen";
@@ -21,6 +74,7 @@
 			let reader = new FileReader();
 			reader.onload = function(){
 				let output = document.getElementById('outputImg');
+        output.style.display = "block";
 				output.src = reader.result;
         imgBase64 = reader.result;
 			};
