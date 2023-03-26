@@ -1,5 +1,4 @@
 import argparse
-import time
 from pathlib import Path
 
 import cv2
@@ -66,7 +65,6 @@ def detect(save_img=False):
     old_img_w = old_img_h = imgsz
     old_img_b = 1
 
-    t0 = time.time()
     for path, img, im0s, vid_cap in dataset:
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -75,7 +73,8 @@ def detect(save_img=False):
             img = img.unsqueeze(0)
 
         # Warmup
-        if device.type != 'cpu' and (old_img_b != img.shape[0] or old_img_h != img.shape[2] or old_img_w != img.shape[3]):
+        if device.type != 'cpu' and (
+                old_img_b != img.shape[0] or old_img_h != img.shape[2] or old_img_w != img.shape[3]):
             old_img_b = img.shape[0]
             old_img_h = img.shape[2]
             old_img_w = img.shape[3]
@@ -84,7 +83,7 @@ def detect(save_img=False):
 
         # Inference
         t1 = time_synchronized()
-        with torch.no_grad():   # Calculating gradients would cause a GPU memory leak
+        with torch.no_grad():  # Calculating gradients would cause a GPU memory leak
             pred = model(img, augment=opt.augment)[0]
         t2 = time_synchronized()
 
@@ -158,9 +157,7 @@ def detect(save_img=False):
 
     if save_txt or save_img:
         s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
-        #print(f"Results saved to {save_dir}{s}")
-
-    print(f'Done. ({time.time() - t0:.3f}s)')
+        # print(f"Results saved to {save_dir}{s}")
 
 
 if __name__ == '__main__':
@@ -185,7 +182,7 @@ if __name__ == '__main__':
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
     opt = parser.parse_args()
     print(opt)
-    #check_requirements(exclude=('pycocotools', 'thop'))
+    # check_requirements(exclude=('pycocotools', 'thop'))
 
     with torch.no_grad():
         if opt.update:  # update all models (to fix SourceChangeWarning)
