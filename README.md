@@ -30,6 +30,10 @@ MS COCO
 | [**YOLOv7-E6**](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-e6.pt) | 1280 | **56.0%** | **73.5%** | **61.2%** | 56 *fps* | 12.3 *ms* |
 | [**YOLOv7-D6**](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-d6.pt) | 1280 | **56.6%** | **74.0%** | **61.8%** | 44 *fps* | 15.0 *ms* |
 | [**YOLOv7-E6E**](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-e6e.pt) | 1280 | **56.8%** | **74.4%** | **62.1%** | 36 *fps* | 18.7 *ms* |
+| [**YOLOv7-PATO-6clases**](https://drive.google.com/file/d/1eDt8ze7Ayj7sWzYhio1wXio6La0chmyV/view?usp=sharing) | 640 | **** | **%** | **%** |  *fps* |  *ms* |
+| [**YOLOv7-PATO-6clases-3xAug**](https://drive.google.com/file/d/1-NvWqO5ZBDFf0EvMpgw0eSZVUWyJyNYv/view?usp=sharing) | 640 | **** | **%** | **%** |  *fps* |  *ms* |
+| [**YOLOv7-PATO-2clases**](https://drive.google.com/file/d/1Fz-QR3CBaqUknbpPqupi_1nhlVsjibp0/view?usp=sharing) | 640 | **** | **%** | **%** |  *fps* |  *ms* |
+| [**YOLOv7-PATO-1clase**](https://drive.google.com/file/d/1Xtv__52rNpOnILv_RypxCb1eYlu6-CWy/view?usp=sharing) | 640 | **** | **%** | **%** |  *fps* |  *ms* |
 
 ## Installation
 
