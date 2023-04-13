@@ -35,7 +35,6 @@ help_url = 'https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'
 img_formats = ['bmp', 'jpg', 'jpeg', 'png', 'tif', 'tiff', 'dng', 'webp', 'mpo', 'PNG', 'JPG']  # acceptable image suffixes
 vid_formats = ['mov', 'avi', 'mp4', 'mpg', 'mpeg', 'm4v', 'wmv', 'mkv']  # acceptable video suffixes
 logger = logging.getLogger(__name__)
-TRAIN_WITH_RECT_INPUT = False
 
 # Get orientation exif tag
 for orientation in ExifTags.TAGS.keys():
@@ -145,7 +144,13 @@ class LoadImages:  # for inference
         self.img_size = img_size
         self.stride = stride
         self.files = images + videos
-        self.resize_scale = img_size / max([cv2.imread(img_path).shape[0] for img_path in self.files])
+        self.resize_scale = 0.5818 # we use LoadImages in detect.py only thus we set resize_scale to the same number as it is calculated during training.
+        print(
+            f""" 
+                !!! !!! Current resize scale is {self.resize_scale} !!! !!!
+                Please check if it is the same with the training process 
+            """
+            )
         self.nf = ni + nv  # number of files
         self.video_flag = [False] * ni + [True] * nv
         self.mode = 'image'
@@ -383,7 +388,13 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             self.img_files = sorted([x.replace('/', os.sep) for x in f if x.split('.')[-1].lower() in img_formats])
             # self.img_files = sorted([x for x in f if x.suffix[1:].lower() in img_formats])  # pathlib
             assert self.img_files, f'{prefix}No images found'
-            self.resize_scale = img_size / max([cv2.imread(img_path).shape[0] for img_path in self.img_files])
+            self.resize_scale = img_size / max([max(cv2.imread(img_file).shape) for img_file in self.img_files]) 
+            print(
+                f"""
+                    !!! !!! Current resizing scale is {self.resize_scale} !!!!!!
+          !!! !!! Please use the same scale for validation, testing and deployment !!! !!!
+                """
+            )
         except Exception as e:
             raise Exception(f'{prefix}Error loading data from {path}: {e}\nSee {help_url}')
 
@@ -583,13 +594,13 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             #img, labels = self.albumentations(img, labels)
 
             # Augment colorspace
-            augment_hsv(img, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
+            augment_hsv(img, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v']) # Decrease color gains in config.
 
             # Apply cutouts
             # if random.random() < 0.9:
             #     labels = cutout(img, labels)
             
-            if random.random() < hyp['paste_in']:
+            if random.random() < hyp['paste_in']: # Set paste_in probability to 0 in config.
                 sample_labels, sample_images, sample_masks = [], [], [] 
                 while len(sample_labels) < 30:
                     sample_labels_, sample_images_, sample_masks_ = load_samples(self, random.randint(0, len(self.labels) - 1))
@@ -984,8 +995,6 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
     shape = img.shape[:2]  # current shape [height, width]
     if isinstance(new_shape, int):
         new_shape = [new_shape, new_shape]
-    if TRAIN_WITH_RECT_INPUT:
-        new_shape[1] = 256
     # Scale ratio (new / old)
     r = resize_scale
     if not scaleup:  # only scale down, do not scale up (for better test mAP)

@@ -9,7 +9,7 @@ import cv2
 import tensorflow as tf
 import torch
 
-
+RESIZE_SCALE = 0.58 # Use the same resize scale as the one calculated during training.
 PAD_COLOR = (114, 114, 114)
 NAMES = {0: "empty", 1: "yes", 2: "no", 3: "both", 4: "invalid"}
 
@@ -30,7 +30,6 @@ def test_tflite(
     output_dir.mkdir(exist_ok=True, parents=True)
     assert input_data_path.is_dir(), f"{input_data_path} is not a directory."
     for img_path in Path(input_data_path).glob("*.*[Gg]"):
-        print("-" * 100 + f"\nLoading input data from {img_path} ...")
         img = cv2.imread(str(img_path))
         input_data = _preprocess_input(img, input_shape)
         output_tensor = my_signature(input=input_data / 255)["output"]
@@ -49,9 +48,7 @@ def _preprocess_input(img: Path, input_shape: List[int]) -> np.ndarray:
     img_h, img_w, _ = img.shape
     max_img_size = max(img_h, img_w)
     max_target_size = max(target_h, target_w)
-    resize_scale = (
-        max_target_size / max_img_size if max_target_size < max_img_size else 1
-    )
+    resize_scale = min( [max_target_size / max_img_size, RESIZE_SCALE] )
     resized_img = cv2.resize(
         img, (int(resize_scale * img_w), int(resize_scale * img_h))
     )
