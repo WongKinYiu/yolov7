@@ -6,7 +6,6 @@
 !cfg/yolov3*.cfg
 
 storage.googleapis.com
-data/images/*
 
 results*.csv
 
