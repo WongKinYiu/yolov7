@@ -36,7 +36,7 @@ from utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_di
 from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
 
 logger = logging.getLogger(__name__)
-
+from utils.mlflow import *
 
 def train(hyp, opt, device, tb_writer=None):
     logger.info(colorstr('hyperparameters: ') + ', '.join(f'{k}={v}' for k, v in hyp.items()))
@@ -80,6 +80,9 @@ def train(hyp, opt, device, tb_writer=None):
     assert len(names) == nc, '%g names found for nc=%g dataset in %s' % (len(names), nc, opt.data)  # check
 
     # Model
+    # log model parameters
+    on_pretrain_routine_end(nc, names, epochs, batch_size, opt.img_size, opt.weights)
+
     pretrained = weights.endswith('.pt')
     if pretrained:
         with torch_distributed_zero_first(rank):
@@ -425,6 +428,9 @@ def train(hyp, opt, device, tb_writer=None):
                                                  compute_loss=compute_loss,
                                                  is_coco=is_coco,
                                                  v5_metric=opt.v5_metric)
+                
+                # log metric
+                on_fit_epoch_end(results, epoch)
 
             # Write
             with open(results_file, 'a') as f:
@@ -462,8 +468,12 @@ def train(hyp, opt, device, tb_writer=None):
 
                 # Save last, best and delete
                 torch.save(ckpt, last)
+                # log artifact: last model
+                on_model_save(last)
                 if best_fitness == fi:
                     torch.save(ckpt, best)
+                    # log artifact: best model and register_model
+                    on_train_end(save_dir, best)
                 if (best_fitness == fi) and (epoch >= 200):
                     torch.save(ckpt, wdir / 'best_{:03d}.pt'.format(epoch))
                 if epoch == 0:
@@ -476,8 +486,8 @@ def train(hyp, opt, device, tb_writer=None):
                     if ((epoch + 1) % opt.save_period == 0 and not final_epoch) and opt.save_period != -1:
                         wandb_logger.log_model(
                             last.parent, opt, epoch, fi, best_model=best_fitness == fi)
-                del ckpt
 
+                del ckpt
         # end epoch ----------------------------------------------------------------------------------------------------
     # end training
     if rank in [-1, 0]:
