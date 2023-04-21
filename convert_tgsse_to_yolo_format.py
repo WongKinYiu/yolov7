@@ -74,7 +74,7 @@ for sub_dir in dir_list:
     sub_dir_list = os.listdir(sub_dir)
     mp4_file = [ filename for filename in sub_dir_list if filename.endswith( ".mp4" ) ]
     csv_file = [ filename for filename in sub_dir_list if filename.endswith( ".csv" ) ]
-    
+    # print(csv_file)
     if len(mp4_file) == 1 and len(csv_file) == 1 and "Bounding Boxes" not in sub_dir:
         mp4_file = mp4_file[0]
         csv_file = csv_file[0]
@@ -108,22 +108,24 @@ for sub_dir in dir_list:
             
                 # 
                 frame_labels = video_labels.loc[video_labels['Frame'] == frame_num]
-
+                print(frame_labels)
                 # 
+                
                 with open(out_path + "labels/" + sub_dir_save_name + "_" + str(frame_num) + ".txt", 'a') as txt_file:
                     for _, row in frame_labels.iterrows():
                         class_name = row.label
+                        
                         if not pd.isna(class_name):
-
+                            # print(category_ids)
                             label = str(category_ids.index(row.label))
-
+                            
                             xywh = eval(row.coords)
                             
                             # Change origin from bottom left to top left
-                            xyxy = xywh2xyxy(xywh)
-                            xyxy[1] = height - xyxy[1]
-                            xyxy[3] = height - xyxy[3]
-                            xywh = xyxy2xywh(xyxy)
+                            # xyxy = xywh2xyxy(xywh)
+                            # xyxy[1] = height - xyxy[1]
+                            # xyxy[3] = height - xyxy[3]
+                            # xywh = xyxy2xywh(xyxy)
                             
                             # Normalize by image size
                             norm_xywh = normalize_xywh(xywh, width, height)
