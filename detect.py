@@ -17,6 +17,7 @@ from utils.torch_utils import select_device, load_classifier, time_synchronized,
 from pytorch_grad_cam import EigenCAM
 from pytorch_grad_cam.utils.image import show_cam_on_image, scale_cam_image
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+# from cam_utils import renormalize_cam_in_bounding_boxes
 
 
 def detect(save_img=False):
@@ -148,7 +149,7 @@ def detect(save_img=False):
             cam=opt.cam
             if cam:
             
-                target_layers = [model.model[2]]
+                target_layers = [model.model[1]]
                 targets = [ClassifierOutputTarget(1)]
                 cam = EigenCAM(model, target_layers, use_cuda=False)          # exit()
                 grayscale_cam = cam(input_tensor=img,targets=targets,eigen_smooth=True,aug_smooth=False)
@@ -165,8 +166,11 @@ def detect(save_img=False):
                 im0=cv2.cvtColor(im0, cv2.COLOR_RGB2BGR)
                 # print(type(im0),im0.shape)
                 im0=cv2.resize(im0,(im0copy.shape[1],im0copy.shape[0]))
-                # print("final",type(im0),im0.shape)
-                # exit()
+                norm=False
+                if norm:
+                    renormalize_cam_in_bounding_boxes(xyxy, colors,im0copy, grayscale_cam)
+                    Image.fromarray(renormalized_cam_image).save("eignenorm_out_d.png")
+                    print(renormalized_cam_image.shape)
 
 
             # Save results (image with detections)
