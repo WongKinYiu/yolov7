@@ -27,7 +27,7 @@ import torch
 import torch.nn as nn
 from tensorflow import keras
 
-from models.common import (C3, MP, SPP, SPPF, SPPCSPC, Bottleneck, BottleneckCSP, C3x, Concat, Conv, CrossConv, DWConv,
+from models.common import (C3, SP, MP, SPP, SPPF, SPPCSPC, Bottleneck, BottleneckCSP, C3x, Concat, Conv, CrossConv, DWConv,
                            RepConv, DWConvTranspose2d, Focus, autopad)
 from models.experimental import MixConv2d, attempt_load
 from models.yolo import Detect
@@ -269,11 +269,22 @@ class TFC3x(keras.layers.Layer):
     def call(self, inputs):
         return self.cv3(tf.concat((self.m(self.cv1(inputs)), self.cv2(inputs)), axis=3))
 
+    
 class TFMP(keras.layers.Layer):
     # Spatial pyramid pooling layer used in YOLOv3-SPP
     def __init__(self, k=2, w=None):
         super().__init__()
         self.m = keras.layers.MaxPooling2D(pool_size=2, strides=2, padding='VALID')
+
+    def call(self, inputs):
+        return self.m(inputs)
+
+    
+class TFSP(keras.layers.Layer):
+    # Spatial pyramid pooling layer used in YOLOv3-SPP
+    def __init__(self, k=2, s=1, w=None):
+        super().__init__()
+        self.m = keras.layers.MaxPooling2D(pool_size=2, strides=1, padding='SAME')
 
     def call(self, inputs):
         return self.m(inputs)
