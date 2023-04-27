@@ -61,8 +61,9 @@ for i in range(0, len(input_dirs)):
     output_dir = output_dirs[i]
     image_dir = image_dirs[i]
 
-    # create the labels folder (output directory)
-    os.mkdir(output_dir)
+    if not os.path.isdir(output_dir):
+        # create the labels folder (output directory) 
+        os.mkdir(output_dir)
 
     # identify all the xml files in the annotations folder (input directory)
     files = glob.glob(os.path.join(input_dir, '*.xml'))
