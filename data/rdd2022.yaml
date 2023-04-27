@@ -1,5 +1,6 @@
-train: /cluster/projects/itea_lille-idi-tdt4265/datasets/rdd2022/RDD2022/Norway/train
-test: /cluster/projects/itea_lille-idi-tdt4265/datasets/rdd2022/RDD2022/Norway/test
+train: /cluster/projects/itea_lille-idi-tdt4265/datasets/rdd2022/RDD2022/Czech/train
+test: /cluster/projects/itea_lille-idi-tdt4265/datasets/rdd2022/RDD2022/Norway/test/images
+val: /cluster/projects/itea_lille-idi-tdt4265/datasets/rdd2022/RDD2022/Norway/test/images
 
 nc: 4
 names: ['D00', 'D10', 'D20', 'D40']
