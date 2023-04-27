@@ -58,7 +58,7 @@ image_dirs = [
 
 for i in range(0, len(input_dirs)):
     input_dir = input_dirs[i]
-    output_dir = input_dirs[i]
+    output_dir = output_dirs[i]
     image_dir = image_dirs[i]
 
     # create the labels folder (output directory)
