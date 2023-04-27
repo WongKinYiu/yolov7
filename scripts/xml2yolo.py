@@ -69,17 +69,18 @@ for i in range(len(input_dirs)):
     files = glob.glob(os.path.join(input_dir, '*.xml'))
     # loop through each 
     for fil in files:
-        basename = os.path.basename(fil)
-        filename = os.path.splitext(basename)[0]
-        # check if the label contains the corresponding image file
-        if not os.path.exists(os.path.join(image_dir, f"{filename}.jpg")):
-            print(f"{filename} image does not exist!")
-            continue
-
-        result = []
-
-        # parse the content of the xml file
         try:
+            basename = os.path.basename(fil)
+            filename = os.path.splitext(basename)[0]
+            # check if the label contains the corresponding image file
+            if not os.path.exists(os.path.join(image_dir, f"{filename}.jpg")):
+                print(f"{filename} image does not exist!")
+                continue
+            
+            result = []
+    
+            # parse the content of the xml file
+        
             tree = ET.parse(fil)
             root = tree.getroot()
             width = int(root.find("size").find("width").text)
