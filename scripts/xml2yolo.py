@@ -79,27 +79,30 @@ for i in range(len(input_dirs)):
         result = []
 
         # parse the content of the xml file
-        tree = ET.parse(fil)
-        root = tree.getroot()
-        width = int(root.find("size").find("width").text)
-        height = int(root.find("size").find("height").text)
+        try:
+            tree = ET.parse(fil)
+            root = tree.getroot()
+            width = int(root.find("size").find("width").text)
+            height = int(root.find("size").find("height").text)
 
-        for obj in root.findall('object'):
-            label = obj.find("name").text
-            # check for new classes and append to list
-            if label not in classes:
-                classes.append(label)
-            index = classes.index(label)
-            pil_bbox = [int(float(x.text)) for x in obj.find("bndbox")]
-            yolo_bbox = xml_to_yolo_bbox(pil_bbox, width, height)
-            # convert data to string
-            bbox_string = " ".join([str(x) for x in yolo_bbox])
-            result.append(f"{index} {bbox_string}")
+            for obj in root.findall('object'):
+                label = obj.find("name").text
+                # check for new classes and append to list
+                if label not in classes:
+                    classes.append(label)
+                index = classes.index(label)
+                pil_bbox = [int(x.text) for x in obj.find("bndbox")]
+                yolo_bbox = xml_to_yolo_bbox(pil_bbox, width, height)
+                # convert data to string
+                bbox_string = " ".join([str(x) for x in yolo_bbox])
+                result.append(f"{index} {bbox_string}")
 
-        if result:
-            # generate a YOLO format text file for each xml file
-            with open(os.path.join(output_dir, f"{filename}.txt"), "w", encoding="utf-8") as f:
-                f.write("\n".join(result))
+            if result:
+                # generate a YOLO format text file for each xml file
+                with open(os.path.join(output_dir, f"{filename}.txt"), "w", encoding="utf-8") as f:
+                    f.write("\n".join(result))
+        except:
+            print("there was a problem with parsing the file: ", fil)
 
     # generate the classes file as reference
     with open('classes.txt', 'w', encoding='utf8') as f:
