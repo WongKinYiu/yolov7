@@ -1,8 +1,8 @@
-download: bash ./scripts/get_rdd2022.sh
+download: python ./scripts/get_rdd2022.py
 
-train: ./data/RDD2022/Czech/train
+train: ./data/RDD2022/Norway/train
 test: ./data/RDD2022/Norway/test/images
-val: ./data/RDD2022/Norway/test/images
+val: ./data/RDD2022/Norway/val
 
 nc: 4
 names: ['D00', 'D10', 'D20', 'D40']

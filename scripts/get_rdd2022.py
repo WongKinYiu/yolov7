@@ -5,6 +5,8 @@ import xml.etree.ElementTree as ET
 import glob
 import os
 import json
+from distutils.dir_util import copy_tree
+
 
 
 def xml_to_yolo_bbox(bbox, w, h):
@@ -26,15 +28,14 @@ def yolo_to_xml_bbox(bbox, w, h):
     ymax = int((bbox[1] * h) + h_half_len)
     return [xmin, ymin, xmax, ymax]
 
-#China_Drone  China_MotorBike  Czech  India  Japan  Norway  United_States
-classes = []
+classes = ['D00', 'D10', 'D20', 'D40']
 input_dirs = [
     "./data/RDD2022/Czech/train/annotations/xmls/",
     "./data/RDD2022/Norway/train/annotations/xmls/",
     "./data/RDD2022/India/train/annotations/xmls/",
     "./data/RDD2022/Japan/train/annotations/xmls/",
     "./data/RDD2022/China_Drone/train/annotations/xmls/",
-    "./data/RDD2022/China_Motorbike/train/annotations/xmls/",
+    "./data/RDD2022/China_MotorBike/train/annotations/xmls/",
     "./data/RDD2022/United_States/train/annotations/xmls/"
 ]
 output_dirs = [
@@ -43,7 +44,7 @@ output_dirs = [
     "./data/RDD2022/India/train/labels/",
     "./data/RDD2022/Japan/train/labels/",
     "./data/RDD2022/China_Drone/train/labels/",
-    "./data/RDD2022/China_Motorbike/train/labels/",
+    "./data/RDD2022/China_MotorBike/train/labels/",
     "./data/RDD2022/United_States/train/labels/"
 ]
 image_dirs = [
@@ -52,9 +53,21 @@ image_dirs = [
     "./data/RDD2022/India/train/images/",
     "./data/RDD2022/Japan/train/images/",
     "./data/RDD2022/China_Drone/train/images/",
-    "./data/RDD2022/China_Motorbike/train/images/",
+    "./data/RDD2022/China_MotorBike/train/images/",
     "./data/RDD2022/United_States/train/images/"
 ]
+
+def check_bbox(bbox, im_width, im_height):
+    return bbox[0] >= 0 and bbox[1] >= 0 and bbox[2] <= im_width and bbox[3] <= im_height
+
+
+
+# copy subdirectory example
+from_directory = "/cluster/projects/itea_lille-idi-tdt4265/datasets/rdd2022/RDD2022"
+to_directory = "./data/RDD2022"
+
+#if not os.path.isdir(from_directory):
+#copy_tree(from_directory, to_directory)
 
 for i in range(len(input_dirs)):
     input_dir = input_dirs[i]
@@ -90,9 +103,12 @@ for i in range(len(input_dirs)):
                 label = obj.find("name").text
                 # check for new classes and append to list
                 if label not in classes:
-                    classes.append(label)
+                    continue # skip unknown classes
                 index = classes.index(label)
-                pil_bbox = [int(x.text) for x in obj.find("bndbox")]
+                pil_bbox = [int(float(x.text)) for x in obj.find("bndbox")]
+                is_valid = check_bbox(pil_bbox, width, height)
+                if not is_valid:
+                    continue    # skip boxes that go out of bounds
                 yolo_bbox = xml_to_yolo_bbox(pil_bbox, width, height)
                 # convert data to string
                 bbox_string = " ".join([str(x) for x in yolo_bbox])
