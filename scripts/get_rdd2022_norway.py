@@ -9,6 +9,7 @@ from distutils.dir_util import copy_tree
 
 if not os.path.isdir("./data/RDD2022/Norway_split"):
     # split dataset for Norway into training and validation sets
+    
     os.makedirs("./data/RDD2022/Norway_split/train/labels")
     os.makedirs("./data/RDD2022/Norway_split/train/images")
     os.makedirs("./data/RDD2022/Norway_split/train/annotations/xmls")
@@ -22,6 +23,7 @@ if not os.path.isdir("./data/RDD2022/Norway_split"):
     val_xmls = "./data/RDD2022/Norway_split/val/annotations/xmls"
     train_images = "./data/RDD2022/Norway_split/train/images"
     train_xmls = "./data/RDD2022/Norway_split/train/annotations/xmls"
+
     xml_files = glob.glob(os.path.join(from_xmls, '*.xml'))
     train = True
     for fil in xml_files:

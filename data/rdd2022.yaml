@@ -1,8 +1,8 @@
 download: python ./scripts/get_rdd2022.py
 
-train: ./data/RDD2022/Norway/train
+train: ./data/RDD2022/Norway_split/train
 test: ./data/RDD2022/Norway/test/images
-val: ./data/RDD2022/Norway/val
+val: ./data/RDD2022/Norway_split/val
 
 nc: 4
 names: ['D00', 'D10', 'D20', 'D40']
