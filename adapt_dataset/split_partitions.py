@@ -62,7 +62,7 @@ val_images_len = int(total * val)
 
 
 train_images = parent_images[:train_images_len]
-test_images = parent_images[test_images_len:test_images_len+test_images_len]
+test_images = parent_images[train_images_len:train_images_len+test_images_len]
 val_images = parent_images[train_images_len+test_images_len:]
 
 copy_images(train_images, 'train')
