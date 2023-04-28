@@ -80,9 +80,6 @@ def train(hyp, opt, device, tb_writer=None):
     assert len(names) == nc, '%g names found for nc=%g dataset in %s' % (len(names), nc, opt.data)  # check
 
     # Model
-    # log model parameters
-    on_pretrain_routine_end(nc, names, epochs, batch_size, opt.img_size, opt.weights)
-
     pretrained = weights.endswith('.pt')
     if pretrained:
         with torch_distributed_zero_first(rank):
@@ -307,6 +304,20 @@ def train(hyp, opt, device, tb_writer=None):
                 f'Logging results to {save_dir}\n'
                 f'Starting training for {epochs} epochs...')
     torch.save(model, wdir / 'init.pt')
+
+    info_dict = {
+
+        'input size' : opt.img_size,
+        'nc' : nc,
+        'layers' : len(list(model.modules())),
+        'clases' : str(names),
+        # 'hyps' : str(hyp)
+
+    }
+    print(info_dict)
+
+    on_pretrain_routine_end(info_dict)
+
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
         model.train()
 
@@ -429,7 +440,6 @@ def train(hyp, opt, device, tb_writer=None):
                                                  is_coco=is_coco,
                                                  v5_metric=opt.v5_metric)
                 
-                # log metric
                 on_fit_epoch_end(results, epoch)
 
             # Write
@@ -468,11 +478,9 @@ def train(hyp, opt, device, tb_writer=None):
 
                 # Save last, best and delete
                 torch.save(ckpt, last)
-                # log artifact: last model
                 on_model_save(last)
                 if best_fitness == fi:
                     torch.save(ckpt, best)
-                    # log artifact: best model and register_model
                     on_train_end(save_dir, best)
                 if (best_fitness == fi) and (epoch >= 200):
                     torch.save(ckpt, wdir / 'best_{:03d}.pt'.format(epoch))
@@ -486,7 +494,6 @@ def train(hyp, opt, device, tb_writer=None):
                     if ((epoch + 1) % opt.save_period == 0 and not final_epoch) and opt.save_period != -1:
                         wandb_logger.log_model(
                             last.parent, opt, epoch, fi, best_model=best_fitness == fi)
-
                 del ckpt
         # end epoch ----------------------------------------------------------------------------------------------------
     # end training

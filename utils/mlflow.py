@@ -33,21 +33,14 @@ ROOT = FILE.parents[3]
 
 import mlflow
 
-def on_pretrain_routine_end(nc, names, epochs, batch_size, img_size, initial_weights):
-    """
-    This callback function log basic model parameters
-    Parameters
-    ----------
-    nc : int
-        number of classes
-    
-    """
+def on_pretrain_routine_end(info_dict):
+
     global mlflow, _mlflow, _run_id, _expr_name
 
     mlflow_location = 'http://127.0.0.1:5000' 
     mlflow.set_tracking_uri(mlflow_location)
 
-    _expr_name = 'Yolov7'
+    _expr_name = 'new'
     experiment = mlflow.get_experiment_by_name(_expr_name)
     if experiment is None:
         mlflow.create_experiment(_expr_name)
@@ -65,20 +58,11 @@ def on_pretrain_routine_end(nc, names, epochs, batch_size, img_size, initial_wei
         _mlflow = None
         mlflow_active_run = None
 
-    _mlflow.log_params({"nc":nc, "names":names, "epochs": epochs, "batch_size":batch_size, "img_size":img_size, "initial_weights":initial_weights})
+    _mlflow.log_params(info_dict)
 
 
 def on_fit_epoch_end(results, epoch):
-    """
-    This callback function log basic model parameters
-
-    Parameters
-    ----------
-    results : list
-        list of matrices 
-    epoch : int
-        epoch number
-    """
+    
     metrics_dict = {
             "mp": results[0],
             "mr": results[1],
@@ -91,39 +75,26 @@ def on_fit_epoch_end(results, epoch):
 
     _mlflow.log_metrics(metrics=metrics_dict, step=epoch)
 
-
-def on_model_save(model_last):
-    """
-    This callback function log last check point
-
-    Parameters
-    ----------
-    model_last : str
-        local path to last.pt
-    """
-    _mlflow.log_artifact(model_last)
+def on_class_wise_validation(metrics_dict, epoch):
+    _mlflow.log_metrics(metrics=metrics_dict, step=epoch)
 
 
-def on_train_end(save_dir, model_best):
-    """
-    This callback function log the best model check point
+def on_model_save(save_dir):
+    # Save last model
+    _mlflow.log_artifact(save_dir, 'last')
 
-    Parameters
-    ----------
-    save_dir : str
-        path to save model weights
-    model_best : str
-        local path to best.pt
-    """
+
+def on_train_end(save_dir, ckpt_best):
 
     # Save best model
-    _mlflow.log_artifact(model_best)
+    _mlflow.log_artifact(ckpt_best, 'best')
     model_uri = f'runs:/{_run_id}/'
 
     # Save model
     _mlflow.register_model(model_uri, _expr_name)
 
-    _mlflow.pyfunc.log_model(artifact_path=_expr_name,
-                                code_path=[str(ROOT.resolve())],
-                                artifacts={'model_path': str(save_dir)},
-                                python_model=_mlflow.pyfunc.PythonModel())
+    # _mlflow.pyfunc.log_model(artifact_path=_expr_name,
+    #                             code_path=[str(ROOT.resolve())],
+    #                             artifacts={'model_path': str(save_dir)},
+    #                             python_model=_mlflow.pyfunc.PythonModel())
+
