@@ -305,18 +305,14 @@ def train(hyp, opt, device, tb_writer=None):
                 f'Starting training for {epochs} epochs...')
     torch.save(model, wdir / 'init.pt')
 
-    info_dict = {
-
-        'input size' : opt.img_size,
-        'nc' : nc,
-        'layers' : len(list(model.modules())),
-        'clases' : str(names),
-        # 'hyps' : str(hyp)
-
-    }
-    print(info_dict)
-
-    on_pretrain_routine_end(info_dict)
+    if rank in [-1, 0]:
+        info_dict = {
+                        'input size' : opt.img_size,
+                        'number of classes' : nc,
+                        'layers' : len(list(model.modules())),
+                        'class names' : str(names)
+                    }
+        on_pretrain_routine_end(info_dict)
 
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
         model.train()
@@ -440,7 +436,7 @@ def train(hyp, opt, device, tb_writer=None):
                                                  is_coco=is_coco,
                                                  v5_metric=opt.v5_metric)
                 
-                on_fit_epoch_end(results, epoch)
+                on_fit_epoch_end(results, maps, names, epoch)
 
             # Write
             with open(results_file, 'a') as f:
@@ -481,7 +477,7 @@ def train(hyp, opt, device, tb_writer=None):
                 on_model_save(last)
                 if best_fitness == fi:
                     torch.save(ckpt, best)
-                    on_train_end(save_dir, best)
+                    on_train_end(best)
                 if (best_fitness == fi) and (epoch >= 200):
                     torch.save(ckpt, wdir / 'best_{:03d}.pt'.format(epoch))
                 if epoch == 0:
