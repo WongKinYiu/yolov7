@@ -6,11 +6,13 @@ import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, classification_report
-import seaborn as sns
+import seaborn as sn
+import os
+from pandas import DataFrame
 
 # Define hyperparameters
-num_epochs = 50
-batch_size = 32
+num_epochs = 1
+batch_size = 64
 learning_rate = 0.001
 
 # Define device to use (CPU or GPU if available)
@@ -30,13 +32,14 @@ transform_test = transforms.Compose([
 ])
 
 # Load datasets
-train_dataset = torchvision.datasets.ImageFolder(root='H:/PatoUTN/pap/CROC original/imgs_for_classification_split/train', transform=transform_train)
+base_folder = 'H:/PatoUTN/pap/CROC original/prepared_dataset/cells'
+train_dataset = torchvision.datasets.ImageFolder(root=os.path.join(base_folder, 'train'), transform=transform_train)
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-test_dataset = torchvision.datasets.ImageFolder(root='H:/PatoUTN/pap/CROC original/imgs_for_classification_split/test', transform=transform_test)
+test_dataset = torchvision.datasets.ImageFolder(root=os.path.join(base_folder, 'test'), transform=transform_test)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-valid_dataset = torchvision.datasets.ImageFolder(root='H:/PatoUTN/pap/CROC original/imgs_for_classification_split/validation', transform=transform_test)
+valid_dataset = torchvision.datasets.ImageFolder(root=os.path.join(base_folder, 'val'), transform=transform_test)
 valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=batch_size, shuffle=False)
 
 # Define model
@@ -86,14 +89,16 @@ for epoch in range(num_epochs):
 
         # Print statistics
         train_loss += loss.item() * images.size(0)
-        if (i+1) % 100 == 0:
-            train_loss = train_loss / train_total
-            train_acc = 100 * train_correct / train_total
-            print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{total_step}], Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}')
+        train_loss = train_loss / train_total
+        train_acc = 100 * train_correct / train_total
 
-            # Write loss and accuracy to Tensorboard
-            writer.add_scalar('Loss/train', train_loss, epoch * total_step + i)
-            writer.add_scalar('Accuracy/train', train_acc, epoch * total_step + i)
+        # Write loss and accuracy to Tensorboard
+        writer.add_scalar('Loss/train', train_loss, epoch * total_step + i)
+        writer.add_scalar('Accuracy/train', train_acc, epoch * total_step + i)
+
+        if i == 0 or (i+1) % 10 == 0:
+            print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{total_step}], Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.2f}')
+            
 
     # Validate the model on the validation set
     model.eval()
@@ -171,32 +176,21 @@ with torch.no_grad():
 # Print classification report and confusion matrix
 predictions = torch.cat(predictions, dim=0)
 targets = torch.cat(targets, dim=0)
-conf_matrix = confusion_matrix(targets.cpu().numpy(), predictions.cpu().numpy(), labels=[0, 1, 2, 3, 4, 5])
-class_report = classification_report(targets.cpu().numpy(), predictions.cpu().numpy(), target_names=['class0', 'class1', 'class2', 'class3', 'class4', 'class5'])
+conf_matrix = confusion_matrix(targets.cpu().numpy(), predictions.cpu().numpy())
+df_cm = DataFrame(conf_matrix , index=train_dataset.class_to_idx, columns=train_dataset.class_to_idx)
+class_report = classification_report(targets.cpu().numpy(), predictions.cpu().numpy(), target_names=train_dataset.class_to_idx)
 print(f'Confusion matrix:\n{conf_matrix}')
 print(f'Classification report:\n{class_report}')
 
-# Plot loss and accuracy
-plt.plot(train_losses, label='Train Loss')
-plt.plot(valid_losses, label='Valid Loss')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.legend()
-plt.savefig('loss.png', dpi=300, bbox_inches='tight')
-
-plt.plot(train_accs, label='Train Acc')
-plt.plot(valid_accs, label='Valid Acc')
-plt.xlabel('Epoch')
-plt.ylabel('Accuracy')
-plt.legend()
-plt.savefig('accuracy.png', dpi=300, bbox_inches='tight')
-
 # Plot the confusion matrix as an image
-sns.set(font_scale=1.4)
-sns.heatmap(conf_matrix, annot=True, annot_kws={"size": 16}, cmap='Blues', fmt='g')
+fig = plt.figure()
+sn.set(font_scale=1.4)
+sn.heatmap(df_cm, annot=True, annot_kws={"size": 16}, cmap='Blues', fmt='g')
 plt.xlabel('Predicted')
 plt.ylabel('True')
 plt.savefig('confusion_matrix.png', dpi=300, bbox_inches='tight')
+
+writer.add_figure('confussion_matrix', fig)
 
 # save class report
 with open('classification_report.txt', 'w') as f:
