@@ -61,16 +61,16 @@ python train.py --data coco.yaml --batch 16 --weights '' --cfg cfg/yolov7.yaml -
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.84931
 ```
 
-`yolov7s-u6.pt
+`yolov7s-u6.pt`
 
-````
+```
  # Parameters 11.0M
  # FLOPs 28.1G
- ```
+```
 
 `yolov7n-u6.pt`
 
-````
+```
  # Parameters 3.1M
  # FLOPs 8.7G
  Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.37552
