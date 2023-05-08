@@ -65,8 +65,20 @@ python train.py --data coco.yaml --batch 16 --weights '' --cfg cfg/yolov7.yaml -
 
 ```
  # Parameters 60.1M
- # FLOPs 206.8G
-
+ # FLOPs 205.5G
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.54829
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.71969
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.59989
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.38114
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.59976
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.70246
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.39829
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.66562
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.71531
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.56469
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.76751
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.85099
+ 
  # with more epochs
  
 ```
