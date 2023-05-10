@@ -11,9 +11,11 @@ import os
 from pandas import DataFrame
 
 # Define hyperparameters
+num_classes = 6
 num_epochs = 1
 batch_size = 64
 learning_rate = 0.001
+use_wieght_balance = True
 
 # Define device to use (CPU or GPU if available)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -43,13 +45,22 @@ valid_dataset = torchvision.datasets.ImageFolder(root=os.path.join(base_folder, 
 valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=batch_size, shuffle=False)
 
 # Define model
-model = torchvision.models.resnet18(pretrained=False)
+model = torchvision.models.resnet18(pretrained=True)
 num_ftrs = model.fc.in_features
-model.fc = nn.Linear(num_ftrs, 6)
+model.fc = nn.Linear(num_ftrs, num_classes)
 model.to(device)
 
 # Define loss function and optimizer
-criterion = nn.CrossEntropyLoss()
+if use_wieght_balance:
+    class_counts = torch.zeros(num_classes)
+    for item in train_dataset.targets:
+        class_counts[item] += 1
+
+    class_weights = 1 - (class_counts / len(train_dataset.targets))
+    class_weights = class_weights.to(device)
+    criterion = nn.CrossEntropyLoss(weight=class_weights)
+else:
+    criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 
 # Define Tensorboard writer
