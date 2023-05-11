@@ -41,7 +41,7 @@ def colorstr(*input):
 
 
 
-def on_pretrain_routine_end(info_dict):
+def initiate_mlflow_logging(info_dict):
     """
     This function creates the mlflow experiment for the training and log some basic information's,
 
@@ -80,7 +80,7 @@ def on_pretrain_routine_end(info_dict):
     _mlflow.log_params(info_dict)
 
 
-def on_fit_epoch_end(results, maps, names, epoch):
+def log_metrics(results, maps, names, epoch):
     """
     This function logs the epoch wise results
 
@@ -112,32 +112,57 @@ def on_fit_epoch_end(results, maps, names, epoch):
     }
 
     metrics_dict.update(class_wise_ap)
-
     _mlflow.log_metrics(metrics=metrics_dict, step=epoch)
 
 
-def on_model_save(save_dir):
+def log_plot(figure, name_str):
+    """
+    This function log the plots as artifacts
+
+    Parameters
+    ----------
+    figure : matplotlib.figure
+        matplotlib.figure object
+    name_str : str
+        name of the plot
+    """
+    _mlflow.log_figure(figure, name_str)
+
+def log_image(image, name_str):
+    """
+    This function log the test images as artifacts
+
+    Parameters
+    ----------
+    image : np.ndarray
+        np.ndarray
+    name_str : str
+        name of the plot
+    """
+    _mlflow.log_image(image, name_str)
+
+def save_last_model(last_ckpt_path):
     """
     This function saves the last model
 
     Parameters
     ----------
-    save_dir : str
+    last_ckpt_path : str
         local path to the last.pt
     """
-    _mlflow.log_artifact(save_dir, 'last')
+    _mlflow.log_artifact(last_ckpt_path, 'last')
 
 
-def on_train_end(save_dir):
+def save_best_model(best_ckpt_path):
     """
     This function saves the best model and register it on model registry
 
     Parameters
     ----------
-    save_dir : str
+    best_ckpt_path : str
         local path to the best.pt
     """
-    _mlflow.log_artifact(save_dir, 'best')
+    _mlflow.log_artifact(best_ckpt_path, 'best')
     model_uri = f'runs:/{_run_id}/'
     _mlflow.register_model(model_uri, _expr_name)
 

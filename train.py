@@ -34,9 +34,10 @@ from utils.loss import ComputeLoss, ComputeLossOTA
 from utils.plots import plot_images, plot_labels, plot_results, plot_evolution
 from utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first, is_parallel
 from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
+from utils.mlflow import initiate_mlflow_logging, log_metrics, save_last_model, save_best_model
 
 logger = logging.getLogger(__name__)
-from utils.mlflow import *
+
 
 def train(hyp, opt, device, tb_writer=None):
     logger.info(colorstr('hyperparameters: ') + ', '.join(f'{k}={v}' for k, v in hyp.items()))
@@ -312,7 +313,7 @@ def train(hyp, opt, device, tb_writer=None):
                         'layers' : len(list(model.modules())),
                         'class names' : str(names)
                     }
-        on_pretrain_routine_end(info_dict)
+        initiate_mlflow_logging(info_dict)
 
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
         model.train()
@@ -436,7 +437,7 @@ def train(hyp, opt, device, tb_writer=None):
                                                  is_coco=is_coco,
                                                  v5_metric=opt.v5_metric)
                 
-                on_fit_epoch_end(results, maps, names, epoch)
+                log_metrics(results, maps, names, epoch)
 
             # Write
             with open(results_file, 'a') as f:
@@ -474,10 +475,10 @@ def train(hyp, opt, device, tb_writer=None):
 
                 # Save last, best and delete
                 torch.save(ckpt, last)
-                on_model_save(last)
+                save_last_model(last)
                 if best_fitness == fi:
                     torch.save(ckpt, best)
-                    on_train_end(best)
+                    save_best_model(best)
                 if (best_fitness == fi) and (epoch >= 200):
                     torch.save(ckpt, wdir / 'best_{:03d}.pt'.format(epoch))
                 if epoch == 0:
