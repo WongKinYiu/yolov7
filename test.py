@@ -8,15 +8,24 @@ import numpy as np
 import torch
 import yaml
 from tqdm import tqdm
+import cv2
+import matplotlib
 
 from models.experimental import attempt_load
 from utils.datasets import create_dataloader
 from utils.general import coco80_to_coco91_class, check_dataset, check_file, check_img_size, check_requirements, \
     box_iou, non_max_suppression, scale_coords, xyxy2xywh, xywh2xyxy, set_logging, increment_path, colorstr
 from utils.metrics import ap_per_class, ConfusionMatrix
-from utils.plots import plot_images, output_to_target, plot_study_txt
+from utils.plots import plot_images, output_to_target, plot_study_txt, plot_one_box
 from utils.torch_utils import select_device, time_synchronized, TracedModel
+from utils.mlflow import log_image
 
+def color_list():
+    # Return first 10 plt colors as (r,g,b) https://stackoverflow.com/questions/51350872/python-from-color-name-to-rgb
+    def hex2rgb(h):
+        return tuple(int(h[1 + i:1 + i + 2], 16) for i in (0, 2, 4))
+
+    return [hex2rgb(h) for h in matplotlib.colors.TABLEAU_COLORS.values()]  # or BASE_ (8), CSS4_ (148), XKCD_ (949)
 
 def test(data,
          weights=None,
@@ -43,6 +52,7 @@ def test(data,
          v5_metric=False):
     # Initialize/load model and set device
     training = model is not None
+    colors = color_list()
     if training:  # called by train.py
         device = next(model.parameters()).device  # get model device
 
@@ -150,6 +160,16 @@ def test(data,
                     line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
                     with open(save_dir / 'labels' / (path.stem + '.txt'), 'a') as f:
                         f.write(('%g ' * len(line)).rstrip() % line + '\n')
+
+            # mlflow log sample of test images    
+            if batch_i < 3:
+                im_ = cv2.imread(str(path))
+                im_ = cv2.cvtColor(im_, cv2.COLOR_BGR2RGB)
+                for *xyxy, conf, cls in predn.tolist():
+                    if conf > 0.24:
+                        label = f'{names[int(cls)]} {conf:.2f}'
+                        plot_one_box(xyxy, im_, label=label, color=colors[int(cls)], line_thickness=1)
+                log_image(im_, str(path).split('/')[-1])
 
             # W&B logging - Media Panel Plots
             if len(wandb_images) < log_imgs and wandb_logger.current_epoch > 0:  # Check for test operation
