@@ -149,7 +149,7 @@ for image in data:
             if not os.path.exists(class_folder):
                 os.makedirs(class_folder, exist_ok=True)
 
-            cv2.imwrite(os.path.join(class_folder, f"{image_name_only}_{x}_{y}{image_extension}"), cell_image)
+            cv2.imwrite(os.path.join(class_folder, f"{img_class}_{image_name_only}_{x}_{y}{image_extension}"), cell_image)
 
         if create_subimages:
             if x < size and y < size:
