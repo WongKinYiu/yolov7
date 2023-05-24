@@ -3,11 +3,9 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, Subset
 import os
 # Required constants.
-ROOT_DIR = '/shared/PatoUTN/PAP/Datasets/cells_6_class_560_balanced'
-IMAGE_SIZE = 90 # Image size of resize when applying transforms.
-BATCH_SIZE = 16 
-NUM_WORKERS = 4 # Number of parallel processes for data preparation.
 
+IMAGE_SIZE = 90 # Image size of resize when applying transforms.
+NUM_WORKERS = 4 # Number of parallel processes for data preparation.
 
 # Training transforms
 def get_train_transform(IMAGE_SIZE, pretrained):
@@ -57,7 +55,7 @@ def normalize_transform(pretrained):
     return normalize
 
 
-def get_datasets(pretrained):
+def get_datasets(pretrained, ROOT_DIR):
     """
     Function to prepare the Datasets.
     :param pretrained: Boolean, True or False.
@@ -81,7 +79,7 @@ def get_datasets(pretrained):
     return dataset_train, dataset_valid, dataset_test, dataset_train.classes
 
 
-def get_data_loaders(dataset_train, dataset_valid, dataset_test):
+def get_data_loaders(dataset_train, dataset_valid, dataset_test, BATCH_SIZE):
     """
     Prepares the training and validation data loaders.
     :param dataset_train: The training dataset.
@@ -96,8 +94,10 @@ def get_data_loaders(dataset_train, dataset_valid, dataset_test):
         dataset_valid, batch_size=BATCH_SIZE, 
         shuffle=False, num_workers=NUM_WORKERS
     )
+    # Batch size for the test dataset is 1 so the test function can
+    # retrieve the filename of missclasified images
     test_loader = DataLoader(
-        dataset_test, batch_size=BATCH_SIZE, 
+        dataset_test, batch_size=1, 
         shuffle=False, num_workers=NUM_WORKERS
     )
     return train_loader, valid_loader, test_loader
