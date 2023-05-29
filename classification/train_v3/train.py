@@ -189,7 +189,7 @@ def validate(model, testloader, criterion, device, dest_path):
 
             # Calculate the accuracy.
             _, preds = torch.max(outputs.data, 1)
-            epoch_running_correct += (preds == labels).sum().item()
+            valid_running_correct += (preds == labels).sum().item()
      
     # Loss and accuracy for the complete epoch.
     epoch_loss = valid_running_loss / counter
@@ -259,9 +259,9 @@ if __name__ == '__main__':
     pretrained = True
     model_name = 'resnet18'
     fine_tune = True
-    label = ''
-    dataset_path = '/shared/PatoUTN/PAP/Datasets/cells_2_class_balanced'
+    label = '2_clases'
+    dataset_path = '/shared/PatoUTN/PAP/Datasets/originales/2/clasificacion'
     dest_path = '/shared/PatoUTN/PAP/Entrenamientos'
-    use_weight_balance = True
+    use_weight_balance = False
     main(epochs, lr, batch_size, pretrained, model_name, dataset_path, 
          dest_path, fine_tune, label, use_weight_balance)
