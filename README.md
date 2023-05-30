@@ -287,7 +287,7 @@ YOLOv7-3d-detection & YOLOv7-lidar & YOLOv7-road (with NTUT)
         <img src="./figure/yolov7_lidar.jpg" width="30%"/>
     </a>
     <a href="./">
-        <img src="./figure/yolov7_road.png" width="30%"/>
+        <img src="./figure/yolov7_road.jpg" width="30%"/>
     </a>
 </div>
 
