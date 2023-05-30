@@ -34,6 +34,7 @@ from utils.loss import ComputeLoss, ComputeLossOTA
 from utils.plots import plot_images, plot_labels, plot_results, plot_evolution
 from utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first, is_parallel
 from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
+from utils.mlflow import initiate_mlflow_logging, log_metrics, save_last_model, save_best_model
 
 logger = logging.getLogger(__name__)
 
@@ -304,6 +305,16 @@ def train(hyp, opt, device, tb_writer=None):
                 f'Logging results to {save_dir}\n'
                 f'Starting training for {epochs} epochs...')
     torch.save(model, wdir / 'init.pt')
+
+    if rank in [-1, 0]:
+        info_dict = {
+                        'input size' : opt.img_size,
+                        'number of classes' : nc,
+                        'layers' : len(list(model.modules())),
+                        'class names' : str(names)
+                    }
+        initiate_mlflow_logging(info_dict)
+
     for epoch in range(start_epoch, epochs):  # epoch ------------------------------------------------------------------
         model.train()
 
@@ -425,6 +436,8 @@ def train(hyp, opt, device, tb_writer=None):
                                                  compute_loss=compute_loss,
                                                  is_coco=is_coco,
                                                  v5_metric=opt.v5_metric)
+                
+                log_metrics(results, maps, names, epoch)
 
             # Write
             with open(results_file, 'a') as f:
@@ -462,8 +475,10 @@ def train(hyp, opt, device, tb_writer=None):
 
                 # Save last, best and delete
                 torch.save(ckpt, last)
+                save_last_model(last)
                 if best_fitness == fi:
                     torch.save(ckpt, best)
+                    save_best_model(best)
                 if (best_fitness == fi) and (epoch >= 200):
                     torch.save(ckpt, wdir / 'best_{:03d}.pt'.format(epoch))
                 if epoch == 0:
@@ -477,7 +492,6 @@ def train(hyp, opt, device, tb_writer=None):
                         wandb_logger.log_model(
                             last.parent, opt, epoch, fi, best_model=best_fitness == fi)
                 del ckpt
-
         # end epoch ----------------------------------------------------------------------------------------------------
     # end training
     if rank in [-1, 0]:
