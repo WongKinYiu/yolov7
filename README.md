@@ -273,7 +273,7 @@ YOLOv7-semantic & YOLOv7-detection & YOLOv7-depth (with NTUT)
 
 <div align="center">
     <a href="./">
-        <img src="./figure/yolov7_city.png" width="80%"/>
+        <img src="./figure/yolov7_city.jpg" width="80%"/>
     </a>
 </div>
 
