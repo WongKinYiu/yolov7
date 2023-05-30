@@ -196,7 +196,7 @@ See [keypoint.ipynb](https://github.com/WongKinYiu/yolov7/blob/main/tools/keypoi
 </div>
 
 
-## Instance segmentation
+## Instance segmentation (with NTU)
 
 [`code`](https://github.com/WongKinYiu/yolov7/tree/mask) [`yolov7-mask.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-mask.pt)
 
@@ -252,7 +252,7 @@ YOLOv7 with decoupled TAL head (YOLOR + YOLOv5 + YOLOv6)
 
 ## Teaser
 
-Yolov7-semantic & YOLOv7-panoptic & YOLOv7-caption
+YOLOv7-semantic & YOLOv7-panoptic & YOLOv7-caption
 
 <div align="center">
     <a href="./">
@@ -266,6 +266,28 @@ Yolov7-semantic & YOLOv7-panoptic & YOLOv7-caption
     </a>
     <a href="./">
         <img src="./figure/tennis_caption.png" width="24%"/>
+    </a>
+</div>
+
+YOLOv7-semantic & YOLOv7-detection & YOLOv7-depth (with NTUT)
+
+<div align="center">
+    <a href="./">
+        <img src="./figure/yolov7_city.png" width="80%"/>
+    </a>
+</div>
+
+YOLOv7-3d-detection & YOLOv7-lidar & YOLOv7-road (with NTUT)
+
+<div align="center">
+    <a href="./">
+        <img src="./figure/yolov7_3d.jpg" width="30%"/>
+    </a>
+    <a href="./">
+        <img src="./figure/yolov7_lidar.jpg" width="30%"/>
+    </a>
+    <a href="./">
+        <img src="./figure/yolov7_road.png" width="30%"/>
     </a>
 </div>
 
