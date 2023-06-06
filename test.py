@@ -177,9 +177,44 @@ def test(data,
             # Append to text file
             if save_txt:
                 gn = torch.tensor(shapes[si][0])[[1, 0, 1, 0]]  # normalization gain whwh
-                for *xyxy, conf, cls in predn.tolist():
+                for p in predn.tolist():
+                    if p[4] < conf_thres:
+                        continue
+                    xyxy = p[:4]
+                    full_kpts = p[6:]
+                    # detect class from position of the skeleton
+                    kpts = full_kpts[5*3:7*3]
+                    conf_l = kpts[2]
+                    conf_r = kpts[5]
+                    if conf_l > conf_thres and conf_r > conf_thres:
+                        # левое плечо правее правого
+                        if kpts[0] > kpts[3]:
+                            cls = 0
+                        else:
+                            cls = 1
+                    else:
+                        cls = 0
+                    kpts = []
+                    """
+                    for i in range(len(full_kpts)//3):
+                        conf = full_kpts[2 + i*3]
+                        kpts.append(full_kpts[i*3] / gn[0])
+                        kpts.append(full_kpts[1 + i*3] / gn[1])
+                        kpts.append(conf)
+                        if conf > conf_thres:
+                            kpts.append(full_kpts[i*3] / gn[0])
+                            kpts.append(full_kpts[1 + i*3] / gn[1])
+                            kpts.append(conf)
+                        else:
+                            kpts.append(0)
+                            kpts.append(0)
+                            kpts.append(0)
+                    """
+                    # print("Gn: ", gn)
+                    # cls = 0.0
+                    # conf = p[4]
                     xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                    line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
+                    line = (cls, *xywh, *kpts) #if save_conf else (cls, *xywh)  # label format
                     with open(save_dir / 'labels' / (path.stem + '.txt'), 'a') as f:
                         f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
@@ -327,7 +362,7 @@ def test(data,
                 print(f'pycocotools unable to run: {e}')
 
         elif save_json_kpt:
-            anno_json = '../coco/annotations/person_keypoints_val2017.json'  # annotations json
+            anno_json = 'datasets/coco_kpts/annotations/person_keypoints_val2017.json'  # annotations json
             print('\nEvaluating xtcocotools mAP... saving %s...' % pred_json)
 
             try:  # https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocoEvalDemo.ipynb
