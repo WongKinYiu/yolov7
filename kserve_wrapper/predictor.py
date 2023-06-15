@@ -68,7 +68,7 @@ class YoloV7Model(kserve.Model):
             "h": csvrow[4],
         }
 
-    def predict(self, request: Dict) -> Dict:
+    def predict(self, request: Dict, headers: Dict[str, str] = None) -> Dict:
         inputs = request["instances"]
         # request is wrapped the following format
         # {

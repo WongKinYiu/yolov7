@@ -5,7 +5,7 @@ RUN apt-get update && \
 
 COPY requirements.txt requirements.txt
 
-RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir kserve
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir kserve==v0.10.1
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
