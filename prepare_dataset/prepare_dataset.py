@@ -29,11 +29,15 @@ def divide_image_into_subimages(img, x, y, s, id_imagen, i, j, image_partition):
 def correctSize(xx, yy):
   corrected_x = width_in_image
   corrected_y = height_in_image
+
+  xx = xx - (width_in_image/2)
+  yy = yy - (height_in_image/2)
+
   if xx + width_in_image > 1:
-    corrected_x = width_in_image - ((xx + width_in_image) - 1)
+    corrected_x = width_in_image - ((xx + width_in_image) - 0.99)
   
   if yy + height_in_image > 1:
-    corrected_y = height_in_image - ((yy + height_in_image) - 1)
+    corrected_y = height_in_image - ((yy + height_in_image) - 0.99)
 
   return corrected_x, corrected_y
 
