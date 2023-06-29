@@ -27,7 +27,7 @@ This implimentation is for [darknet](https://github.com/AlexeyAB/darknet).
 | Res-ELAN-tiny | 640 | 44.3% | 60.7% | 48.0% | 5.4M | 21.1G | . |
 | CSP-ELAN-tiny | 640 | % | % | % | 5.6M | 21.6G | {1,3,1} |
 | CSP-ELAN-tiny | 640 | % | % | % | 5.9M | 22.7G | {1,3,2} |
-| CSP-ELAN-tiny | 640 | 45.3% | 61.7% | 49.0% | 5.9M | 22.5G | {3,3,1} |
+| CSP-ELAN-tiny | 640 | 45.4% | 61.9% | 49.1% | 5.9M | 22.5G | {3,3,1} |
 | CSP-ELAN-tiny (relu) | 640 | 44.1% | 60.6% | 47.7% | 5.9M | 22.5G | {3,3,1} |
 | CSP-ELAN-tiny | 640 | % | % | % | 6.5M | 24.5G | {3,3,2} |
 |  |  |  |  |  |  |  |  |
