@@ -27,7 +27,8 @@ This implimentation is for [darknet](https://github.com/AlexeyAB/darknet).
 | Res-ELAN-tiny | 640 | 44.3% | 60.7% | 48.0% | 5.4M | 21.1G | . |
 | CSP-ELAN-tiny | 640 | % | % | % | 5.6M | 21.6G | {1,3,1} |
 | CSP-ELAN-tiny | 640 | % | % | % | 5.9M | 22.7G | {1,3,2} |
-| CSP-ELAN-tiny | 640 | 45.1% | 61.6% | 49.1% | 5.9M | 22.5G | {3,3,1} |
+| CSP-ELAN-tiny | 640 | 45.3% | 61.7% | 49.0% | 5.9M | 22.5G | {3,3,1} |
+| CSP-ELAN-tiny (relu) | 640 | 44.1% | 60.6% | 47.7% | 5.9M | 22.5G | {3,3,1} |
 | CSP-ELAN-tiny | 640 | % | % | % | 6.5M | 24.5G | {3,3,2} |
 |  |  |  |  |  |  |  |  |
 | DarkN-ELAN-tiny | 640 | 42.1% | 58.6% | 45.8% | 4.4M | 17.9G | {1,3} |
@@ -35,7 +36,4 @@ This implimentation is for [darknet](https://github.com/AlexeyAB/darknet).
 | ResN-ELAN-tiny | 640 | 41.9% | 58.4% | 45.8% | 4.2M | 17.1G | . |
 | CSPN-ELAN-tiny | 640 | 43.7% | 60.2% | 47.5% | 4.6M | 18.6G | {3,3,1} |
 | CSPN-ELAN-tiny | 640 | 44.7% | 61.1% | 48.5% | 5.2M | 20.5G | {3,3,2} |
-|  |  |  |  |  |  |  |  |
-| ELAN-nano | 640 | % | % | % | 1.7M | 7.7G | {2,2} |
-| ELAN-tina | 640 | % | % | % | 3.9M | 16.1G | {2,2} |
 |  |  |  |  |  |  |  |  |
