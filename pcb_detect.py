@@ -30,10 +30,16 @@ Image.MAX_IMAGE_PIXELS = None
 result_path = "/home/workspace/PCBBoard/Daheng_pcbboard_result"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 crop_size = 640
 =======
 crop_size = 416
 >>>>>>> 7d20ccfd97efe5d68cfd7e86aa84ec2031784649
+=======
+feature/for_custom
+crop_size = 640
+
+>>>>>>> 8898f04483791c31bea65e0cc6e1bda6f693218b
 overlap = 0.2
 
 
@@ -114,11 +120,16 @@ def detect(save_img=False):
 
                 # Get names and colors
 <<<<<<< HEAD
+<<<<<<< HEAD
                 names = model.module.names if hasattr(model, 'module') else model.names
 =======
                 # names = model.module.names if hasattr(model, 'module') else model.names
 >>>>>>> 7d20ccfd97efe5d68cfd7e86aa84ec2031784649
                 # colors = [[random.randint(0, 255) for _ in range(3)] for _ in names]
+=======
+                
+                names = model.module.names if hasattr(model, 'module') else model.names
+>>>>>>> 8898f04483791c31bea65e0cc6e1bda6f693218b
 
                 if True:
                     im0s = img0
@@ -185,12 +196,18 @@ def detect(save_img=False):
 
                                 if save_img or view_img:  # Add bbox to image
 <<<<<<< HEAD
+<<<<<<< HEAD
                                     label = f'{names[int(cls)]} {conf:.2f}'
                                     # label = "ng"
 =======
                                     # label = f'{names[int(cls)]} {conf:.2f}'
                                     label = "ng"
 >>>>>>> 7d20ccfd97efe5d68cfd7e86aa84ec2031784649
+=======
+                                    label = f'{names[int(cls)]} {conf:.2f}'
+                                    # label = "ng"
+
+>>>>>>> 8898f04483791c31bea65e0cc6e1bda6f693218b
                                     # plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=1)
                                     plot_one_box(xyxy, im0, label=label, color=[0,0,255], line_thickness=1)
                                     
