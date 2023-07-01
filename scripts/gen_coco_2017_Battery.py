@@ -56,8 +56,8 @@ def sep_train_val(file):
 
 def convert_annotation(image_id):
     if probo < 75:
-        in_file = open('/home/workspace/BatteryDetection/xmls/train2017/%s.xml'%image_id)
-        out_file = open('/home/workspace/BatteryDetection/labels/train2017/%s.txt'%image_id, 'w')
+        in_file = open('/home/workspace/BatteryDetect/DataCOCO/xmls/train2017/%s.xml'%image_id)
+        out_file = open('/home/workspace/BatteryDetect/DataCOCO/labels/train2017/%s.txt'%image_id, 'w')
         
         tree=ET.parse(in_file)
         root = tree.getroot()
@@ -79,8 +79,8 @@ def convert_annotation(image_id):
         out_file.close()
 
     else:				
-        in_file = open('/home/workspace/BatteryDetection/xmls/val2017/%s.xml'%image_id)
-        out_file = open('/home/workspace/BatteryDetection/labels/val2017/%s.txt'%image_id, 'w')
+        in_file = open('/home/workspace/BatteryDetect/DataCOCO/xmls/val2017/%s.xml'%image_id)
+        out_file = open('/home/workspace/BatteryDetect/DataCOCO/labels/val2017/%s.txt'%image_id, 'w')
 
         tree=ET.parse(in_file)
         root = tree.getroot()
@@ -125,24 +125,24 @@ val_file = open(os.path.join(work_space_dir, "val2017.txt"), 'w')
 train_file.close()
 val_file.close()
 
-labels_train = '/home/workspace/BatteryDetection/labels/train2017/'
+labels_train = '/home/workspace/BatteryDetect/DataCOCO/labels/train2017/'
 if not os.path.isdir(labels_train):
         os.makedirs(labels_train)
-labels_val = '/home/workspace/BatteryDetection/labels/val2017/'
+labels_val = '/home/workspace/BatteryDetect/DataCOCO/labels/val2017/'
 if not os.path.isdir(labels_val):
         os.makedirs(labels_val)
 
-train_img_dst_path = "/home/workspace/BatteryDetection/images/train2017/"
+train_img_dst_path = "/home/workspace/BatteryDetect/DataCOCO/images/train2017/"
 if not os.path.isdir(train_img_dst_path):
     os.makedirs(train_img_dst_path)
-train_xml_dst_path = "/home/workspace/BatteryDetection/xmls/train2017/"
+train_xml_dst_path = "/home/workspace/BatteryDetect/DataCOCO/xmls/train2017/"
 if not os.path.isdir(train_xml_dst_path):
     os.makedirs(train_xml_dst_path)
 
-val_img_dst_path = '/home/workspace/BatteryDetection/images/val2017/'
+val_img_dst_path = '/home/workspace/BatteryDetect/DataCOCO/images/val2017/'
 if not os.path.isdir(val_img_dst_path):
     os.makedirs(val_img_dst_path)
-val_xml_dst_path = '/home/workspace/BatteryDetection/xmls/val2017/'
+val_xml_dst_path = '/home/workspace/BatteryDetect/DataCOCO/xmls/val2017/'
 if not os.path.isdir(val_xml_dst_path):
     os.makedirs(val_xml_dst_path)
 
