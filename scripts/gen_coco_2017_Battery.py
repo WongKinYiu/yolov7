@@ -58,6 +58,7 @@ def convert_annotation(image_id):
     if probo < 75:
         in_file = open('/home/workspace/BatteryDetect/DataCOCO/xmls/train2017/%s.xml'%image_id)
         out_file = open('/home/workspace/BatteryDetect/DataCOCO/labels/train2017/%s.txt'%image_id, 'w')
+
         
         tree=ET.parse(in_file)
         root = tree.getroot()
@@ -81,6 +82,7 @@ def convert_annotation(image_id):
     else:				
         in_file = open('/home/workspace/BatteryDetect/DataCOCO/xmls/val2017/%s.xml'%image_id)
         out_file = open('/home/workspace/BatteryDetect/DataCOCO/labels/val2017/%s.txt'%image_id, 'w')
+
 
         tree=ET.parse(in_file)
         root = tree.getroot()
@@ -125,6 +127,7 @@ val_file = open(os.path.join(work_space_dir, "val2017.txt"), 'w')
 train_file.close()
 val_file.close()
 
+
 labels_train = '/home/workspace/BatteryDetect/DataCOCO/labels/train2017/'
 if not os.path.isdir(labels_train):
         os.makedirs(labels_train)
@@ -143,6 +146,7 @@ val_img_dst_path = '/home/workspace/BatteryDetect/DataCOCO/images/val2017/'
 if not os.path.isdir(val_img_dst_path):
     os.makedirs(val_img_dst_path)
 val_xml_dst_path = '/home/workspace/BatteryDetect/DataCOCO/xmls/val2017/'
+
 if not os.path.isdir(val_xml_dst_path):
     os.makedirs(val_xml_dst_path)
 

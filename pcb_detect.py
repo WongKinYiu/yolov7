@@ -29,7 +29,9 @@ Image.MAX_IMAGE_PIXELS = None
 
 result_path = "/home/workspace/PCBBoard/Daheng_pcbboard_result"
 
+feature/for_custom
 crop_size = 640
+
 overlap = 0.2
 
 
@@ -109,8 +111,8 @@ def detect(save_img=False):
                 img = np.ascontiguousarray(img)
 
                 # Get names and colors
+                
                 names = model.module.names if hasattr(model, 'module') else model.names
-                # colors = [[random.randint(0, 255) for _ in range(3)] for _ in names]
 
                 if True:
                     im0s = img0
@@ -178,6 +180,7 @@ def detect(save_img=False):
                                 if save_img or view_img:  # Add bbox to image
                                     label = f'{names[int(cls)]} {conf:.2f}'
                                     # label = "ng"
+
                                     # plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=1)
                                     plot_one_box(xyxy, im0, label=label, color=[0,0,255], line_thickness=1)
                                     
