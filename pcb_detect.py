@@ -29,7 +29,11 @@ Image.MAX_IMAGE_PIXELS = None
 
 result_path = "/home/workspace/PCBBoard/Daheng_pcbboard_result"
 
+<<<<<<< HEAD
 crop_size = 640
+=======
+crop_size = 416
+>>>>>>> 7d20ccfd97efe5d68cfd7e86aa84ec2031784649
 overlap = 0.2
 
 
@@ -109,7 +113,11 @@ def detect(save_img=False):
                 img = np.ascontiguousarray(img)
 
                 # Get names and colors
+<<<<<<< HEAD
                 names = model.module.names if hasattr(model, 'module') else model.names
+=======
+                # names = model.module.names if hasattr(model, 'module') else model.names
+>>>>>>> 7d20ccfd97efe5d68cfd7e86aa84ec2031784649
                 # colors = [[random.randint(0, 255) for _ in range(3)] for _ in names]
 
                 if True:
@@ -176,8 +184,13 @@ def detect(save_img=False):
                                 #         print(line)
 
                                 if save_img or view_img:  # Add bbox to image
+<<<<<<< HEAD
                                     label = f'{names[int(cls)]} {conf:.2f}'
                                     # label = "ng"
+=======
+                                    # label = f'{names[int(cls)]} {conf:.2f}'
+                                    label = "ng"
+>>>>>>> 7d20ccfd97efe5d68cfd7e86aa84ec2031784649
                                     # plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=1)
                                     plot_one_box(xyxy, im0, label=label, color=[0,0,255], line_thickness=1)
                                     
