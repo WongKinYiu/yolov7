@@ -23,6 +23,7 @@ import os
 import pandas as pd
 import cv2
 import argparse
+import numpy as np
 
 # Settings
 #--------------------------------------------------------------------#
@@ -63,6 +64,11 @@ def normalize_xywh(xywh, w, h):
     xywh[2] = xywh[2] / w
     xywh[3] = xywh[3] / h
     return xywh
+
+def center_xy_coords(xywh):
+    x,y,w,h = xywh
+    center_x, center_y = (x+x+w)/2,(y+y+h)/2
+    return np.array([center_x, center_y,w,h])
 
 # Load data
 #--------------------------------------------------------------------#
@@ -120,15 +126,23 @@ for sub_dir in dir_list:
                             label = str(category_ids.index(row.label))
                             
                             xywh = eval(row.coords)
-                            
-                            # Change origin from bottom left to top left
+                            # print(xywh)
+                            xywh[0],xywh[1]= xywh[1],xywh[0] #switch [0,1,2,3] to [1,0,3,2] turn off if corrected
+                            xywh[2],xywh[3]= xywh[3],xywh[2]
+                            # print(xywh)
+                            xywh=center_xy_coords(xywh) # shift coorindates from top left to center xy
+                            # print(xywh)
+                            # Change origin from bottom left to top left TURN OFF FOR REAL WORLD DATA
                             # xyxy = xywh2xyxy(xywh)
                             # xyxy[1] = height - xyxy[1]
                             # xyxy[3] = height - xyxy[3]
                             # xywh = xyxy2xywh(xyxy)
                             
                             # Normalize by image size
-                            norm_xywh = normalize_xywh(xywh, width, height)
+                            norm_xywh = normalize_xywh(xywh, width,height)
+                            # print(norm_xywh*1280)
+                            # exit()
+                            
                             
                             # Write to txt
                             txt_file.write(label + ' ')
@@ -138,4 +152,4 @@ for sub_dir in dir_list:
                                 else:
                                     txt_file.write(str(dim) + ' ')
                             txt_file.write('\n')
-
+                            # exit()
