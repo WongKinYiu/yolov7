@@ -578,6 +578,11 @@ if __name__ == '__main__':
     #    check_git_status()
     #    check_requirements()
 
+    if opt.loss_metric=="NWD":
+        print("USING NWD LOSS")
+    else:
+        print("USING CIOU LOSS")
+
     # Resume
     wandb_run = check_wandb_resume(opt)
     if opt.resume and not wandb_run:  # resume an interrupted run
