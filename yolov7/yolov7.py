@@ -13,6 +13,8 @@ from yolov7.utils.torch_utils import TracedModel
 @torch.no_grad()
 class YOLOv7:
     _defaults = {
+        'bgr': True,
+        'device': 'cuda',
         'conf_thresh': 0.25,
         'nms_thresh': 0.45,
         'model_image_size': 640,
@@ -25,15 +27,14 @@ class YOLOv7:
         'cudnn_benchmark': False,
     }
 
-    def __init__(self, bgr=True, gpu_device=0, **kwargs):
+    def __init__(self, **kwargs):
         self.__dict__.update(self._defaults)  # set up default values
         self.__dict__.update(kwargs)  # update with user overrides
 
-        self.bgr = bgr
-        self.device, self.device_num = self._select_device(str(gpu_device))
+        self.device = self._select_device(self.device)
 
         model = Model(self.cfg)
-        self.model, self.class_names = attempt_load_state_dict(model, self.weights, map_location=self.device)
+        self.model, self.class_names = attempt_load_state_dict(model, self.weights, map_location=torch.device('cpu'))
         self.model.to(self.device)
 
         self.model_stride = int(self.model.stride.max())  # model stride
@@ -58,14 +59,9 @@ class YOLOv7:
 
     @staticmethod
     def _select_device(device):
-        cpu_request = device.lower() == 'cpu'
-        if cpu_request:
-            print('Using CPU')
-            return torch.device('cpu'), -1
-        if not device.isnumeric():
-            device = device.split(':')[-1]
-        print(f'Using CUDA device {device}')
-        return torch.device(f'cuda:{device}'), int(device)
+        if device.lower() not in ['cpu', 'cuda']:
+            raise ValueError(f'Device "{device}" not supported')
+        return torch.device(device.lower())
 
     def classname_to_idx(self, classname):
         return self.class_names.index(classname)
@@ -88,12 +84,11 @@ class YOLOv7:
             batches.append(these_imgs)
 
         preds = []
-        with torch.cuda.device(self.device_num):
-            for batch in batches:
-                batch = batch.to(self.device)
-                features = self.model(batch)[0]
-                preds.append(features.detach().cpu())
-                del features
+        for batch in batches:
+            batch = batch.to(self.device)
+            features = self.model(batch)[0]
+            preds.append(features.detach().cpu())
+            del features
 
         predictions = torch.cat(preds, dim=0)
 
