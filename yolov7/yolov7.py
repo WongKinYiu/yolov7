@@ -31,7 +31,7 @@ class YOLOv7:
         self.__dict__.update(self._defaults)  # set up default values
         self.__dict__.update(kwargs)  # update with user overrides
 
-        self.device = self._select_device(self.device)
+        self.device, self.device_num = self._select_device(self.device)
 
         model = Model(self.cfg)
         self.model, self.class_names = attempt_load_state_dict(model, self.weights, map_location=torch.device('cpu'))
@@ -59,9 +59,12 @@ class YOLOv7:
 
     @staticmethod
     def _select_device(device):
-        if device.lower() not in ['cpu', 'cuda']:
-            raise ValueError(f'Device "{device}" not supported')
-        return torch.device(device.lower())
+        if not device.isnumeric():
+            if device.lower() not in ['cpu', 'cuda']:
+                raise ValueError(f'Device "{device}" not supported')
+            return torch.device(device.lower()), None
+        else:
+            return torch.device(f'cuda:{device}'), int(device)
 
     def classname_to_idx(self, classname):
         return self.class_names.index(classname)
@@ -83,16 +86,24 @@ class YOLOv7:
                 these_imgs = these_imgs.half()
             batches.append(these_imgs)
 
+        if self.device_num is not None
+            with torch.cuda.device(self.device_num):
+                preds = self._batch_pred(batches)
+        else:
+            preds = self._batch_pred(batches)
+
+        predictions = torch.cat(preds, dim=0)
+
+        return predictions, input_shapes
+
+    def _batch_pred(self, batches):
         preds = []
         for batch in batches:
             batch = batch.to(self.device)
             features = self.model(batch)[0]
             preds.append(features.detach().cpu())
             del features
-
-        predictions = torch.cat(preds, dim=0)
-
-        return predictions, input_shapes
+        return preds
 
     def detect_get_box_in(self, images, box_format='ltrb', classes=None, buffer_ratio=0.0):
         '''
