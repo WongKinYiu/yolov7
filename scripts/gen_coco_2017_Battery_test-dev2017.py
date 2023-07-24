@@ -57,6 +57,7 @@ def sep_test(file):
 def convert_annotation(image_id):
     if probo < 0:  #trian=101 test=0 trian/test=75
         in_file = open('/home/workspace/BatteryDetect/DataCOCO/ValidationData/NG_14_20220907_xml/%s.xml'%image_id)
+
         out_file = open('/home/workspace/BatteryDetect/DataCOCO/labels/test-dev2017/%s.txt'%image_id, 'w')
 
         
@@ -81,6 +82,7 @@ def convert_annotation(image_id):
 
     else:				
         in_file = open('/home/workspace/BatteryDetect/DataCOCO/ValidationData/NG_14_20220907_xml/%s.xml'%image_id)
+
         out_file = open('/home/workspace/BatteryDetect/DataCOCO/labels/test-dev2017/%s.txt'%image_id, 'w')
 
 
