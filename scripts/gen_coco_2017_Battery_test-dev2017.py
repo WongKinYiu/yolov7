@@ -56,7 +56,7 @@ def sep_test(file):
 
 def convert_annotation(image_id):
     if probo < 0:  #trian=101 test=0 trian/test=75
-        in_file = open('/home/workspace/BatteryDetect/DataCOCO/ValidataionData/NG_14_20220907_xml/%s.xml'%image_id)
+        in_file = open('/home/workspace/BatteryDetect/DataCOCO/ValidationData/NG_14_20220907_xml/%s.xml'%image_id)
         out_file = open('/home/workspace/BatteryDetect/DataCOCO/labels/test-dev2017/%s.txt'%image_id, 'w')
 
         
@@ -80,7 +80,7 @@ def convert_annotation(image_id):
         out_file.close()
 
     else:				
-        in_file = open('/home/workspace/BatteryDetect/DataCOCO/ValidataionData/NG_14_20220907_xml/%s.xml'%image_id)
+        in_file = open('/home/workspace/BatteryDetect/DataCOCO/ValidationData/NG_14_20220907_xml/%s.xml'%image_id)
         out_file = open('/home/workspace/BatteryDetect/DataCOCO/labels/test-dev2017/%s.txt'%image_id, 'w')
 
 
@@ -113,11 +113,11 @@ print(wd)
 work_space_dir = os.path.join(wd, 'BatteryDetect/DataCOCO/')
 if not os.path.isdir(work_space_dir):
     os.makedirs(work_space_dir)
-image_dir = os.path.join(work_space_dir, "ValidataionData/NG_14_20220907/")
+image_dir = os.path.join(work_space_dir, "ValidationData/NG_14_20220907/")
 if not os.path.exists(image_dir):
     os.makedirs(image_dir)
 clear_hidden_files(image_dir)
-annotation_dir = os.path.join(work_space_dir, "ValidataionData/NG_14_20220907_xml/")
+annotation_dir = os.path.join(work_space_dir, "ValidationData/NG_14_20220907_xml/")
 if not os.path.exists(annotation_dir):
     os.makedirs(annotation_dir)
 clear_hidden_files(annotation_dir)
