@@ -38,7 +38,7 @@ from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
 logger = logging.getLogger(__name__)
 
 
-def train(hyp, opt, device, tb_writer=None):
+def train(hyp, opt, device):
     logger.info(colorstr('hyperparameters: ') + ', '.join(f'{k}={v}' for k, v in hyp.items()))
     save_dir, epochs, batch_size, total_batch_size, weights, rank, freeze = \
         Path(opt.save_dir), opt.epochs, opt.batch_size, opt.total_batch_size, opt.weights, opt.global_rank, opt.freeze
@@ -62,7 +62,6 @@ def train(hyp, opt, device, tb_writer=None):
     init_seeds(2 + rank)
     with open(opt.data) as f:
         data_dict = yaml.load(f, Loader=yaml.SafeLoader)  # data dict
-    is_coco = opt.data.endswith('coco.yaml')
 
     # Logging- Doing this before checking the dataset. Might update data_dict
     loggers = {'wandb': None}  # loggers dict
@@ -262,10 +261,6 @@ def train(hyp, opt, device, tb_writer=None):
             c = torch.tensor(labels[:, 0])  # classes
             # cf = torch.bincount(c.long(), minlength=nc) + 1.  # frequency
             # model._initialize_biases(cf.to(device))
-            if plots:
-                #plot_labels(labels, names, save_dir, loggers)
-                if tb_writer:
-                    tb_writer.add_histogram('classes', c, 0)
 
             # Anchors
             if not opt.noautoanchor:
@@ -391,9 +386,6 @@ def train(hyp, opt, device, tb_writer=None):
                 if plots and ni < 10:
                     f = save_dir / f'train_batch{ni}.jpg'  # filename
                     Thread(target=plot_images, args=(imgs, targets, paths, f), daemon=True).start()
-                    # if tb_writer:
-                    #     tb_writer.add_image(f, result, dataformats='HWC', global_step=epoch)
-                    #     tb_writer.add_graph(torch.jit.trace(model, imgs, strict=False), [])  # add model graph
                 elif plots and ni == 10 and wandb_logger.wandb:
                     wandb_logger.log({"Mosaics": [wandb_logger.wandb.Image(str(x), caption=x.name) for x in
                                                   save_dir.glob('train*.jpg') if x.exists()]})
@@ -423,7 +415,6 @@ def train(hyp, opt, device, tb_writer=None):
                                                  plots=plots and final_epoch,
                                                  wandb_logger=wandb_logger,
                                                  compute_loss=compute_loss,
-                                                 is_coco=is_coco,
                                                  v5_metric=opt.v5_metric)
 
             # Write
@@ -438,8 +429,6 @@ def train(hyp, opt, device, tb_writer=None):
                     'val/box_loss', 'val/obj_loss', 'val/cls_loss',  # val loss
                     'x/lr0', 'x/lr1', 'x/lr2']  # params
             for x, tag in zip(list(mloss[:-1]) + list(results) + lr, tags):
-                if tb_writer:
-                    tb_writer.add_scalar(tag, x, epoch)  # tensorboard
                 if wandb_logger.wandb:
                     wandb_logger.log({tag: x})  # W&B
 
@@ -503,7 +492,6 @@ def train(hyp, opt, device, tb_writer=None):
                                           save_dir=save_dir,
                                           save_json=True,
                                           plots=False,
-                                          is_coco=is_coco,
                                           v5_metric=opt.v5_metric)
 
         # Strip optimizers
@@ -589,10 +577,5 @@ if __name__ == '__main__':
 
     # Train
     logger.info(opt)
-    
-    tb_writer = None  # init loggers
-    if opt.global_rank in [-1, 0]:
-        prefix = colorstr('tensorboard: ')
-        logger.info(f"{prefix}Start with 'tensorboard --logdir {opt.project}', view at http://localhost:6006/")
-        tb_writer = SummaryWriter(opt.save_dir)  # Tensorboard
-    train(hyp, opt, device, tb_writer)
+
+    train(hyp, opt, device)
