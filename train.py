@@ -66,7 +66,7 @@ def train(hyp, opt, device, tb_writer=None):
 
     # Logging- Doing this before checking the dataset. Might update data_dict
     loggers = {'wandb': None}  # loggers dict
-    if rank in [-1, 0]:
+    if rank in [-1, 0]:  # 本机运行是-1
         opt.hyp = hyp  # add hyperparameters
         run_id = torch.load(weights, map_location=device).get('wandb_id') if weights.endswith('.pt') and os.path.isfile(weights) else None
         wandb_logger = WandbLogger(opt, Path(opt.save_dir).stem, run_id, data_dict)
@@ -84,36 +84,46 @@ def train(hyp, opt, device, tb_writer=None):
     if pretrained:
         with torch_distributed_zero_first(rank):
             attempt_download(weights)  # download if not found locally
-        ckpt = torch.load(weights, map_location=device)  # load checkpoint
+        ckpt = torch.load(weights, map_location=device)  # load checkpoint # ckpt的关键字：'model', 'optimizer', 'training_results', 'epoch'
+        # 这里从权重里解析出来了ckpt["model"].yaml, 这个本身就是一个字典。ckpt["model"]  <class 'models.yolo.Model'>
         model = Model(opt.cfg or ckpt['model'].yaml, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)  # create
         exclude = ['anchor'] if (opt.cfg or hyp.get('anchors')) and not opt.resume else []  # exclude keys
         state_dict = ckpt['model'].float().state_dict()  # to FP32
+        # 筛选字典中的键值对，除了exclude
         state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
         model.load_state_dict(state_dict, strict=False)  # load
         logger.info('Transferred %g/%g items from %s' % (len(state_dict), len(model.state_dict()), weights))  # report
     else:
         model = Model(opt.cfg, ch=3, nc=nc, anchors=hyp.get('anchors')).to(device)  # create
+    # 用来处理模型进行分布式训练时的同步问题。
     with torch_distributed_zero_first(rank):
         check_dataset(data_dict)  # check
     train_path = data_dict['train']
     test_path = data_dict['val']
 
-    # Freeze
+    # Freeze 对于v7 tiny一共是77层。k: model.77.m.2.bias
+    # 冻结模式，1或2。其中，1是冻结DarkNet53网络中的层，
     freeze = [f'model.{x}.' for x in (freeze if len(freeze) > 1 else range(freeze[0]))]  # parameter names to freeze (full or partial)
     for k, v in model.named_parameters():
         v.requires_grad = True  # train all layers
+        # print("####", k)
         if any(x in k for x in freeze):
             print('freezing %s' % k)
             v.requires_grad = False
 
     # Optimizer
+    # nbs为名义批次, 比如实际批次为16, 那么64 / 16 = 4, 每4次迭代，才进行一次反向传播更新权重，可以节约显存
     nbs = 64  # nominal batch size
     accumulate = max(round(nbs / total_batch_size), 1)  # accumulate loss before optimizing
     hyp['weight_decay'] *= total_batch_size * accumulate / nbs  # scale weight_decay
     logger.info(f"Scaled weight_decay = {hyp['weight_decay']}")
 
+    # 设置优化器，权重weight使用了正则化,偏置bias则不使用正则化
     pg0, pg1, pg2 = [], [], []  # optimizer parameter groups
     for k, v in model.named_modules():
+        # print("!!!!", k, v, [i for i in dir(v) if i[:2] != "__"])
+        # Conv2d; BatchNorm2d; LeakyReLU; Conv; Concat; MP; MaxPool2d;
+        # hasattr(object, name)，其中object是要检查的对象，name是要检查的属性名
         if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
             pg2.append(v.bias)  # biases
         if isinstance(v, nn.BatchNorm2d):
@@ -189,6 +199,7 @@ def train(hyp, opt, device, tb_writer=None):
 
     # Scheduler https://arxiv.org/pdf/1812.01187.pdf
     # https://pytorch.org/docs/stable/_modules/torch/optim/lr_scheduler.html#OneCycleLR
+    # 两种学习率模式。
     if opt.linear_lr:
         lf = lambda x: (1 - x / (epochs - 1)) * (1.0 - hyp['lrf']) + hyp['lrf']  # linear
     else:
@@ -197,6 +208,7 @@ def train(hyp, opt, device, tb_writer=None):
     # plot_lr_scheduler(optimizer, scheduler, epochs)
 
     # EMA
+    # 滑动平均 https://blog.csdn.net/weixin_43402147/article/details/98629146
     ema = ModelEMA(model) if rank in [-1, 0] else None
 
     # Resume
@@ -228,7 +240,8 @@ def train(hyp, opt, device, tb_writer=None):
         del ckpt, state_dict
 
     # Image sizes
-    gs = max(int(model.stride.max()), 32)  # grid size (max stride)
+    # print("model_stride_max: ", model.stride.max())
+    gs = max(int(model.stride.max()), 32)  # grid size (max stride)  有时是32，有些是64，所以之前是576, 960
     nl = model.model[-1].nl  # number of detection layers (used for scaling hyp['obj'])
     imgsz, imgsz_test = [check_img_size(x, gs) for x in opt.img_size]  # verify imgsz are gs-multiples
 
@@ -265,7 +278,7 @@ def train(hyp, opt, device, tb_writer=None):
             if plots:
                 #plot_labels(labels, names, save_dir, loggers)
                 if tb_writer:
-                    tb_writer.add_histogram('classes', c, 0)
+                    tb_writer.add_histogram('classes', c, 0)  # 画一些数据。
 
             # Anchors
             if not opt.noautoanchor:
@@ -308,7 +321,7 @@ def train(hyp, opt, device, tb_writer=None):
         model.train()
 
         # Update image weights (optional)
-        if opt.image_weights:
+        if opt.image_weights:  # 用于解决类别不平衡的问题。
             # Generate indices
             if rank in [-1, 0]:
                 cw = model.class_weights.cpu().numpy() * (1 - maps) ** 2 / nc  # class weights
@@ -338,6 +351,9 @@ def train(hyp, opt, device, tb_writer=None):
             imgs = imgs.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
 
             # Warmup
+            # https://blog.csdn.net/anshiquanshu/article/details/108209264
+            #  warmup顾名思义就是热身，在刚刚开始训练时以很小的学习率进行训练，使得网络熟悉数据，随着训练的进行学习率慢慢变大，
+            #  到了一定程度，以设置的初始学习率进行训练，接着过了一些inter后，学习率再慢慢变小；学习率变化：上升——平稳——下降；
             if ni <= nw:
                 xi = [0, nw]  # x interp
                 # model.gr = np.interp(ni, xi, [0.0, 1.0])  # iou loss ratio (obj_loss = 1.0 or iou)
@@ -348,15 +364,17 @@ def train(hyp, opt, device, tb_writer=None):
                     if 'momentum' in x:
                         x['momentum'] = np.interp(ni, xi, [hyp['warmup_momentum'], hyp['momentum']])
 
-            # Multi-scale
+            # Multi-scale 好像只变换了图像，标签不用吗？w, h缩放比例是不一样的。
             if opt.multi_scale:
                 sz = random.randrange(imgsz * 0.5, imgsz * 1.5 + gs) // gs * gs  # size
                 sf = sz / max(imgs.shape[2:])  # scale factor
                 if sf != 1:
                     ns = [math.ceil(x * sf / gs) * gs for x in imgs.shape[2:]]  # new shape (stretched to gs-multiple)
+                    # https://blog.csdn.net/qq_50001789/article/details/120297401
                     imgs = F.interpolate(imgs, size=ns, mode='bilinear', align_corners=False)
 
             # Forward
+            # autocast可以作为 Python 上下文管理器和装饰器来使用，用来指定脚本中某个区域、或者某些函数，按照自动混合精度来运行
             with amp.autocast(enabled=cuda):
                 pred = model(imgs)  # forward
                 if 'loss_ota' not in hyp or hyp['loss_ota'] == 1:
@@ -365,14 +383,14 @@ def train(hyp, opt, device, tb_writer=None):
                     loss, loss_items = compute_loss(pred, targets.to(device))  # loss scaled by batch_size
                 if rank != -1:
                     loss *= opt.world_size  # gradient averaged between devices in DDP mode
-                if opt.quad:
+                if opt.quad:  # 四元数据加载器， 开启后大于640的效果变好，但是在640上可能变差。
                     loss *= 4.
 
             # Backward
             scaler.scale(loss).backward()
 
             # Optimize
-            if ni % accumulate == 0:
+            if ni % accumulate == 0:  # 参数优化
                 scaler.step(optimizer)  # optimizer.step
                 scaler.update()
                 optimizer.zero_grad()
@@ -409,7 +427,7 @@ def train(hyp, opt, device, tb_writer=None):
         if rank in [-1, 0]:
             # mAP
             ema.update_attr(model, include=['yaml', 'nc', 'hyp', 'gr', 'names', 'stride', 'class_weights'])
-            final_epoch = epoch + 1 == epochs
+            final_epoch = epoch + 1 == epochs  # 判断是不是最后一个epochs
             if not opt.notest or final_epoch:  # Calculate mAP
                 wandb_logger.current_epoch = epoch + 1
                 results, maps, times = test.test(data_dict,
@@ -444,6 +462,7 @@ def train(hyp, opt, device, tb_writer=None):
                     wandb_logger.log({tag: x})  # W&B
 
             # Update best mAP
+            # fi是评价模型好坏的一个综合性指标，后续也可以用来，选择best模型.
             fi = fitness(np.array(results).reshape(1, -1))  # weighted combination of [P, R, mAP@.5, mAP@.5-.95]
             if fi > best_fitness:
                 best_fitness = fi
@@ -461,7 +480,7 @@ def train(hyp, opt, device, tb_writer=None):
                         'wandb_id': wandb_logger.wandb_run.id if wandb_logger.wandb else None}
 
                 # Save last, best and delete
-                torch.save(ckpt, last)
+                torch.save(ckpt, last)  # 这里可以进行模型保存。
                 if best_fitness == fi:
                     torch.save(ckpt, best)
                 if (best_fitness == fi) and (epoch >= 200):
@@ -510,8 +529,8 @@ def train(hyp, opt, device, tb_writer=None):
         final = best if best.exists() else last  # final model
         for f in last, best:
             if f.exists():
-                strip_optimizer(f)  # strip optimizers
-        if opt.bucket:
+                strip_optimizer(f)  # strip optimizers  用来清除迭代器等一些无用信息。
+        if opt.bucket: # 从谷歌云盘下载或上传数据，GCS 是 Google 提供的一种对象存储服务，用户可以将任意数量和类型的数据存储在其中。
             os.system(f'gsutil cp {final} gs://{opt.bucket}/weights')  # upload
         if wandb_logger.wandb and not opt.evolve:  # Log the stripped model
             wandb_logger.wandb.log_artifact(str(final), type='model',
@@ -519,21 +538,21 @@ def train(hyp, opt, device, tb_writer=None):
                                             aliases=['last', 'best', 'stripped'])
         wandb_logger.finish_run()
     else:
-        dist.destroy_process_group()
+        dist.destroy_process_group()  # 销毁进程组上下文数据（一些全局变量）
     torch.cuda.empty_cache()
     return results
 
 
 if __name__ == '__main__':
-    # python train.py --weights ./yolov7-tiny.pt --data ./data/test.yaml --device 0 --workers 0
+    # python train.py --weights ./yolov7-tiny.pt --data ./data/test.yaml --device 0 --workers 0 --batch-size 8
     # 页面太小是因为workers,还有就是虚拟内存的问题。
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default='yolo7.pt', help='initial weights path')
-    parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
-    parser.add_argument('--data', type=str, default='data/coco.yaml', help='data.yaml path')
+    parser.add_argument('--weights', type=str, default='./yolov7-tiny.pt', help='initial weights path')
+    parser.add_argument('--cfg', type=str, default='', help='model.yaml path')  # 模型配置文件，如果制定了weights则自动寻找。
+    parser.add_argument('--data', type=str, default='./data/test.yaml', help='data.yaml path')
     parser.add_argument('--hyp', type=str, default='data/hyp.scratch.p5.yaml', help='hyperparameters path')
     parser.add_argument('--epochs', type=int, default=300)
-    parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs')
+    parser.add_argument('--batch-size', type=int, default=8, help='total batch size for all GPUs')
     parser.add_argument('--img-size', nargs='+', type=int, default=[640, 640], help='[train, test] image sizes')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
     parser.add_argument('--resume', nargs='?', const=True, default=False, help='resume most recent training')
@@ -544,13 +563,13 @@ if __name__ == '__main__':
     parser.add_argument('--bucket', type=str, default='', help='gsutil bucket')
     parser.add_argument('--cache-images', action='store_true', help='cache images for faster training')
     parser.add_argument('--image-weights', action='store_true', help='use weighted image selection for training')
-    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--multi-scale', action='store_true', help='vary img-size +/- 50%%')
     parser.add_argument('--single-cls', action='store_true', help='train multi-class data as single-class')
     parser.add_argument('--adam', action='store_true', help='use torch.optim.Adam() optimizer')
     parser.add_argument('--sync-bn', action='store_true', help='use SyncBatchNorm, only available in DDP mode')
     parser.add_argument('--local_rank', type=int, default=-1, help='DDP parameter, do not modify')
-    parser.add_argument('--workers', type=int, default=8, help='maximum number of dataloader workers')
+    parser.add_argument('--workers', type=int, default=0, help='maximum number of dataloader workers')
     parser.add_argument('--project', default='runs/train', help='save to project/name')
     parser.add_argument('--entity', default=None, help='W&B entity')
     parser.add_argument('--name', default='exp', help='save to project/name')
@@ -589,7 +608,7 @@ if __name__ == '__main__':
     else:  # 普通正常训练
         # opt.hyp = opt.hyp or ('hyp.finetune.yaml' if opt.weights else 'hyp.scratch.yaml')
         opt.data, opt.cfg, opt.hyp = check_file(opt.data), check_file(opt.cfg), check_file(opt.hyp)  # check files
-        assert len(opt.cfg) or len(opt.weights), 'either --cfg or --weights must be specified' # 两个必须提供一个。
+        assert len(opt.cfg) or len(opt.weights), 'either --cfg or --weights must be specified'  # 两个必须提供一个。
         opt.img_size.extend([opt.img_size[-1]] * (2 - len(opt.img_size)))  # extend to 2 sizes (train, test)
         opt.name = 'evolve' if opt.evolve else opt.name
         opt.save_dir = increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok | opt.evolve)  # increment run

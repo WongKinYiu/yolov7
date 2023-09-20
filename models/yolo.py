@@ -514,18 +514,20 @@ class Model(nn.Module):
         else:  # is *.yaml
             import yaml  # for torch hub
             self.yaml_file = Path(cfg).name
-            with open(cfg) as f:
-                self.yaml = yaml.load(f, Loader=yaml.SafeLoader)  # model dict
 
         # Define model
-        ch = self.yaml['ch'] = self.yaml.get('ch', ch)  # input channels
+        ch = self.yaml['ch'] = self.yaml.get('ch', ch)  # input channels, 如果没指定，默认通道就是3。
         if nc and nc != self.yaml['nc']:
             logger.info(f"Overriding model.yaml nc={self.yaml['nc']} with nc={nc}")
             self.yaml['nc'] = nc  # override yaml value
         if anchors:
             logger.info(f'Overriding model.yaml anchors with anchors={anchors}')
             self.yaml['anchors'] = round(anchors)  # override yaml value
+        # d 的内容在model_dict.txt
         self.model, self.save = parse_model(deepcopy(self.yaml), ch=[ch])  # model, savelist
+        with open(r"./fileff.txt", mode="a", encoding="utf-8") as ob:
+            ob.write(str(self.yaml))
+
         self.names = [str(i) for i in range(self.yaml['nc'])]  # default names
         # print([x.shape for x in self.forward(torch.zeros(1, ch, 64, 64))])
 
@@ -734,12 +736,14 @@ class Model(nn.Module):
 
 
 def parse_model(d, ch):  # model_dict, input_channels(3)
+    # 根据参数还原模型。https://blog.csdn.net/qq_41398619/article/details/129742953
     logger.info('\n%3s%18s%3s%10s  %-40s%-30s' % ('', 'from', 'n', 'params', 'module', 'arguments'))
     anchors, nc, gd, gw = d['anchors'], d['nc'], d['depth_multiple'], d['width_multiple']
     na = (len(anchors[0]) // 2) if isinstance(anchors, list) else anchors  # number of anchors
     no = na * (nc + 5)  # number of outputs = anchors * (classes + 5)
 
     layers, save, c2 = [], [], ch[-1]  # layers, savelist, ch out
+    # [-1, 1, 'Conv', [32, 3, 2, 'None', 1, 'nn.LeakyReLU(0.1)']]
     for i, (f, n, m, args) in enumerate(d['backbone'] + d['head']):  # from, number, module, args
         m = eval(m) if isinstance(m, str) else m  # eval strings
         for j, a in enumerate(args):
@@ -747,8 +751,7 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
                 args[j] = eval(a) if isinstance(a, str) else a  # eval strings
             except:
                 pass
-
-        n = max(round(n * gd), 1) if n > 1 else n  # depth gain
+        n = max(round(n * gd), 1) if n > 1 else n  # depth gain，如果之前有深度，则深度最少是1
         if m in [nn.Conv2d, Conv, RobustConv, RobustConv2, DWConv, GhostConv, RepConv, RepConv_OREPA, DownC, 
                  SPP, SPPF, SPPCSPC, GhostSPPCSPC, MixConv2d, Focus, Stem, GhostStem, CrossConv, 
                  Bottleneck, BottleneckCSPA, BottleneckCSPB, BottleneckCSPC, 
@@ -762,9 +765,9 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
                  SwinTransformer2Block, ST2CSPA, ST2CSPB, ST2CSPC]:
             c1, c2 = ch[f], args[0]
             if c2 != no:  # if not output
-                c2 = make_divisible(c2 * gw, 8)
+                c2 = make_divisible(c2 * gw, 8)  # 缩放后取整的一个行为。
 
-            args = [c1, c2, *args[1:]]
+            args = [c1, c2, *args[1:]]  # 注意下面的args已经变了。
             if m in [DownC, SPPCSPC, GhostSPPCSPC, 
                      BottleneckCSPA, BottleneckCSPB, BottleneckCSPC, 
                      RepBottleneckCSPA, RepBottleneckCSPB, RepBottleneckCSPC, 
@@ -800,36 +803,40 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
         else:
             c2 = ch[f]
 
-        m_ = nn.Sequential(*[m(*args) for _ in range(n)]) if n > 1 else m(*args)  # module
+        # m代表的是模块如: Conv; *args是参数如：[-1, 输出尺寸，3, 2, None, 1, nn.LeakyReLU(0.1)]
+        m_ = nn.Sequential(*[m(*args) for _ in range(n)]) if n > 1 else m(*args)  # module, 构建模型  conv(*args)
+        # m -> t: <class 'models.common.Conv'> -> models.common.Conv, 因为conv变成函数了，所以打印出来是那样。
         t = str(m)[8:-2].replace('__main__.', '')  # module type
-        np = sum([x.numel() for x in m_.parameters()])  # number params
+        np = sum([x.numel() for x in m_.parameters()])  # number params  model.parameters()保存的是Weights和Bais参数的值。
         m_.i, m_.f, m_.type, m_.np = i, f, t, np  # attach index, 'from' index, type, number params
-        logger.info('%3s%18s%3s%10.0f  %-40s%-30s' % (i, f, n, np, t, args))  # print
-        save.extend(x % i for x in ([f] if isinstance(f, int) else f) if x != -1)  # append to savelist
+        logger.info('%3s%18s%3s%10.0f  %-40s%-30s' % (i, f, n, np, t, args))  # print i是第几个块, f参数表中第一个
+        save.extend(x % i for x in ([f] if isinstance(f, int) else f) if x != -1)  # append to savelist 方法extend让你能够同时将多个值附加到列表末尾，不等于-1的加进去。
         layers.append(m_)
         if i == 0:
             ch = []
-        ch.append(c2)
-    return nn.Sequential(*layers), sorted(save)
+        ch.append(c2)  # 方便往前取，特征图通道数。
+    return nn.Sequential(*layers), sorted(save)  # 把余数保存到save中干啥。
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--cfg', type=str, default='yolor-csp-c.yaml', help='model.yaml')
-    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-    parser.add_argument('--profile', action='store_true', help='profile model speed')
-    opt = parser.parse_args()
-    opt.cfg = check_file(opt.cfg)  # check file
-    set_logging()
-    device = select_device(opt.device)
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--cfg', type=str, default='yolor-csp-c.yaml', help='model.yaml')
+    # parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    # parser.add_argument('--profile', action='store_true', help='profile model speed')
+    # opt = parser.parse_args()
+    # opt.cfg = check_file(opt.cfg)  # check file
+    # set_logging()
+    # device = select_device(opt.device)
+    #
+    # # Create model
+    # model = Model(opt.cfg).to(device)
+    # model.train()
+    #
+    # if opt.profile:
+    #     img = torch.rand(1, 3, 640, 640).to(device)
+    #     y = model(img, profile=True)
 
-    # Create model
-    model = Model(opt.cfg).to(device)
-    model.train()
-    
-    if opt.profile:
-        img = torch.rand(1, 3, 640, 640).to(device)
-        y = model(img, profile=True)
+    print([v for v in range(1) if v != 0])
 
     # Profile
     # img = torch.rand(8 if torch.cuda.is_available() else 1, 3, 640, 640).to(device)

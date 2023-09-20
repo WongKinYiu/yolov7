@@ -8,3 +8,9 @@ http://681314.com/A/bzkBdpOrR8
 ### 03
 UserWarning: torch.meshgrid: in an upcoming release, it will be required to....
 https://blog.csdn.net/m0_74890428/article/details/131042830
+
+### yolov7-tiny网络结构讲的非常清晰 
+https://blog.csdn.net/qq_41398619/article/details/129742953?ops_request_misc=%257B%2522request%255Fid%2522%253A%2522169511107416800197071264%2522%252C%2522scm%2522%253A%252220140713.130102334.pc%255Fblog.%2522%257D&request_id=169511107416800197071264&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~blog~first_rank_ecpm_v1~rank_v31_ecpm-2-129742953-null-null.nonecase&utm_term=yolov7&spm=1018.2226.3001.4450
+freeze 50
+### 关于tensorrt部署的c++
+https://zhuanlan.zhihu.com/p/580268047?utm_id=0
