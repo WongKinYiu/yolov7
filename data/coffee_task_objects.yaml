@@ -1,0 +1,72 @@
+# COCO 2017 dataset http://cocodataset.org
+
+# download command/URL (optional)
+#download: bash ./scripts/get_coco.sh
+
+# train and val data as 1) directory: path/images/, 2) file: path/images.txt, or 3) list: [path1/images/, path2/images/]
+#train: /data/PTG/cooking/images/coffee/  # 1463 images
+#train: ./coco/train2017.txt
+train: /data/standard_datasets/coffee_coco/images/train/
+val: /data/standard_datasets/coffee_coco/images/train/
+test: /data/standard_datasets/coffee_coco/images/train/
+
+# number of classes
+nc: 54
+
+# class names
+names: [
+        "background",
+        "hand (left)",
+        "hand (right)",
+        "paper towel",
+        "water",
+        "null-5",
+        "null-6",
+        "null-7",
+        "null-8",
+        "null-9",
+        "null-10",
+        "null-11",
+        "null-12",
+        "null-13",
+        "null-14",
+        "kettle lid",
+        "kettle (open)",
+        "measuring cup",
+        "mug",
+        "switch",
+        "thermometer (close)",
+        "thermometer (open)",
+        "timer (on)",
+        "timer (off)",
+        "kettle (closed)",
+        "null-25",
+        "trash can",
+        "coffee + mug",
+        "coffee bag",
+        "coffee beans + container",
+        "coffee beans + container + scale",
+        "coffee grounds + paper filter + filter cone",
+        "coffee grounds + paper filter + filter cone + mug",
+        "container",
+        "container + scale",
+        "filter cone",
+        "filter cone + mug",
+        "grinder (close)",
+        "grinder (open)",
+        "lid (grinder)",
+        "lid (kettle)",
+        "paper filter",
+        "paper filter (quarter)",
+        "paper filter (semi)",
+        "paper filter + filter cone",
+        "paper filter + filter cone + mug",
+        "paper filter bag",
+        "scale (off)",
+        "scale (on)",
+        "used paper filter",
+        "used paper filter + filter cone",
+        "used paper filter + filter cone + mug",
+        "water + coffee grounds + paper filter + filter cone + mug",
+        "null"
+]
