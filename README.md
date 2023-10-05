@@ -98,6 +98,9 @@ python train.py --workers 8 --device 0 --batch-size 32 --data data/coco.yaml --i
 
 # train p6 models
 python train_aux.py --workers 8 --device 0 --batch-size 16 --data data/coco.yaml --img 1280 1280 --cfg cfg/training/yolov7-w6.yaml --weights '' --name yolov7-w6 --hyp data/hyp.scratch.p6.yaml
+
+# train PTG coffee model
+python train.py --workers 8 --device 0 --batch-size 4 --data data/coffee_task_objects.yaml --img 1280 720 --cfg cfg/training/yolov7_coffee.yaml --weights 'yolov7_training.pt' --name yolov7-coffee --hyp data/hyp.scratch.custom.yaml
 ```
 
 Multiple GPU training
