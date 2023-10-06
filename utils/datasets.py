@@ -344,10 +344,13 @@ class LoadStreams:  # multiple IP or RTSP cameras
         return 0  # 1E12 frames = 32 streams at 30 FPS for 30 years
 
 
-def img2label_paths(img_paths):
+def img2label_paths(path, img_paths):
     # Define label paths as a function of image paths
-    sa, sb = os.sep + 'images' + os.sep, os.sep + 'labels' + os.sep  # /images/, /labels/ substrings
-    return ['txt'.join(x.replace(sa, sb, 1).rsplit(x.split('.')[-1], 1)) for x in img_paths]
+    root_dir = os.path.dirname(path)
+    split = os.path.splitext(os.path.basename(path))[0]
+    return [f"{root_dir}/labels/{split}/{os.path.splitext(os.path.basename(f))[0]}.txt" for f in img_paths]
+    #sa, sb = os.sep + 'images' + os.sep, os.sep + 'labels' + os.sep  # /images/, /labels/ substrings
+    #return ['txt'.join(x.replace(sa, sb, 1).rsplit(x.split('.')[-1], 1)) for x in img_paths]
 
 
 class LoadImagesAndLabels(Dataset):  # for training/testing
@@ -386,7 +389,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             raise Exception(f'{prefix}Error loading data from {path}: {e}\nSee {help_url}')
 
         # Check cache
-        self.label_files = img2label_paths(self.img_files)  # labels
+        self.label_files = img2label_paths(self.path, self.img_files)  # labels
         cache_path = (p if p.is_file() else Path(self.label_files[0]).parent).with_suffix('.cache')  # cached labels
         if cache_path.is_file():
             cache, exists = torch.load(cache_path), True  # load
@@ -409,7 +412,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         self.labels = list(labels)
         self.shapes = np.array(shapes, dtype=np.float64)
         self.img_files = list(cache.keys())  # update
-        self.label_files = img2label_paths(cache.keys())  # update
+        self.label_files = img2label_paths(self.path, cache.keys())  # update
         if single_cls:
             for x in self.labels:
                 x[:, 0] = 0
@@ -1269,7 +1272,7 @@ def extract_boxes(path='../coco/'):  # from utils.datasets import *; extract_box
             h, w = im.shape[:2]
 
             # labels
-            lb_file = Path(img2label_paths([str(im_file)])[0])
+            lb_file = Path(img2label_paths(self.path, [str(im_file)])[0])
             if Path(lb_file).exists():
                 with open(lb_file, 'r') as f:
                     lb = np.array([x.split() for x in f.read().strip().splitlines()], dtype=np.float32)  # labels
@@ -1308,7 +1311,7 @@ def autosplit(path='../coco', weights=(0.9, 0.1, 0.0), annotated_only=False):
 
     print(f'Autosplitting images from {path}' + ', using *.txt labeled images only' * annotated_only)
     for i, img in tqdm(zip(indices, files), total=n):
-        if not annotated_only or Path(img2label_paths([str(img)])[0]).exists():  # check label
+        if not annotated_only or Path(self.path, img2label_paths([str(img)])[0]).exists():  # check label
             with open(path / txt[i], 'a') as f:
                 f.write(str(img) + '\n')  # add image to txt file
     
