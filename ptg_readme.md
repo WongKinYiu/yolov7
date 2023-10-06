@@ -12,10 +12,11 @@ $ python scripts/translate_coffee_to_coco.py --dset /data/PTG/cooking/object_ann
 
 You should have a file structure like:
 ```
-├── labels
-│   ├── train
-|       ├── {image_filename}.txt
-├── train.txt
+├── {output_dir}
+|   ├── labels
+|       ├── train
+|           ├── {image_filename}.txt
+|   ├── train.txt
 ```
 
 ## Weights
@@ -26,7 +27,7 @@ $ wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7.pt wei
 ```
 
 ## Configs
-## Changes Needed
+### Changes Needed
 - Change `nc` in cfg/training/PTG/cooking/{filename}.yaml to the number of classes (including background)
 
 - Change `nc` in data/PTG/cooking/{filename}.yaml to the number of classes (including background)
@@ -48,4 +49,14 @@ $ python detect.py --weights runs/train/coffee+tea_yolov7/weights/best.pt --conf
 ### Output to kwcoco
 ```bash
 $ python detect_ptg.py --recipes coffee tea --split val --weights runs/train/coffee+tea_yolov7/weights/best.pt --project runs/detect --name coffee+tea_yolov7 --save-img
+```
+
+Your output should look like:
+```
+├── {project}
+|   ├── {name}
+|       ├── images
+|           ├── {video_name}
+|               ├── {image_filename}.png
+|       ├── {name}_{split}_obj_results.mscoco.json
 ```

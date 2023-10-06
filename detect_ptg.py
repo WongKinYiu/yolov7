@@ -22,6 +22,10 @@ from utils.datasets import letterbox
 
 
 def data_loader(recipes, split):
+    """Create a list of all videos in the recipes for the given split
+
+    :return: List of absolute paths to video folders
+    """
     training_split = {
         split: []
     }
@@ -48,6 +52,12 @@ def data_loader(recipes, split):
     return videos
 
 def read_image(image_fn, imgsz, stride, device, half):
+    """Read the image file and preprocess it
+
+    :return:
+        - img0: The original image
+        - img: The preprocessed image
+    """
     img0 = cv2.imread(image_fn)  # BGR
     assert img0 is not None, 'Image Not Found ' + image_fn
 
@@ -67,6 +77,8 @@ def read_image(image_fn, imgsz, stride, device, half):
     return img0, img
 
 def detect(opt):
+    """Run the model over a series of images
+    """
     save_path = f"{opt.project}/{opt.name}"
     Path(save_path).mkdir(parents=True, exist_ok=True)
 
@@ -104,7 +116,7 @@ def detect(opt):
         save_imgs_dir = f"{save_path}/images/{video_name}"
         Path(save_imgs_dir).mkdir(parents=True, exist_ok=True)
 
-        images = glob.glob(f"{video}_extracted/images/*.png")
+        images = glob.glob(f"{video}/images/*.png")
         for image_fn in ub.ProgIter(images, desc=f"images in {video_name}"):
             fn = os.path.basename(image_fn)
             img0, img = read_image(image_fn, imgsz, stride, device, half)
