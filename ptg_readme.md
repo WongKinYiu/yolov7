@@ -14,9 +14,9 @@ You should have a file structure like:
 ```
 ├── {output_dir}
 |   ├── labels
-|       ├── train
+|       ├── {split}
 |           ├── {image_filename}.txt
-|   ├── train.txt
+|   ├── {split}.txt
 ```
 
 ## Weights
