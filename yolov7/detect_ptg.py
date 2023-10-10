@@ -11,14 +11,14 @@ import numpy as np
 
 from pathlib import Path
 
-from angel_system.data.data_paths import grab_data
+from angel_system.data.data_paths import grab_data, activity_gt_dir
 from angel_system.data.common.load_data import time_from_name
 
-from models.experimental import attempt_load
-from utils.general import check_img_size, non_max_suppression, scale_coords, xyxy2xywh
-from utils.torch_utils import select_device, TracedModel
-from utils.plots import plot_one_box
-from utils.datasets import letterbox
+from yolov7.models.experimental import attempt_load
+from yolov7.utils.general import check_img_size, non_max_suppression, scale_coords, xyxy2xywh
+from yolov7.utils.torch_utils import select_device, TracedModel
+from yolov7.utils.plots import plot_one_box
+from yolov7.utils.datasets import letterbox
 
 
 def data_loader(recipes, split):
@@ -111,16 +111,22 @@ def detect(opt):
     videos = data_loader(opt.recipes, opt.split)
     for video in videos:
         video_name = os.path.basename(video)
-        vid = dset.add_video(name=video_name)
+        video_recipe = "tea" if "tea" in video_name else "coffee"
+        vid = dset.add_video(
+            name=video_name,
+            recipe=video_recipe,
+        )
 
-        save_imgs_dir = f"{save_path}/images/{video_name}"
-        Path(save_imgs_dir).mkdir(parents=True, exist_ok=True)
+        if opt.save_img:
+            save_imgs_dir = f"{save_path}/images/{video_name}"
+            Path(save_imgs_dir).mkdir(parents=True, exist_ok=True)
 
         images = glob.glob(f"{video}/images/*.png")
         for image_fn in ub.ProgIter(images, desc=f"images in {video_name}"):
             fn = os.path.basename(image_fn)
             img0, img = read_image(image_fn, imgsz, stride, device, half)
             height, width = img0.shape[:2]
+
             frame_num, time = time_from_name(image_fn)
 
             img_id = dset.add_image(

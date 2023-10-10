@@ -9,10 +9,10 @@ from pathlib import Path
 
 import torch
 
-from models.yolo import Model
-from utils.general import check_requirements, set_logging
-from utils.google_utils import attempt_download
-from utils.torch_utils import select_device
+from yolov7.models.yolo import Model
+from yolov7.utils.general import check_requirements, set_logging
+from yolov7.utils.google_utils import attempt_download
+from yolov7.utils.torch_utils import select_device
 
 dependencies = ['torch', 'yaml']
 check_requirements(Path(__file__).parent / 'requirements.txt', exclude=('pycocotools', 'thop'))
