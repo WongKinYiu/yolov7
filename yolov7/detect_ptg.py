@@ -14,11 +14,11 @@ from pathlib import Path
 from angel_system.data.data_paths import grab_data, activity_gt_dir
 from angel_system.data.common.load_data import time_from_name
 
-from models.experimental import attempt_load
-from utils.general import check_img_size, non_max_suppression, scale_coords, xyxy2xywh
-from utils.torch_utils import select_device, TracedModel
-from utils.plots import plot_one_box
-from utils.datasets import letterbox
+from yolov7.models.experimental import attempt_load
+from yolov7.utils.general import check_img_size, non_max_suppression, scale_coords, xyxy2xywh
+from yolov7.utils.torch_utils import select_device, TracedModel
+from yolov7.utils.plots import plot_one_box
+from yolov7.utils.datasets import letterbox
 
 
 def data_loader(recipes, split):
@@ -128,7 +128,6 @@ def detect(opt):
             height, width = img0.shape[:2]
 
             frame_num, time = time_from_name(image_fn)
-            matching_act_gt = act_gt.loc[(act_gt["start"] <= time) & (act_gt["end"] >= time)]
 
             img_id = dset.add_image(
                 file_name=image_fn,
