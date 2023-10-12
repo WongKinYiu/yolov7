@@ -2,6 +2,8 @@ import argparse
 import logging
 import math
 import os
+import re
+import mlflow
 import random
 import time
 from copy import deepcopy
@@ -34,11 +36,16 @@ from utils.loss import ComputeLoss, ComputeLossOTA
 from utils.plots import plot_images, plot_labels, plot_results, plot_evolution
 from utils.torch_utils import ModelEMA, select_device, intersect_dicts, torch_distributed_zero_first, is_parallel
 from utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
+from mlflow.models.signature import infer_signature
+
 
 logger = logging.getLogger(__name__)
 
 
 def train(hyp, opt, device, tb_writer=None):
+    mlflow_signature = None
+    mlflow_experience_name = "yolov7"
+    mlflow.set_experiment(mlflow_experience_name)
     logger.info(colorstr('hyperparameters: ') + ', '.join(f'{k}={v}' for k, v in hyp.items()))
     save_dir, epochs, batch_size, total_batch_size, weights, rank, freeze = \
         Path(opt.save_dir), opt.epochs, opt.batch_size, opt.total_batch_size, opt.weights, opt.global_rank, opt.freeze
@@ -359,6 +366,11 @@ def train(hyp, opt, device, tb_writer=None):
             # Forward
             with amp.autocast(enabled=cuda):
                 pred = model(imgs)  # forward
+                if mlflow_signature is None:
+                    mlflow_signature = infer_signature(
+                        imgs.cpu().numpy(),
+                        pred[0].detach().cpu().numpy()
+                    )
                 if 'loss_ota' not in hyp or hyp['loss_ota'] == 1:
                     loss, loss_items = compute_loss_ota(pred, targets.to(device), imgs)  # loss scaled by batch_size
                 else:
@@ -442,6 +454,9 @@ def train(hyp, opt, device, tb_writer=None):
                     tb_writer.add_scalar(tag, x, epoch)  # tensorboard
                 if wandb_logger.wandb:
                     wandb_logger.log({tag: x})  # W&B
+                tag = re.sub('[^a-zA-Z0-9\/\_\-\. ]', '-', tag)
+                # we remove not allowed characters from the tags.
+                mlflow.log_metric(tag, float(x))
 
             # Update best mAP
             fi = fitness(np.array(results).reshape(1, -1))  # weighted combination of [P, R, mAP@.5, mAP@.5-.95]
@@ -464,6 +479,12 @@ def train(hyp, opt, device, tb_writer=None):
                 torch.save(ckpt, last)
                 if best_fitness == fi:
                     torch.save(ckpt, best)
+                    # Store the best model in the MLmodel format. 
+                    mlflow.pytorch.log_model(
+                        ckpt['model'], 
+                        mlflow_experience_name, 
+                        signature=mlflow_signature
+                    )
                 if (best_fitness == fi) and (epoch >= 200):
                     torch.save(ckpt, wdir / 'best_{:03d}.pt'.format(epoch))
                 if epoch == 0:
@@ -479,6 +500,12 @@ def train(hyp, opt, device, tb_writer=None):
                 del ckpt
 
         # end epoch ----------------------------------------------------------------------------------------------------
+    mlflow.log_artifact("./service.py", "service")
+    mlflow.log_artifact(best, "service")
+    mlflow.log_artifact("./requirements.txt", "service")
+    mlflow.log_artifact("./bentofile.yaml", "service")
+    mlflow.log_artifacts("./models", "service/models")
+    mlflow.log_artifacts("./utils", "service/utils")
     # end training
     if rank in [-1, 0]:
         # Plots
@@ -530,7 +557,7 @@ if __name__ == '__main__':
     parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
     parser.add_argument('--data', type=str, default='data/coco.yaml', help='data.yaml path')
     parser.add_argument('--hyp', type=str, default='data/hyp.scratch.p5.yaml', help='hyperparameters path')
-    parser.add_argument('--epochs', type=int, default=300)
+    parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs')
     parser.add_argument('--img-size', nargs='+', type=int, default=[640, 640], help='[train, test] image sizes')
     parser.add_argument('--rect', action='store_true', help='rectangular training')
