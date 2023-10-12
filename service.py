@@ -2,6 +2,7 @@ from pathlib import Path
 
 import bentoml
 import os
+import glob
 import cv2
 import numpy as np
 import pandas as pd
@@ -26,7 +27,15 @@ class Yolov7Runnable(bentoml.Runnable):
         self.iou_thres = 0.45
         img_size = 640
 
-        weights = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models", "best.pt")
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+
+        best_pt_files = glob.glob(os.path.join(current_dir, '**', 'best.pt'), recursive=True)
+
+        if best_pt_files:
+            best_pt_path = best_pt_files[0]
+        else:
+            raise Exception("model best.pt file not found")
+        weights = os.path.join(best_pt_path)
 
         self.device = select_device("0")
         self.half = self.device.type != "cpu"  # half precision only supported on CUDA

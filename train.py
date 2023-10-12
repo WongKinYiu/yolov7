@@ -1,4 +1,5 @@
 import argparse
+import bentoml
 import logging
 import math
 import os
@@ -41,6 +42,35 @@ from mlflow.models.signature import infer_signature
 
 logger = logging.getLogger(__name__)
 
+def process_bentoml(model_path):
+    # Option 1
+    # bento = bentoml.bentos.build_bentofile("bentofile.yaml")
+    
+    # Option 2
+    bento = bentoml.bentos.build(
+        service="service:svc",
+        labels=dict(
+            owner="Myelintek",
+            tage="dev"
+        ),
+        include=[
+            "service.py",
+            "models/*.py",
+            "utils/*.py",
+            model_path
+        ],
+        python=dict(
+            requirements_txt="./requirements.txt",
+        ),
+        docker=dict(
+            distro="debian",
+            python_version="3.8.12",
+            cuda_version="11.6.2",
+            system_packages=["ffmpeg", "libsm6", "libxext6"]
+        )
+    )
+    exported_bento = bentoml.bentos.export_bento(f"{bento.tag.name}:{bento.tag.version}", "./")
+    mlflow.log_artifact(exported_bento)
 
 def train(hyp, opt, device, tb_writer=None):
     mlflow_signature = None
@@ -456,7 +486,7 @@ def train(hyp, opt, device, tb_writer=None):
                     wandb_logger.log({tag: x})  # W&B
                 tag = re.sub('[^a-zA-Z0-9\/\_\-\. ]', '-', tag)
                 # we remove not allowed characters from the tags.
-                mlflow.log_metric(tag, float(x))
+                mlflow.log_metric(tag, float(x), epoch)
 
             # Update best mAP
             fi = fitness(np.array(results).reshape(1, -1))  # weighted combination of [P, R, mAP@.5, mAP@.5-.95]
@@ -500,12 +530,6 @@ def train(hyp, opt, device, tb_writer=None):
                 del ckpt
 
         # end epoch ----------------------------------------------------------------------------------------------------
-    mlflow.log_artifact("./service.py", "service")
-    mlflow.log_artifact(best, "service")
-    mlflow.log_artifact("./requirements.txt", "service")
-    mlflow.log_artifact("./bentofile.yaml", "service")
-    mlflow.log_artifacts("./models", "service/models")
-    mlflow.log_artifacts("./utils", "service/utils")
     # end training
     if rank in [-1, 0]:
         # Plots
@@ -547,6 +571,8 @@ def train(hyp, opt, device, tb_writer=None):
         wandb_logger.finish_run()
     else:
         dist.destroy_process_group()
+
+    process_bentoml(best)
     torch.cuda.empty_cache()
     return results
 
