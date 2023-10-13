@@ -1,7 +1,11 @@
+import os
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]="1, 2, 3"
+
 import argparse
 import logging
 import math
-import os
 import random
 import time
 from copy import deepcopy
@@ -36,6 +40,7 @@ from yolov7.utils.torch_utils import ModelEMA, select_device, intersect_dicts, t
 from yolov7.utils.wandb_logging.wandb_utils import WandbLogger, check_wandb_resume
 
 logger = logging.getLogger(__name__)
+
 
 
 def train(hyp, opt, device, tb_writer=None):
