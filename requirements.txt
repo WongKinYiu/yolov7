@@ -2,6 +2,7 @@
 
 # Base ----------------------------------------
 matplotlib>=3.2.2
+# See https://github.com/WongKinYiu/yolov7/issues/1537
 numpy>=1.18.5,<1.24.0
 opencv-python>=4.1.1
 Pillow>=7.1.2
