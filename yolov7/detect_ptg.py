@@ -5,6 +5,7 @@ import torch
 import kwcoco
 import glob
 import cv2
+import warnings
 
 import ubelt as ub
 import numpy as np
@@ -13,6 +14,7 @@ from pathlib import Path
 
 from angel_system.data.data_paths import grab_data, activity_gt_dir
 from angel_system.data.common.load_data import time_from_name
+from angel_system.data.common.load_data import Re_order
 
 from yolov7.models.experimental import attempt_load
 from yolov7.utils.general import check_img_size, non_max_suppression, scale_coords, xyxy2xywh
@@ -100,28 +102,49 @@ def detect(opt):
     print(names)
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in names]
 
-    dset = kwcoco.CocoDataset()
+    dset = {
+        "categories": [],
+        "videos": [],
+        "images": [],
+        "annotations": []
+    }#kwcoco.CocoDataset()
+    video_id = 0
+    img_id = 0
+    ann_id = 0
 
     # Add categories
     for i, object_label in enumerate(names):
         if object_label == "background":
             continue
-        dset.add_category(name=object_label, id=i)
+        cat = {
+            "id": i,
+            "name": object_label,
+        }
+        dset["categories"].append(cat)
+        #dset.add_category(name=object_label, id=i)
 
     videos = data_loader(opt.recipes, opt.split)
     for video in videos:
         video_name = os.path.basename(video)
         video_recipe = "tea" if "tea" in video_name else "coffee"
-        vid = dset.add_video(
-            name=video_name,
-            recipe=video_recipe,
-        )
+        
+        video_id = video_id + 1 #vid = dset._next_ids.get('videos')
+        video_data = {
+            "id": video_id,
+            "name": video_name,
+            "recipe": video_recipe,
+        }
+        dset['videos'].append(video_data)
+        #vid = dset.add_video(**video_data)
 
         if opt.save_img:
             save_imgs_dir = f"{save_path}/images/{video_name}"
             Path(save_imgs_dir).mkdir(parents=True, exist_ok=True)
 
         images = glob.glob(f"{video}/images/*.png")
+        if not images:
+            warnings.warn(f"No images found in {video_name}")
+        images = Re_order(images, len(images))
         for image_fn in ub.ProgIter(images, desc=f"images in {video_name}"):
             fn = os.path.basename(image_fn)
             img0, img = read_image(image_fn, imgsz, stride, device, half)
@@ -129,13 +152,17 @@ def detect(opt):
 
             frame_num, time = time_from_name(image_fn)
 
-            img_id = dset.add_image(
-                file_name=image_fn,
-                video_id=vid,
-                frame_index=frame_num,
-                width=width,
-                height=height,
-            )
+            img_id = img_id + 1 #dset._next_ids.get('images')
+            image = {
+                "id": img_id,
+                "file_name": image_fn,
+                "video_id": video_id,
+                "frame_index": frame_num,
+                "width": width,
+                "height": height,
+            }
+            dset['images'].append(image)
+            #img_id = dset.add_image(**image)
 
             # Predict
             with torch.no_grad():   # Calculating gradients would cause a GPU memory leak
@@ -159,25 +186,28 @@ def detect(opt):
                     xywh = [cxywh[0] - (cxywh[2] / 2), cxywh[1] - (cxywh[3] / 2),
                             cxywh[2], cxywh[3]]
 
+                    ann_id = ann_id + 1
                     ann = {
+                        "id": ann_id,
                         "area": xywh[2] * xywh[3],
                         "image_id": img_id,
                         "category_id": cls_id,
-                        "segmentation": [],
                         "bbox": xywh,
                         "confidence": float(conf),
                     }
-
-                    dset.add_annotation(**ann)
+                    dset['annotations'].append(ann)
+                    #dset.add_annotation(**ann)
 
                     # Optionaly draw results
                     if opt.save_img:  # Add bbox to image
                         label = f'{names[int(cls_id)]} {conf:.2f}'
                         plot_one_box(xyxy, img0, label=label, color=colors[int(cls_id)], line_thickness=1)
-                if opt.save_img:
-                    cv2.imwrite(f"{save_imgs_dir}/{fn}", img0)
+            
+            if opt.save_img:
+                cv2.imwrite(f"{save_imgs_dir}/{fn}", img0)
     
     # Save
+    dset = kwcoco.CocoDatset(dset)
     dset.fpath = f"{save_path}/{opt.name}_{opt.split}_obj_results.mscoco.json"
     dset.dump(dset.fpath, newlines=True)
     print(f"Saved predictions to {dset.fpath}")
