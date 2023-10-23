@@ -25,6 +25,7 @@
 
 storage.googleapis.com
 runs/*
+yolov7/runs
 data/*
 data/images/*
 !data/*.yaml
