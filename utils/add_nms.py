@@ -100,6 +100,7 @@ class RegisterNMS(object):
             "iou_threshold": nms_thresh,
             "score_activation": False,
             "box_coding": 0,
+            "class_agnostic": True
         }
 
         if self.precision == "fp32":
