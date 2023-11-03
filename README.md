@@ -232,11 +232,11 @@ YOLOv7 with decoupled TAL head (YOLOR + YOLOv5 + YOLOv6)
 ## Citation
 
 ```
-@article{wang2022yolov7,
+@inproceedings{wang2023yolov7,
   title={{YOLOv7}: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors},
   author={Wang, Chien-Yao and Bochkovskiy, Alexey and Liao, Hong-Yuan Mark},
-  journal={arXiv preprint arXiv:2207.02696},
-  year={2022}
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year={2023}
 }
 ```
 
