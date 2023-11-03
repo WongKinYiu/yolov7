@@ -241,11 +241,11 @@ YOLOv7 with decoupled TAL head (YOLOR + YOLOv5 + YOLOv6)
 ```
 
 ```
-@article{wang2022designing,
+@article{wang2023designing,
   title={Designing Network Design Strategies Through Gradient Path Analysis},
   author={Wang, Chien-Yao and Liao, Hong-Yuan Mark and Yeh, I-Hau},
-  journal={arXiv preprint arXiv:2211.04800},
-  year={2022}
+  journal={Journal of Information Science and Engineering},
+  year={2023}
 }
 ```
 
