@@ -60,6 +60,10 @@ def train(hyp, opt, device, tb_writer=None):
     plots = not opt.evolve  # create plots
     cuda = device.type != 'cpu'
     init_seeds(2 + rank)
+    
+    # Move target tensors to GPU
+    from_which_layer = build_targets(hyp, targets, imgs)[4].to(device)
+    
     with open(opt.data) as f:
         data_dict = yaml.load(f, Loader=yaml.SafeLoader)  # data dict
     is_coco = opt.data.endswith('coco.yaml')
