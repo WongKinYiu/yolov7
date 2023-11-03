@@ -192,6 +192,7 @@ class ONNX_ORT(nn.Module):
         X = X.unsqueeze(1).float()
         return torch.cat([X, selected_boxes, selected_categories, selected_scores], 1)
 
+
 class ONNX_TRT(nn.Module):
     '''onnx module with TensorRT NMS operation.'''
     def __init__(self, max_obj=100, iou_thres=0.45, score_thres=0.25, max_wh=None ,device=None, n_classes=80):
@@ -239,9 +240,6 @@ class End2End(nn.Module):
         x = self.model(x)
         x = self.end2end(x)
         return x
-
-
-
 
 
 def attempt_load(weights, map_location=None):
