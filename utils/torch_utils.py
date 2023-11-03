@@ -10,9 +10,12 @@ import time
 from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
+from packaging.version import Version
 
 import torch
 import torch.backends.cudnn as cudnn
+if Version(torch.__version__) >= Version('1.13.0'):
+    import torch.backends.mps
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
@@ -61,16 +64,20 @@ def git_describe(path=Path(__file__).parent):  # path must be a directory
 
 
 def select_device(device='', batch_size=None):
-    # device = 'cpu' or '0' or '0,1,2,3'
+    # device = 'cpu' or 'mps' or '0' or '0,1,2,3'
     s = f'YOLOR 🚀 {git_describe() or date_modified()} torch {torch.__version__} '  # string
     cpu = device.lower() == 'cpu'
-    if cpu:
+    mps = device.lower() == 'mps'
+    if not Version(torch.__version__) >= Version('1.13.0'):
+        cpu = True
+        mps = False
+    if cpu or mps:
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # force torch.cuda.is_available() = False
     elif device:  # non-cpu device requested
         os.environ['CUDA_VISIBLE_DEVICES'] = device  # set environment variable
         assert torch.cuda.is_available(), f'CUDA unavailable, invalid device {device} requested'  # check availability
 
-    cuda = not cpu and torch.cuda.is_available()
+    cuda = not cpu and not mps and torch.cuda.is_available()
     if cuda:
         n = torch.cuda.device_count()
         if n > 1 and batch_size:  # check that batch_size is compatible with device_count
@@ -79,11 +86,16 @@ def select_device(device='', batch_size=None):
         for i, d in enumerate(device.split(',') if device else range(n)):
             p = torch.cuda.get_device_properties(i)
             s += f"{'' if i == 0 else space}CUDA:{d} ({p.name}, {p.total_memory / 1024 ** 2}MB)\n"  # bytes to MB
+        device_arg = 'cuda:0'
+    elif mps and torch.backends.mps.is_available() and torch.backends.mps.is_built():
+        s += 'MPS\n'
+        device_arg = 'mps'
     else:
         s += 'CPU\n'
+        device_arg = 'cpu'
 
     logger.info(s.encode().decode('ascii', 'ignore') if platform.system() == 'Windows' else s)  # emoji-safe
-    return torch.device('cuda:0' if cuda else 'cpu')
+    return torch.device(device_arg)
 
 
 def time_synchronized():
