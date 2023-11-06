@@ -63,7 +63,9 @@ def test(data,
             model = TracedModel(model, device, imgsz)
 
     # Half
-    half = device.type != 'cpu' and half_precision  # half precision only supported on CUDA
+    compute_capability = torch.cuda.get_device_capability(device=device)
+    print(f"compute_capability = {compute_capability} ")
+    half = device.type != 'cpu' and half_precision and (compute_capability[0] >= 7)  # half precision only supported on CUDA
     if half:
         model.half()
 

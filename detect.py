@@ -28,7 +28,9 @@ def detect(save_img=False):
     # Initialize
     set_logging()
     device = select_device(opt.device)
-    half = device.type != 'cpu'  # half precision only supported on CUDA
+    compute_capability = torch.cuda.get_device_capability(device=device)
+    print(f"compute_capability = {compute_capability} ")
+    half = (device.type != 'cpu') and (compute_capability[0] >= 7)  # half precision only supported on CUDA
 
     # Load model
     model = attempt_load(weights, map_location=device)  # load FP32 model
