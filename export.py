@@ -65,6 +65,7 @@ if __name__ == '__main__':
         # elif isinstance(m, models.yolo.Detect):
         #     m.forward = m.forward_export  # assign forward (optional)
     model.model[-1].export = not opt.grid  # set Detect() layer grid export
+    model.model[-1].dynamic = opt.dynamic
     y = model(img)  # dry run
     if opt.include_nms:
         model.model[-1].include_nms = True

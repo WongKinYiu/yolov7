@@ -26,6 +26,7 @@ class Detect(nn.Module):
     end2end = False
     include_nms = False
     concat = False
+    dynamic = False
 
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(Detect, self).__init__()
@@ -49,7 +50,7 @@ class Detect(nn.Module):
             x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
             if not self.training:  # inference
-                if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                if self.grid[i].shape[2:4] != x[i].shape[2:4] or self.dynamic:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
                 y = x[i].sigmoid()
                 if not torch.onnx.is_in_onnx_export():
@@ -58,7 +59,7 @@ class Detect(nn.Module):
                 else:
                     xy, wh, conf = y.split((2, 2, self.nc + 1), 4)  # y.tensor_split((2, 4, 5), 4)  # torch 1.8.0
                     xy = xy * (2. * self.stride[i]) + (self.stride[i] * (self.grid[i] - 0.5))  # new xy
-                    wh = wh ** 2 * (4 * self.anchor_grid[i].data)  # new wh
+                    wh = wh ** 2 * (4 * self.anchor_grid[i])  # new wh
                     y = torch.cat((xy, wh, conf), 4)
                 z.append(y.view(bs, -1, self.no))
 
@@ -100,6 +101,7 @@ class IDetect(nn.Module):
     end2end = False
     include_nms = False
     concat = False
+    dynamic = False
 
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(IDetect, self).__init__()
@@ -127,7 +129,7 @@ class IDetect(nn.Module):
             x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
             if not self.training:  # inference
-                if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                if self.grid[i].shape[2:4] != x[i].shape[2:4] or self.dynamic:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
 
                 y = x[i].sigmoid()
@@ -147,7 +149,7 @@ class IDetect(nn.Module):
             x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
             if not self.training:  # inference
-                if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                if self.grid[i].shape[2:4] != x[i].shape[2:4] or self.dynamic:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
 
                 y = x[i].sigmoid()
@@ -157,7 +159,7 @@ class IDetect(nn.Module):
                 else:
                     xy, wh, conf = y.split((2, 2, self.nc + 1), 4)  # y.tensor_split((2, 4, 5), 4)  # torch 1.8.0
                     xy = xy * (2. * self.stride[i]) + (self.stride[i] * (self.grid[i] - 0.5))  # new xy
-                    wh = wh ** 2 * (4 * self.anchor_grid[i].data)  # new wh
+                    wh = wh ** 2 * (4 * self.anchor_grid[i])  # new wh
                     y = torch.cat((xy, wh, conf), 4)
                 z.append(y.view(bs, -1, self.no))
 
@@ -210,6 +212,7 @@ class IDetect(nn.Module):
 class IKeypoint(nn.Module):
     stride = None  # strides computed during build
     export = False  # onnx export
+    dynamic = False
 
     def __init__(self, nc=80, anchors=(), nkpt=17, ch=(), inplace=True, dw_conv_kpt=False):  # detection layer
         super(IKeypoint, self).__init__()
@@ -261,7 +264,7 @@ class IKeypoint(nn.Module):
             x_kpt = x[i][..., 6:]
 
             if not self.training:  # inference
-                if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                if self.grid[i].shape[2:4] != x[i].shape[2:4] or self.dynamic:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
                 kpt_grid_x = self.grid[i][..., 0:1]
                 kpt_grid_y = self.grid[i][..., 1:2]
@@ -314,6 +317,7 @@ class IAuxDetect(nn.Module):
     end2end = False
     include_nms = False
     concat = False
+    dynamic = False
 
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(IAuxDetect, self).__init__()
@@ -345,7 +349,7 @@ class IAuxDetect(nn.Module):
             x[i+self.nl] = x[i+self.nl].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
             if not self.training:  # inference
-                if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                if self.grid[i].shape[2:4] != x[i].shape[2:4] or self.dynamic:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
 
                 y = x[i].sigmoid()
@@ -355,7 +359,7 @@ class IAuxDetect(nn.Module):
                 else:
                     xy, wh, conf = y.split((2, 2, self.nc + 1), 4)  # y.tensor_split((2, 4, 5), 4)  # torch 1.8.0
                     xy = xy * (2. * self.stride[i]) + (self.stride[i] * (self.grid[i] - 0.5))  # new xy
-                    wh = wh ** 2 * (4 * self.anchor_grid[i].data)  # new wh
+                    wh = wh ** 2 * (4 * self.anchor_grid[i])  # new wh
                     y = torch.cat((xy, wh, conf), 4)
                 z.append(y.view(bs, -1, self.no))
 
@@ -371,7 +375,7 @@ class IAuxDetect(nn.Module):
             x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
             if not self.training:  # inference
-                if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                if self.grid[i].shape[2:4] != x[i].shape[2:4] or self.dynamic:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
 
                 y = x[i].sigmoid()
@@ -380,7 +384,7 @@ class IAuxDetect(nn.Module):
                     y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
                 else:
                     xy = (y[..., 0:2] * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
-                    wh = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i].data  # wh
+                    wh = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
                     y = torch.cat((xy, wh, y[..., 4:]), -1)
                 z.append(y.view(bs, -1, self.no))
 
@@ -433,6 +437,7 @@ class IAuxDetect(nn.Module):
 class IBin(nn.Module):
     stride = None  # strides computed during build
     export = False  # onnx export
+    dynamic = False
 
     def __init__(self, nc=80, anchors=(), ch=(), bin_count=21):  # detection layer
         super(IBin, self).__init__()
@@ -474,7 +479,7 @@ class IBin(nn.Module):
             x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
 
             if not self.training:  # inference
-                if self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                if self.grid[i].shape[2:4] != x[i].shape[2:4] or self.dynamic:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
 
                 y = x[i].sigmoid()
@@ -535,7 +540,7 @@ class Model(nn.Module):
             s = 256  # 2x min stride
             m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))])  # forward
             check_anchor_order(m)
-            m.anchors /= m.stride.view(-1, 1, 1)
+            m.anchors = m.anchors / m.stride.view(-1, 1, 1)
             self.stride = m.stride
             self._initialize_biases()  # only run once
             # print('Strides: %s' % m.stride.tolist())
@@ -543,7 +548,7 @@ class Model(nn.Module):
             s = 256  # 2x min stride
             m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))])  # forward
             check_anchor_order(m)
-            m.anchors /= m.stride.view(-1, 1, 1)
+            m.anchors = m.anchors / m.stride.view(-1, 1, 1)
             self.stride = m.stride
             self._initialize_biases()  # only run once
             # print('Strides: %s' % m.stride.tolist())
@@ -552,7 +557,7 @@ class Model(nn.Module):
             m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))[:4]])  # forward
             #print(m.stride)
             check_anchor_order(m)
-            m.anchors /= m.stride.view(-1, 1, 1)
+            m.anchors = m.anchors / m.stride.view(-1, 1, 1)
             self.stride = m.stride
             self._initialize_aux_biases()  # only run once
             # print('Strides: %s' % m.stride.tolist())
@@ -560,7 +565,7 @@ class Model(nn.Module):
             s = 256  # 2x min stride
             m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))])  # forward
             check_anchor_order(m)
-            m.anchors /= m.stride.view(-1, 1, 1)
+            m.anchors = m.anchors / m.stride.view(-1, 1, 1)
             self.stride = m.stride
             self._initialize_biases_bin()  # only run once
             # print('Strides: %s' % m.stride.tolist())
@@ -568,7 +573,7 @@ class Model(nn.Module):
             s = 256  # 2x min stride
             m.stride = torch.tensor([s / x.shape[-2] for x in self.forward(torch.zeros(1, ch, s, s))])  # forward
             check_anchor_order(m)
-            m.anchors /= m.stride.view(-1, 1, 1)
+            m.anchors = m.anchors / m.stride.view(-1, 1, 1)
             self.stride = m.stride
             self._initialize_biases_kpt()  # only run once
             # print('Strides: %s' % m.stride.tolist())
@@ -588,7 +593,7 @@ class Model(nn.Module):
                 xi = scale_img(x.flip(fi) if fi else x, si, gs=int(self.stride.max()))
                 yi = self.forward_once(xi)[0]  # forward
                 # cv2.imwrite(f'img_{si}.jpg', 255 * xi[0].cpu().numpy().transpose((1, 2, 0))[:, :, ::-1])  # save
-                yi[..., :4] /= si  # de-scale
+                yi[..., :4] = yi[..., :4] / si  # de-scale
                 if fi == 2:
                     yi[..., 1] = img_size[0] - yi[..., 1]  # de-flip ud
                 elif fi == 3:
