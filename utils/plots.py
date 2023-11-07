@@ -423,6 +423,7 @@ def plot_results(start=0, stop=0, bucket='', id=(), labels=(), save_dir=''):
                     # y /= y[0]  # normalize
                 label = labels[fi] if len(labels) else f.stem
                 ax[i].plot(x, y, marker='.', label=label, linewidth=2, markersize=8)
+                ax[i].plot(x, gaussian_filter1d(y, sigma=3), ':', label='smooth', linewidth=2)  # smoothing line
                 ax[i].set_title(s[i])
                 # if i in [5, 6, 7]:  # share train and val loss y axes
                 #     ax[i].get_shared_y_axes().join(ax[i], ax[i - 5])
