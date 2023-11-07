@@ -1,0 +1,19 @@
+service: "service:svc"
+labels:
+  owner: Myelintek
+  stage: dev
+include:
+  - "service.py"
+  - "models/*.py"
+  - "utils/*.py"
+  - "best.pt"
+python:
+  requirements_txt: "./requirements.txt"
+docker:
+  distro: debian
+  python_version: "3.8.12"
+  cuda_version: "11.6.2"
+  system_packages:
+    - ffmpeg
+    - libsm6
+    - libxext6
