@@ -17,6 +17,7 @@ import torch
 import yaml
 from PIL import Image, ImageDraw, ImageFont
 from scipy.signal import butter, filtfilt
+from scipy.ndimage import gaussian_filter1d
 
 from utils.general import xywh2xyxy, xyxy2xywh
 from utils.metrics import fitness
