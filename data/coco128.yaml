@@ -1,6 +1,6 @@
 # path
-train: ../datasets/coco128/images/train2017
-val: ../datasets/coco128/images/train2017
+train: /mlsteam/data/dataset/coco128/images/train2017
+val: /mlsteam/data/dataset/coco128/images/train2017
 
 # number of classes
 nc: 80
