@@ -150,9 +150,15 @@ def detect(save_img=False):
                             fps = vid_cap.get(cv2.CAP_PROP_FPS)
                             w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                             h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+                            dotn = save_path.rfind('.')
+                            if save_path[dotn:] == '.hevc':
+                                save_path = save_path[:dotn] + '.mp4'
+
                         else:  # stream
                             fps, w, h = 30, im0.shape[1], im0.shape[0]
                             save_path += '.mp4'
+
                         vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                     vid_writer.write(im0)
 
