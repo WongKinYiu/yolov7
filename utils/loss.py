@@ -658,8 +658,10 @@ class ComputeLossOTA:
             this_target = targets[b_idx]
             if this_target.shape[0] == 0:
                 continue
-                
-            txywh = this_target[:, 2:6] * imgs[batch_idx].shape[1]
+
+            txywh = torch.clone(this_target[:, 2:6])
+            txywh[:, [0,2]] *= imgs[batch_idx].shape[2] # x, w * img width
+            txywh[:, [1,3]] *= imgs[batch_idx].shape[1] # y, h * img height
             txyxy = xywh2xyxy(txywh)
 
             pxyxys = []

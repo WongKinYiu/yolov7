@@ -21,7 +21,7 @@ from utils.torch_utils import select_device, time_synchronized, TracedModel
 def test(data,
          weights=None,
          batch_size=32,
-         imgsz=640,
+         imgsz=(640, 640),
          conf_thres=0.001,
          iou_thres=0.6,  # for NMS
          save_json=False,
@@ -57,10 +57,10 @@ def test(data,
         # Load model
         model = attempt_load(weights, map_location=device)  # load FP32 model
         gs = max(int(model.stride.max()), 32)  # grid size (max stride)
-        imgsz = check_img_size(imgsz, s=gs)  # check img_size
+        test_img_size_h, test_img_size_w = [check_img_size(x, gs) for x in imgsz]  # check img_size
         
         if trace:
-            model = TracedModel(model, device, imgsz)
+            model = TracedModel(model, device, (test_img_size_h, test_img_size_w))
 
     # Half
     half = device.type != 'cpu' and half_precision  # half precision only supported on CUDA
@@ -85,7 +85,7 @@ def test(data,
     # Dataloader
     if not training:
         if device.type != 'cpu':
-            model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
+            model(torch.zeros(1, 3, imgsz[0], imgsz[1]).to(device).type_as(next(model.parameters())))  # run once
         task = opt.task if opt.task in ('train', 'val', 'test') else 'val'  # path to train/val/test images
         dataloader = create_dataloader(data[task], imgsz, batch_size, gs, opt, pad=0.5, rect=True,
                                        prefix=colorstr(f'{task}: '))[0]
@@ -238,7 +238,7 @@ def test(data,
             print(pf % (names[c], seen, nt[c], p[i], r[i], ap50[i], ap[i]))
 
     # Print speeds
-    t = tuple(x / seen * 1E3 for x in (t0, t1, t0 + t1)) + (imgsz, imgsz, batch_size)  # tuple
+    t = tuple(x / seen * 1E3 for x in (t0, t1, t0 + t1)) + (imgsz[0], imgsz[1], batch_size)  # tuple
     if not training:
         print('Speed: %.1f/%.1f/%.1f ms inference/NMS/total per %gx%g image at batch-size %g' % t)
 
