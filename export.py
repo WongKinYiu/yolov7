@@ -96,7 +96,7 @@ if __name__ == '__main__':
             else:
                 print('quantization only supported on macOS, skipping...')
 
-        f = opt.weights.replace('.pt', '.mlmodel')  # filename
+        f = opt.weights.replace('.pt', '.mlpackage')  # filename
         ct_model.save(f)
         print('CoreML export success, saved as %s' % f)
     except Exception as e:
