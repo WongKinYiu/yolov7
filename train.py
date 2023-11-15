@@ -468,6 +468,8 @@ def train(hyp, opt, device, tb_writer=None):
                     torch.save(ckpt, wdir / 'best_{:03d}.pt'.format(epoch))
                 if epoch == 0:
                     torch.save(ckpt, wdir / 'epoch_{:03d}.pt'.format(epoch))
+                if opt.save_period > 0 and epoch % opt.save_period == 0:
+                    torch.save(ckpt, wdir / 'epoch_{:03d}.pt'.format(epoch))
                 elif ((epoch+1) % 25) == 0:
                     torch.save(ckpt, wdir / 'epoch_{:03d}.pt'.format(epoch))
                 elif epoch >= (epochs-5):
@@ -558,7 +560,7 @@ if __name__ == '__main__':
     parser.add_argument('--label-smoothing', type=float, default=0.0, help='Label smoothing epsilon')
     parser.add_argument('--upload_dataset', action='store_true', help='Upload dataset as W&B artifact table')
     parser.add_argument('--bbox_interval', type=int, default=-1, help='Set bounding-box image logging interval for W&B')
-    parser.add_argument('--save_period', type=int, default=-1, help='Log model after every "save_period" epoch')
+    parser.add_argument('--save_period', type=int, default=-1, help='Log model and save checkpoint after every "save_period" epoch')
     parser.add_argument('--artifact_alias', type=str, default="latest", help='version of dataset artifact to be used')
     parser.add_argument('--freeze', nargs='+', type=int, default=[0], help='Freeze layers: backbone of yolov7=50, first3=0 1 2')
     parser.add_argument('--v5-metric', action='store_true', help='assume maximum recall as 1.0 in AP calculation')
