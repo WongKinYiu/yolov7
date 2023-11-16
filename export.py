@@ -62,8 +62,10 @@ if __name__ == '__main__':
                 m.act = Hardswish()
             elif isinstance(m.act, nn.SiLU):
                 m.act = SiLU()
-        # elif isinstance(m, models.yolo.Detect):
-        #     m.forward = m.forward_export  # assign forward (optional)
+        elif isinstance(m, models.yolo.Detect) or isinstance(m, models.yolo.IDetect):
+            m.dynamic = opt.dynamic
+        elif isinstance(m, models.yolo.IKeypoint) or isinstance(m, models.yolo.IAuxDetect) or isinstance(m, models.yolo.IBin):
+            m.dynamic = opt.dynamic
     model.model[-1].export = not opt.grid  # set Detect() layer grid export
     y = model(img)  # dry run
     if opt.include_nms:
