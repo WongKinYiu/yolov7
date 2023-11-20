@@ -35,8 +35,8 @@ def detect(save_img=False):
     stride = int(model.stride.max())  # model stride
     imgsz = check_img_size(imgsz, s=stride)  # check img_size
 
-    if trace:
-        model = TracedModel(model, device, opt.img_size)
+    #if trace:
+    #    model = TracedModel(model, device, opt.img_size)
 
     if half:
         model.half()  # to FP16
