@@ -33,7 +33,7 @@ MS COCO
 
 ## Installation
 
-Docker environment (recommended)
+### Docker environment (recommended)
 <details><summary> <b>Expand</b> </summary>
 
 ``` shell
@@ -51,6 +51,27 @@ pip install seaborn thop
 cd /yolov7
 ```
 
+</details>
+
+### Docker on Jetson NX
+<details><summary> <b>Expand</b> </summary>
+
+Using L4T R32 and JetPack 6.1, adjust as needed:
+
+``` shell
+# create the docker container, you can change the share memory size if you have more.
+docker run --runtime nvidia --name yolov7 -it -v /home/guillermo/code/datasets/coco/:/coco/ -v /home/guillermo/code/github/yolov7/:/yolov7 nvcr.io/nvidia/l4t-ml:r32.6.1-py3
+
+# apt install required packages
+apt update
+apt install -y zip unzip htop screen libgl1-mesa-glx
+
+# pip install required packages
+pip install pyyaml tqdm seaborn thop
+
+# go to code folder
+cd /yolov7
+```
 </details>
 
 ## Testing
@@ -79,6 +100,14 @@ You will get the results:
 ```
 
 To measure accuracy, download [COCO-annotations for Pycocotools](http://images.cocodataset.org/annotations/annotations_trainval2017.zip) to the `./coco/annotations/instances_val2017.json`
+
+### Testing on Jetson NX
+
+[`yolov7-tiny.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-tiny.pt)
+
+``` shell
+python3 test.py --data data/coco.yaml --img 640 --batch 16 --conf 0.001 --iou 0.65 --device 0 --weights yolov7-tiny.pt --name yolov7-tiny_640_val
+```
 
 ## Training
 
