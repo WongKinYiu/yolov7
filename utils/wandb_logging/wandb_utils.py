@@ -14,6 +14,13 @@ from utils.general import colorstr, xywh2xyxy, check_dataset
 try:
     import wandb
     from wandb import init, finish
+    try:
+        wandb_login_success = wandb.login(timeout=30)
+    except wandb.errors.UsageError:  # known non-TTY terminal issue
+        wandb_login_success = False
+    if not wandb_login_success:
+        wandb = None
+        
 except ImportError:
     wandb = None
 
