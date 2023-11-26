@@ -14,7 +14,7 @@ from models.experimental import attempt_load, End2End
 from utils.activations import Hardswish, SiLU
 from utils.general import set_logging, check_img_size
 from utils.torch_utils import select_device
-from utils.add_nms import RegisterNMS
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -189,14 +189,18 @@ if __name__ == '__main__':
                 print(f'Simplifier failure: {e}')
 
         # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
-        onnx.save(onnx_model,f)
+        onnx.save(onnx_model, f)
         print('ONNX export success, saved as %s' % f)
 
         if opt.include_nms:
-            print('Registering NMS plugin for ONNX...')
-            mo = RegisterNMS(f)
-            mo.register_nms()
-            mo.save(f)
+            try:
+                from utils.add_nms import RegisterNMS
+                print('Registering NMS plugin for ONNX...')
+                mo = RegisterNMS(f)
+                mo.register_nms()
+                mo.save(f)
+            except Exception as e:
+                print(f'Add NMS failure: {e}')
 
     except Exception as e:
         print('ONNX export failure: %s' % e)
