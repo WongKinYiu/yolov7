@@ -16,7 +16,7 @@ Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-t
 ## Web Demo
 
 - Integrated into [Huggingface Spaces 🤗](https://huggingface.co/spaces/akhaliq/yolov7) using Gradio. Try out the Web Demo [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/akhaliq/yolov7)
-
+- Yolov7 in TensorflowJS: [Repo](https://github.com/hugozanini/yolov7-tfjs) | [Demo](https://codesandbox.io/p/github/hugozanini/yolov7-tfjs/master?file=%2FREADME.md)
 ## Performance 
 
 MS COCO
