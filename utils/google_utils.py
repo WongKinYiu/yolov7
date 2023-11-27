@@ -21,14 +21,24 @@ def attempt_download(file, repo='WongKinYiu/yolov7'):
     file = Path(str(file).strip().replace("'", '').lower())
 
     if not file.exists():
+        # Set default assets
+        assets = ['yolov7.pt', 'yolov7-tiny.pt', 'yolov7x.pt', 'yolov7-d6.pt', 'yolov7-e6.pt',
+                  'yolov7-e6e.pt', 'yolov7-w6.pt']
         try:
-            response = requests.get(f'https://api.github.com/repos/{repo}/releases/latest').json()  # github api
-            assets = [x['name'] for x in response['assets']]  # release assets
-            tag = response['tag_name']  # i.e. 'v1.0'
-        except:  # fallback plan
-            assets = ['yolov7.pt', 'yolov7-tiny.pt', 'yolov7x.pt', 'yolov7-d6.pt', 'yolov7-e6.pt', 
-                      'yolov7-e6e.pt', 'yolov7-w6.pt']
-            tag = subprocess.check_output('git tag', shell=True).decode().split()[-1]
+            response = requests.get(
+                f'https://api.github.com/repos/{repo}/releases').json()  # github api
+            if len(response) > 0:
+                release_assets = response[0]  # get dictionary of assets
+                # Get names of assets if it rleases exists
+                assets = [release_asset['name']
+                          for release_asset in release_assets['assets']]
+                # Get first tag which is the latest tag
+                tag = release_assets.get("tag_name")
+        except KeyError:  # fallback plan
+            tag = subprocess.check_output(
+                'git tag', shell=True).decode().split()[-1]
+        except subprocess.CalledProcessError:  # fallback to default release if can't get tag
+            tag = "v0.1"
 
         name = file.name
         if name in assets:
@@ -44,7 +54,8 @@ def attempt_download(file, repo='WongKinYiu/yolov7'):
                 assert redundant, 'No secondary mirror'
                 url = f'https://storage.googleapis.com/{repo}/ckpt/{name}'
                 print(f'Downloading {url} to {file}...')
-                os.system(f'curl -L {url} -o {file}')  # torch.hub.download_url_to_file(url, weights)
+                # torch.hub.download_url_to_file(url, weights)
+                os.system(f'curl -L {url} -o {file}')
             finally:
                 if not file.exists() or file.stat().st_size < 1E6:  # check
                     file.unlink(missing_ok=True)  # remove partial downloads
@@ -58,13 +69,15 @@ def gdrive_download(id='', file='tmp.zip'):
     t = time.time()
     file = Path(file)
     cookie = Path('cookie')  # gdrive cookie
-    print(f'Downloading https://drive.google.com/uc?export=download&id={id} as {file}... ', end='')
+    print(
+        f'Downloading https://drive.google.com/uc?export=download&id={id} as {file}... ', end='')
     file.unlink(missing_ok=True)  # remove existing file
     cookie.unlink(missing_ok=True)  # remove existing cookie
 
     # Attempt file download
     out = "NUL" if platform.system() == "Windows" else "/dev/null"
-    os.system(f'curl -c ./cookie -s -L "drive.google.com/uc?export=download&id={id}" > {out}')
+    os.system(
+        f'curl -c ./cookie -s -L "drive.google.com/uc?export=download&id={id}" > {out}')
     if os.path.exists('cookie'):  # large file
         s = f'curl -Lb ./cookie "drive.google.com/uc?export=download&confirm={get_token()}&id={id}" -o {file}'
     else:  # small file
