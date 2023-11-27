@@ -651,6 +651,10 @@ if __name__ == '__main__':
         
         with open(opt.hyp, errors='ignore') as f:
             hyp = yaml.safe_load(f)  # load hyps dict
+            #remove keys not in meta
+            for k in list(hyp.keys()):
+                if k not in meta:
+                    hyp.pop(k)
             if 'anchors' not in hyp:  # anchors commented in hyp.yaml
                 hyp['anchors'] = 3
                 
