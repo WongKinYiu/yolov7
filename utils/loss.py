@@ -650,7 +650,9 @@ class ComputeLossOTA:
         matching_targets = [[] for pp in p]
         matching_anchs = [[] for pp in p]
         
-        nl = len(p)    
+        nl = len(p)
+        
+        device = torch.device(targets.device)
     
         for batch_idx in range(p[0].shape[0]):
         
