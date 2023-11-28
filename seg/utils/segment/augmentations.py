@@ -18,7 +18,14 @@ def mixup(im, labels, segments, im2, labels2, segments2):
     r = np.random.beta(32.0, 32.0)  # mixup ratio, alpha=beta=32.0
     im = (im * r + im2 * (1 - r)).astype(np.uint8)
     labels = np.concatenate((labels, labels2), 0)
-    segments = np.concatenate((segments, segments2), 0)
+    # Handle cases if segments or segments2 is empty if no labels. It is a list if empty.
+    # TODO handle this issue upstream before ingestion of segments. This is a quick fix.
+    if isinstance(segments2, list):
+        return im, labels, segments
+    elif isinstance(segments, list):
+        return im, labels, segments2
+    else:
+        segments = np.concatenate((segments, segments2), 0)
     return im, labels, segments
 
 
