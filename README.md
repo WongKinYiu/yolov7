@@ -80,7 +80,7 @@ You will get the results:
 
 To measure accuracy, download [COCO-annotations for Pycocotools](http://images.cocodataset.org/annotations/annotations_trainval2017.zip) to the `./coco/annotations/instances_val2017.json`
 
-## Training
+## Training on COCO
 
 Data preparation
 
@@ -123,6 +123,10 @@ python train.py --workers 8 --device 0 --batch-size 32 --data data/custom.yaml -
 # finetune p6 models
 python train_aux.py --workers 8 --device 0 --batch-size 16 --data data/custom.yaml --img 1280 1280 --cfg cfg/training/yolov7-w6-custom.yaml --weights 'yolov7-w6_training.pt' --name yolov7-w6-custom --hyp data/hyp.scratch.custom.yaml
 ```
+
+## Training on Custom Data
+
+Follow the [YOLOv7 Custom Training Tutorial](https://blog.roboflow.com/yolov7-custom-dataset-training-tutorial/) <a href="https://colab.research.google.com/drive/1X9A8odmK4k6l26NDviiT6dd6TgR-piOa"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a> to learn how to create and prepare your dataset, train a model in Google Colab, and download your weights for inference.
 
 ## Re-parameterization
 
