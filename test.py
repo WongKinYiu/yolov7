@@ -22,8 +22,10 @@ def test(data,
          weights=None,
          batch_size=32,
          imgsz=640,
-         conf_thres=0.001,
-         iou_thres=0.6,  # for NMS
+         conf_thres: float = 0.001,
+         iou_thres: float = 0.6,  # for NMS
+         overlap: float = 0.5,  # Min overlap to base mAP on; note that this
+         max_overlap: float = 0.95,  # Max overlap to base mAP on.
          save_json=False,
          single_cls=False,
          augment=False,
@@ -75,7 +77,7 @@ def test(data,
             data = yaml.load(f, Loader=yaml.SafeLoader)
     check_dataset(data)  # check
     nc = 1 if single_cls else int(data['nc'])  # number of classes
-    iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
+    iouv = torch.linspace(overlap, max_overlap, 10).to(device)  # iou vector for mAP@0.5:0.95
     niou = iouv.numel()
 
     # Logging
