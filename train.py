@@ -570,7 +570,6 @@ if __name__ == '__main__':
     parser.add_argument('--freeze', nargs='+', type=int, default=[0], help='Freeze layers: backbone of yolov7=50, first3=0 1 2')
     parser.add_argument('--conf_thres', type=float, help='Confidence threshold for validation and mAP')
     parser.add_argument('--iou_thres', type=float, help='NMS for validation and mAP')
-    parser.add_argument('--conf_thres', type=float, help='Confidence threshold for validation and mAP')
     parser.add_argument('--overlap', type=float, help='Minimum needed overlap (iou threshold) for validation and mAP')
     parser.add_argument('--max_overlap', type=float,
                         help='Maximum needed overlap (iou threshold) for validation and mAP; used for mAP=0.x-o.y')
