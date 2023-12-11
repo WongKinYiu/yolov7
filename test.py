@@ -295,11 +295,13 @@ if __name__ == '__main__':
     parser.add_argument('--data', type=str, default='data/coco.yaml', help='*.data path')
     parser.add_argument('--batch-size', type=int, default=32, help='size of each image batch')
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-    parser.add_argument('--conf_thres', type=float, help='Confidence threshold for validation and mAP')
-    parser.add_argument('--iou_thres', type=float, help='NMS for validation and mAP')
-    parser.add_argument('--overlap', type=float, help='Minimum needed overlap (iou threshold) for validation and mAP')
+    parser.add_argument('--conf_thres', type=float, help='Confidence threshold for validation and mAP', default=0.01)
+    parser.add_argument('--iou_thres', type=float, help='NMS for validation and mAP', default=0.6)
+    parser.add_argument('--overlap', type=float, help='Minimum needed overlap (iou threshold) for validation and mAP',
+                        default=0.5)
     parser.add_argument('--max_overlap', type=float,
-                        help='Maximum needed overlap (iou threshold) for validation and mAP; used for mAP=0.x-o.y')
+                        help='Maximum needed overlap (iou threshold) for validation and mAP; used for mAP=0.x-o.y',
+                        default=0.95)
     parser.add_argument('--task', default='val', help='train, val, test, speed or study')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--single-cls', action='store_true', help='treat as single-class dataset')

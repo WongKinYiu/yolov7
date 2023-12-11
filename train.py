@@ -568,11 +568,13 @@ if __name__ == '__main__':
     parser.add_argument('--save_period', type=int, default=-1, help='Log model after every "save_period" epoch')
     parser.add_argument('--artifact_alias', type=str, default="latest", help='version of dataset artifact to be used')
     parser.add_argument('--freeze', nargs='+', type=int, default=[0], help='Freeze layers: backbone of yolov7=50, first3=0 1 2')
-    parser.add_argument('--conf_thres', type=float, help='Confidence threshold for validation and mAP')
-    parser.add_argument('--iou_thres', type=float, help='NMS for validation and mAP')
-    parser.add_argument('--overlap', type=float, help='Minimum needed overlap (iou threshold) for validation and mAP')
+    parser.add_argument('--conf_thres', type=float, help='Confidence threshold for validation and mAP', default=0.01)
+    parser.add_argument('--iou_thres', type=float, help='NMS for validation and mAP', default=0.6)
+    parser.add_argument('--overlap', type=float, help='Minimum needed overlap (iou threshold) for validation and mAP',
+                        default=0.5)
     parser.add_argument('--max_overlap', type=float,
-                        help='Maximum needed overlap (iou threshold) for validation and mAP; used for mAP=0.x-o.y')
+                        help='Maximum needed overlap (iou threshold) for validation and mAP; used for mAP=0.x-o.y',
+                        default=0.95)
     parser.add_argument('--v5-metric', action='store_true', help='assume maximum recall as 1.0 in AP calculation')
     opt = parser.parse_args()
 
