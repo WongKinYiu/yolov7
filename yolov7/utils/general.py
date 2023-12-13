@@ -18,9 +18,10 @@ import torch
 import torchvision
 import yaml
 
-from utils.google_utils import gsutil_getsize
-from utils.metrics import fitness
-from utils.torch_utils import init_torch_seeds
+from .. import PACKAGE_ROOT
+from .google_utils import gsutil_getsize
+from .metrics import fitness
+from .torch_utils import init_torch_seeds
 
 # Settings
 torch.set_printoptions(linewidth=320, precision=5, profile='long')
@@ -147,7 +148,7 @@ def check_file(file):
     if Path(file).is_file() or file == '':
         return file
     else:
-        files = glob.glob('./**/' + file, recursive=True)  # find file
+        files = glob.glob(os.path.join(PACKAGE_ROOT, '**', file), recursive=True)  # find file
         assert len(files), f'File Not Found: {file}'  # assert file was found
         assert len(files) == 1, f"Multiple files match '{file}', specify exact path: {files}"  # assert unique
         return files[0]  # return file
