@@ -3,8 +3,8 @@ import random
 import torch
 import torch.nn as nn
 
-from models.common import Conv, DWConv
-from utils.google_utils import attempt_download
+from .common import Conv, DWConv
+from ..utils.google_utils import attempt_download
 
 
 class CrossConv(nn.Module):
@@ -79,9 +79,6 @@ class Ensemble(nn.ModuleList):
         # y = torch.stack(y).mean(0)  # mean ensemble
         y = torch.cat(y, 1)  # nms ensemble
         return y, None  # inference, train output
-
-
-
 
 
 class ORT_NMS(torch.autograd.Function):
@@ -192,6 +189,7 @@ class ONNX_ORT(nn.Module):
         X = X.unsqueeze(1).float()
         return torch.cat([X, selected_boxes, selected_categories, selected_scores], 1)
 
+
 class ONNX_TRT(nn.Module):
     '''onnx module with TensorRT NMS operation.'''
     def __init__(self, max_obj=100, iou_thres=0.45, score_thres=0.25, max_wh=None ,device=None, n_classes=80):
@@ -241,9 +239,6 @@ class End2End(nn.Module):
         return x
 
 
-
-
-
 def attempt_load(weights, map_location=None):
     # Loads an ensemble of models weights=[a,b,c] or a single model weights=[a] or weights=a
     model = Ensemble()
@@ -268,5 +263,3 @@ def attempt_load(weights, map_location=None):
         for k in ['names', 'stride']:
             setattr(model, k, getattr(model[-1], k))
         return model  # return ensemble
-
-
