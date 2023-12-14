@@ -119,6 +119,7 @@ if __name__ == '__main__':
     
     # end of warmup
     container = av.open(args.input)
+
     # capture = cv2.VideoCapture(os.path.join(args.input))
     # get width and height
     print("Getting data from: ", args.input)
@@ -127,8 +128,20 @@ if __name__ == '__main__':
     width, height = args.img_size
     print("writing to: ", args.output)
     print("", fps, width, height)
-    out_writer = cv2.VideoWriter(args.output, fourcc, fps, (int(width), int(height)))
-    
+    # out_writer = cv2.VideoWriter(args.output, fourcc, fps, (int(width), int(height)))
+    output = av.open(args.output, 'w')
+    stream = output.add_stream("h264", 25)
+    options = dict(
+        threads='0',
+        preset='fast',
+        profile='high'
+    )
+    bitrate = 10_000_000
+    stream.bit_rate = bitrate
+    stream.pix_fmt = 'yuvj420p'
+    stream.options = options
+    stream.height = int(width)
+    stream.width = int(height)
     count = 0
 
     
@@ -196,11 +209,16 @@ if __name__ == '__main__':
         detection_time_list.append(t3 - t2)
         print(f'Preprocess: {t1 - t0}; To GPU: {t2 - t1}; Detection {t3 - t2}; Cost of detection {time.perf_counter() - start} s; Posprocess: {d6}; Total time: {t4 - t0}')
     
-        out_writer.write(img)
-    try:
-        capture.release()
-    except NameError:
-        print("No images found in the range")
+        # out_writer.write(img)
+        # Write the dewarped frame to the output video
+        frame_d = av.VideoFrame.from_ndarray(img, format='rgb24')
+        packet = stream.encode(frame_d)
+        output.mux(packet)
+
+    # try:
+    #     capture.release()
+    # except NameError:
+    #     print("No images found in the range")
     # cv2.destroyAllWindows()
     
     print('mean total time', np.mean(total_time_list))
