@@ -53,6 +53,7 @@ class RegisterNMS(object):
                 raise
 
             count_after = len(self.graph.nodes)
+            LOGGER.info(f"Infered NMS plugin")
             if count_before == count_after:
                 # No new folding occurred in this iteration, so we can stop for now.
                 break
@@ -64,8 +65,11 @@ class RegisterNMS(object):
             output_path: Path pointing to the location where to write
                 out the updated ONNX model.
         """
+        LOGGER.info("Starting to cleanup graph")
         self.graph.cleanup().toposort()
+        LOGGER.info("Exporting to onnx")
         model = gs.export_onnx(self.graph)
+        LOGGER.info("Savind model")
         onnx.save(model, output_path)
         LOGGER.info(f"Saved ONNX model to {output_path}")
 
