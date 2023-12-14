@@ -116,7 +116,7 @@ if __name__ == '__main__':
     #     context.execute_v2(list(binding_addrs.values()))
     
     # end of warmup
-    capture = cv2.VideoCapture(args.input)
+    capture = cv2.VideoCapture(os.path.join(args.input))
     # get width and height
     print("Getting data from: ", args.input)
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
