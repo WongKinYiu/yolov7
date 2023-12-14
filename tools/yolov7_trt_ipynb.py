@@ -118,7 +118,7 @@ if __name__ == '__main__':
     # end of warmup
     capture = cv2.VideoCapture(args.input)
     # get width and height
-
+    print("Getting data from: ", args.input)
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     fps = 25
     width = int(capture.get(3))
