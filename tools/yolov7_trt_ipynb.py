@@ -6,6 +6,7 @@ import random
 import time
 import numpy as np
 import tensorrt as trt
+import av
 from PIL import Image
 from pathlib import Path
 from collections import OrderedDict,namedtuple
@@ -88,6 +89,7 @@ if __name__ == '__main__':
     parser.add_argument("-i", "--input", help="Path to input video")
     parser.add_argument("-o", "--output", help="Path to output video")
     parser.add_argument("-n", "--names", help="Class names", nargs="+")
+    parser.add_argument("--img_size", help="Image size width height", nargs="+")
 
     args = parser.parse_args()
 
@@ -116,13 +118,13 @@ if __name__ == '__main__':
     #     context.execute_v2(list(binding_addrs.values()))
     
     # end of warmup
-    capture = cv2.VideoCapture(os.path.join(args.input))
+    container = av.open(args.input)
+    # capture = cv2.VideoCapture(os.path.join(args.input))
     # get width and height
     print("Getting data from: ", args.input)
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     fps = 25
-    width = int(capture.get(3))
-    height = int(capture.get(4))
+    width, height = args.img_size
     print("writing to: ", args.output)
     print("", fps, width, height)
     out_writer = cv2.VideoWriter(args.output, fourcc, fps, (width, height))
@@ -133,9 +135,10 @@ if __name__ == '__main__':
     total_time_list = []
     detection_time_list = []
     total_detections = 0
-    while True:
+    for frame in container.decode(video=0):
+        captured_img = frame.to_ndarray(format='bgr24')
         # here we get the image in a np.ndarray format
-        captured_img = capture.read()[1]
+        # captured_img = capture.read()[1]
         print("next img; ", captured_img.shape)
         # if all_frames % sampling_rate != 0:
         #     continue
