@@ -194,7 +194,7 @@ if __name__ == '__main__':
         capture.release()
     except NameError:
         print("No images found in the range")
-    cv2.destroyAllWindows()
+    # cv2.destroyAllWindows()
     
     print('mean total time', np.mean(total_time_list))
     print('mean detection time', np.mean(detection_time_list))
