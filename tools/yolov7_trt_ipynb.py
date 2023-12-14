@@ -94,7 +94,7 @@ if __name__ == '__main__':
     device = torch.device('cuda:0')
     colors = {name: [random.randint(0, 255) for _ in range(3)] for i, name in enumerate(args.names)}
 
-    context, binding_addrs, bindings = load_tensorrt_model(args.weights_path, device)
+    context, binding_addrs, bindings = load_tensorrt_model(args.weights, device)
     # # INIT THE WARMUP
     # img = cv2.imread('./hockey_2.png')
     # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
