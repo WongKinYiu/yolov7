@@ -140,8 +140,8 @@ if __name__ == '__main__':
     stream.bit_rate = bitrate
     stream.pix_fmt = 'yuvj420p'
     stream.options = options
-    stream.height = int(width)
-    stream.width = int(height)
+    stream.height = int(height)
+    stream.width = int(width)
     count = 0
 
     
