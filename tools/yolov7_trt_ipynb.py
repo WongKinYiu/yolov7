@@ -121,8 +121,11 @@ if __name__ == '__main__':
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     fps = 25
-    output_size = (capture.get(3), capture.get(4))
-    out_writer = cv2.VideoWriter(args.output, fourcc, fps, output_size)
+    width = int(capture.get(3))
+    height = int(capture.get(4))
+    print("writing to: ", args.output)
+    print("", fps, width, height)
+    out_writer = cv2.VideoWriter(args.output, fourcc, fps, (width, height))
     
     count = 0
 
