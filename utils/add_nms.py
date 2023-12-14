@@ -31,8 +31,9 @@ class RegisterNMS(object):
         ONNX graph to determine tensor shapes.
         """
         for _ in range(3):
+            LOGGER.info("Next loop", _)
             count_before = len(self.graph.nodes)
-
+            LOGGER.info("Cleaning up graph")
             self.graph.cleanup().toposort()
             try:
                 for node in self.graph.nodes:
@@ -57,6 +58,7 @@ class RegisterNMS(object):
             if count_before == count_after:
                 # No new folding occurred in this iteration, so we can stop for now.
                 break
+
 
     def save(self, output_path):
         """
