@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     fps = 25
-    output_size = (int(1920), int(1080))
+    output_size = (capture.get(3), capture.get(4))
     out_writer = cv2.VideoWriter(args.output, fourcc, fps, output_size)
     
     count = 0
@@ -133,6 +133,7 @@ if __name__ == '__main__':
     while True:
         # here we get the image in a np.ndarray format
         captured_img = capture.read()[1]
+        print("next img; ", captured_img.shape)
         # if all_frames % sampling_rate != 0:
         #     continue
         if captured_img is None:
@@ -148,7 +149,7 @@ if __name__ == '__main__':
         image = np.ascontiguousarray(image)
     
         im = image.astype(np.float32)
-    
+        print("prepped img: ", im.shape)
         t1 = time.time()
         im = torch.from_numpy(im).to(device)
         t2 = time.time()
