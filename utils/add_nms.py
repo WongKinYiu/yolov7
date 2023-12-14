@@ -31,7 +31,7 @@ class RegisterNMS(object):
         ONNX graph to determine tensor shapes.
         """
         for _ in range(3):
-            LOGGER.info("Next loop", _)
+            LOGGER.info(f"Next loop {_}")
             count_before = len(self.graph.nodes)
             LOGGER.info("Cleaning up graph")
             self.graph.cleanup().toposort()
