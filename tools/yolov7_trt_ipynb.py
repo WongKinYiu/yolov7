@@ -224,6 +224,7 @@ if __name__ == '__main__':
     print('mean total time', np.mean(total_time_list))
     print('mean detection time', np.mean(detection_time_list))
     print('Total detection count', total_detections)
+    print('total time', np.sum(total_time_list))
     packets = stream.encode()
     output.mux(packets)
     output.close()
