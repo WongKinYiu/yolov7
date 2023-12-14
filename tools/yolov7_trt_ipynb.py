@@ -127,7 +127,7 @@ if __name__ == '__main__':
     width, height = args.img_size
     print("writing to: ", args.output)
     print("", fps, width, height)
-    out_writer = cv2.VideoWriter(args.output, fourcc, fps, (width, height))
+    out_writer = cv2.VideoWriter(args.output, fourcc, fps, (int(width), int(height)))
     
     count = 0
 
