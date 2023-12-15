@@ -641,7 +641,7 @@ if __name__ == '__main__':
                 'warmup_momentum': (1, 0.0, 0.95),  # warmup initial momentum
                 'warmup_bias_lr': (1, 0.0, 0.2),  # warmup initial bias lr
                 'box': (1, 0.02, 0.2),  # box loss gain
-                'cls': (1, 0.2, 4.0),  # cls loss gain
+                'cls': (0, 0.2, 4.0),  # cls loss gain                                                  NO NEED
                 'cls_pw': (1, 0.5, 2.0),  # cls BCELoss positive_weight
                 'obj': (1, 0.2, 4.0),  # obj loss gain (scale with pixels)
                 'obj_pw': (1, 0.5, 2.0),  # obj BCELoss positive_weight
@@ -652,7 +652,7 @@ if __name__ == '__main__':
                 'hsv_h': (1, 0.0, 0.1),  # image HSV-Hue augmentation (fraction)
                 'hsv_s': (1, 0.0, 0.9),  # image HSV-Saturation augmentation (fraction)
                 'hsv_v': (1, 0.0, 0.9),  # image HSV-Value augmentation (fraction)
-                'degrees': (1, 0.0, 45.0),  # image rotation (+/- deg)
+                'degrees': (1, 0.0, 45.0),  # image rotation (+/- deg)                                  Check runtime
                 'translate': (1, 0.0, 0.9),  # image translation (+/- fraction)
                 'scale': (1, 0.0, 0.9),  # image scale (+/- gain)
                 'shear': (1, 0.0, 10.0),  # image shear (+/- deg)
@@ -662,8 +662,9 @@ if __name__ == '__main__':
                 'mosaic': (1, 0.0, 1.0),  # image mixup (probability)
                 'mixup': (1, 0.0, 1.0),   # image mixup (probability)
                 'copy_paste': (1, 0.0, 1.0),  # segment copy-paste (probability)
-                'paste_in': (1, 0.0, 1.0)}    # segment copy-paste (probability)
-        
+                'paste_in': (1, 0.0, 1.0),    # segment copy-paste (probability)
+                'loss_ota': (1, 0, 1)} # adding loss_ota in the mutation compute, evolve will fail without this
+
         with open(opt.hyp, errors='ignore') as f:
             hyp = yaml.safe_load(f)  # load hyps dict
             if 'anchors' not in hyp:  # anchors commented in hyp.yaml
@@ -683,7 +684,7 @@ if __name__ == '__main__':
                 x = np.loadtxt('evolve.txt', ndmin=2)
                 n = min(5, len(x))  # number of previous results to consider
                 x = x[np.argsort(-fitness(x))][:n]  # top n mutations
-                w = fitness(x) - fitness(x).min()  # weights
+                w = fitness(x) - fitness(x).min() + 1E-6  # weights
                 if parent == 'single' or len(x) == 1:
                     # x = x[random.randint(0, n - 1)]  # random selection
                     x = x[random.choices(range(n), weights=w)[0]]  # weighted selection
