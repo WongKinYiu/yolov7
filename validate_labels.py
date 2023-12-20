@@ -67,7 +67,8 @@ if __name__ == "__main__":
         frame = av.VideoFrame.from_ndarray(img_rgb, format='rgb24')
 
         # Add the frame to the video container
-        video_stream.encode(frame)
+        packet = video_stream.encode(frame)
+        container.mux(packet)
 
     # Close the video container
     container.close()
