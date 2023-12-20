@@ -89,6 +89,7 @@ def test(data,
         if device.type != 'cpu':
             model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
         task = opt.task if opt.task in ('train', 'val', 'test') else 'val'  # path to train/val/test images
+        print("PAD AND RECT: ", opt.pad, opt.rect)
         dataloader = create_dataloader(data[task], imgsz, batch_size, gs, opt, pad=opt.pad, rect=opt.rect,
                                        prefix=colorstr(f'{task}: '))[0]
 
