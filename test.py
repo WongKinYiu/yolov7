@@ -112,7 +112,7 @@ def test(data,
         #     i = False
         if i:
             print(type(img))
-            cap_img = torch.to_numpy(img)
+            cap_img = img.numpy()
             cv2.imwrite('videos/test_detect.pnb', cap_img)
             i = False
         img = img.to(device, non_blocking=True)
