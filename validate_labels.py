@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     # Sort the image files to maintain order
     image_files.sort()
-
+    
     # Create a container for the video
     container = av.open(output_video, 'w')
     w, h = 1920, 1080
@@ -32,7 +32,6 @@ if __name__ == "__main__":
     )
     bitrate = 10_000_000
     stream.bit_rate = bitrate
-    stream.pix_fmt = 'yuvj420p'
     stream.options = options
     stream.height = int(h)
     stream.width = int(w)
@@ -71,7 +70,7 @@ if __name__ == "__main__":
 
         # Convert the image to RGB format
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img_rgb = cv2.resize(img_rgb, (h, w))
+        img_rgb = cv2.resize(img_rgb, (w, h))
 
         cv2.imwrite("videos/last_image.jpg", img_rgb)
         print("saving image: ", img_rgb.shape)
