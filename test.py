@@ -105,16 +105,18 @@ def test(data,
     p, r, f1, mp, mr, map50, map, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class, wandb_images = [], [], [], [], []
-    i = True
+    iimg = True
     for batch_i, (img, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
         # if i:
         #     Image.fromarray(img).save("videos/first_test_img.png")
         #     i = False
-        if i:
+        if iimg:
             print(type(img))
             cap_img = img.numpy()
+            cap_img = np.ascontiguousarray(cap_img)
+            cap_img = cap_img.transpose(1, 2, 0)
             cv2.imwrite('videos/test_detect.png', cap_img)
-            i = False
+            iimg = False
         img = img.to(device, non_blocking=True)
 
         img = img.half() if half else img.float()  # uint8 to fp16/32
