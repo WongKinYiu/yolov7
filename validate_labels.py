@@ -35,8 +35,10 @@ if __name__ == "__main__":
         img = cv2.imread(image_path)
 
         # Read the corresponding label file
-        label_path = os.path.join(data_folder, image_file.replace('.jpg', '.txt'))
-
+        if 'jpg' in image_file:
+            label_path = os.path.join(data_folder, image_file.replace('.jpg', '.txt'))
+        elif 'png' in image_file:
+            label_path = os.path.join(data_folder, image_file.replace('.png', '.txt'))
         # Open and parse the label file
         with open(label_path, 'r') as label_file:
             lines = label_file.readlines()
