@@ -230,7 +230,6 @@ def test(data,
 
             # Append statistics (correct, conf, pcls, tcls)
             stats.append((correct.cpu(), pred[:, 4].cpu(), pred[:, 5].cpu(), tcls))
-            print(stats[-1])
 
         # Plot images
         if plots and batch_i < 3:
