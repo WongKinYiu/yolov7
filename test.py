@@ -202,7 +202,6 @@ def test(data,
                 detected = []  # target indices
                 tcls_tensor = labels[:, 0]
                 # target boxes
-                print(predn, labels[:, 0:1])
                 tbox = xywh2xyxy(labels[:, 1:5])
                 scale_coords(img[si].shape[1:], tbox, shapes[si][0], shapes[si][1])  # native-space labels
                 if plots:
@@ -231,6 +230,7 @@ def test(data,
 
             # Append statistics (correct, conf, pcls, tcls)
             stats.append((correct.cpu(), pred[:, 4].cpu(), pred[:, 5].cpu(), tcls))
+            print(stats[-1])
 
         # Plot images
         if plots and batch_i < 3:
