@@ -7,6 +7,7 @@ from threading import Thread
 import numpy as np
 import torch
 import yaml
+from PIL import Image
 from tqdm import tqdm
 
 from models.experimental import attempt_load
@@ -104,8 +105,13 @@ def test(data,
     p, r, f1, mp, mr, map50, map, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class, wandb_images = [], [], [], [], []
+    i = True
     for batch_i, (img, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
+        if i:
+            Image.fromarray(img).save("videos/first_test_img.png")
+            i = False
         img = img.to(device, non_blocking=True)
+
         img = img.half() if half else img.float()  # uint8 to fp16/32
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
         targets = targets.to(device)
