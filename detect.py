@@ -70,6 +70,7 @@ def detect(save_img=False):
     for path, img, im0s, vid_cap in dataset:
         if iix:
             cap_img = img.transpose(1, 2, 0)
+            cap_img = cv2.cvtColor(cap_img, cv2.COLOR_RGB2BGR)
             print("image shape: ", cap_img.shape)
             cv2.imwrite('videos/test_detect.png', cap_img)
             iix = False
