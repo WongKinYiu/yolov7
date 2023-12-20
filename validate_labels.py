@@ -2,7 +2,7 @@ import os
 import av
 import argparse
 import cv2
-
+import tqdm
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -15,7 +15,7 @@ if __name__ == "__main__":
     output_video = args.output_file
 
     # Get the list of image files in the data folder
-    image_files = [f for f in os.listdir(data_folder) if f.endswith('.jpg')]
+    image_files = [f for f in os.listdir(data_folder) if f.endswith('.jpg') or f.endswith(".png")]
 
     # Sort the image files to maintain order
     image_files.sort()
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     video_stream.height = h
 
     # Iterate through the image files
-    for image_file in image_files:
+    for image_file in tqdm.tqdm(image_files):
         # Read the image
         image_path = os.path.join(data_folder, image_file)
         img = cv2.imread(image_path)
