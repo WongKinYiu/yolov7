@@ -69,6 +69,7 @@ def detect(save_img=False):
     t0 = time.time()
     for path, img, im0s, vid_cap in dataset:
         if iix:
+            print("image shape: ", img.shape)
             cv2.imwrite('videos/test_detect.png', img)
             iix = False
         img = torch.from_numpy(img).to(device)
