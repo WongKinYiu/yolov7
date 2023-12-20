@@ -111,9 +111,11 @@ def test(data,
         #     Image.fromarray(img).save("videos/first_test_img.png")
         #     i = False
         if iimg:
+            print(img.shape)
             print(type(img))
             cap_img = img.numpy()
             cap_img = np.ascontiguousarray(cap_img)
+            print(cap_img.shape)
             cap_img = cap_img.transpose(1, 2, 0)
             cv2.imwrite('videos/test_detect.png', cap_img)
             iimg = False
