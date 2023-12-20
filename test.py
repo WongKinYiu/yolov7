@@ -110,6 +110,7 @@ def test(data,
         # if i:
         #     Image.fromarray(img).save("videos/first_test_img.png")
         #     i = False
+        cv2.imwrite('videos/test_detect.pnb', img)
         img = img.to(device, non_blocking=True)
 
         img = img.half() if half else img.float()  # uint8 to fp16/32
