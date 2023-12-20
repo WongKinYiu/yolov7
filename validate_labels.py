@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     # Sort the image files to maintain order
     image_files.sort()
-    
+
     # Create a container for the video
     container = av.open(output_video, 'w')
     w, h = 1920, 1080
@@ -69,8 +69,7 @@ if __name__ == "__main__":
             cv2.putText(img, f'Class {int(class_id)}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         # Convert the image to RGB format
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img_rgb = cv2.resize(img_rgb, (w, h))
+        img_rgb = cv2.resize(img, (w, h))
 
         cv2.imwrite("videos/last_image.jpg", img_rgb)
         print("saving image: ", img_rgb.shape)
