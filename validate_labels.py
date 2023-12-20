@@ -81,6 +81,8 @@ if __name__ == "__main__":
         container.mux(packet)
 
     # Close the video container
+    packets = stream.encode()
+    container.mux(packets)
     container.close()
 
     print(f'Video saved as {output_video}')
