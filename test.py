@@ -91,7 +91,7 @@ def test(data,
             model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
         task = opt.task if opt.task in ('train', 'val', 'test') else 'val'  # path to train/val/test images
         print("PAD AND RECT: ", opt.pad, opt.rect)
-        dataloader = create_dataloader(data[task], imgsz, batch_size, gs, opt, pad=0.0, rect=False,
+        dataloader = create_dataloader(data[task], imgsz, batch_size, gs, opt, pad=0.5, rect=False,
                                        prefix=colorstr(f'{task}: '))[0]
 
     if v5_metric:
