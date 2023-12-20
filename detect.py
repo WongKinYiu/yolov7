@@ -69,9 +69,9 @@ def detect(save_img=False):
     t0 = time.time()
     for path, img, im0s, vid_cap in dataset:
         if iix:
-            img = img.transpose(1, 2, 0)
-            print("image shape: ", img.shape)
-            cv2.imwrite('videos/test_detect.png', img)
+            cap_img = img.transpose(1, 2, 0)
+            print("image shape: ", cap_img.shape)
+            cv2.imwrite('videos/test_detect.png', cap_img)
             iix = False
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
