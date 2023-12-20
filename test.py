@@ -111,7 +111,9 @@ def test(data,
         #     Image.fromarray(img).save("videos/first_test_img.png")
         #     i = False
         if i:
-            cv2.imwrite('videos/test_detect.pnb', img)
+            print(type(img))
+            cap_img = torch.to_numpy(img)
+            cv2.imwrite('videos/test_detect.pnb', cap_img)
             i = False
         img = img.to(device, non_blocking=True)
 
