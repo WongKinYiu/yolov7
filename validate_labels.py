@@ -70,11 +70,8 @@ if __name__ == "__main__":
 
         # Convert the image to RGB format
         img_rgb = cv2.resize(img, (w, h))
-
-        cv2.imwrite("videos/last_image.jpg", img_rgb)
-        print("saving image: ", img_rgb.shape)
         # Create a video frame from the image
-        frame = av.VideoFrame.from_ndarray(img_rgb, format='rgb24')
+        frame = av.VideoFrame.from_ndarray(img_rgb, format='bgr24')
 
         # Add the frame to the video container
         packet = stream.encode(frame)
