@@ -65,7 +65,7 @@ def detect(save_img=False):
         model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
     old_img_w = old_img_h = imgsz
     old_img_b = 1
-
+    i = True
     t0 = time.time()
     for path, img, im0s, vid_cap in dataset:
         img = torch.from_numpy(img).to(device)
@@ -84,7 +84,9 @@ def detect(save_img=False):
 
         # Inference
         t1 = time_synchronized()
-        cv2.imwrite('videos/test_detect.pnb', img)
+        if i:
+            cv2.imwrite('videos/test_detect.pnb', img)
+            i = False
         with torch.no_grad():   # Calculating gradients would cause a GPU memory leak
             pred = model(img, augment=opt.augment)[0]
         t2 = time_synchronized()
