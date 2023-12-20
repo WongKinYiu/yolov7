@@ -114,6 +114,7 @@ def test(data,
             print(img.shape)
             print(type(img))
             cap_img = img.numpy()
+            cap_img = cap_img[0]
             cap_img = np.ascontiguousarray(cap_img)
             print(cap_img.shape)
             cap_img = cap_img.transpose(1, 2, 0)
