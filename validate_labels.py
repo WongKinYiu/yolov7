@@ -24,9 +24,18 @@ if __name__ == "__main__":
     container = av.open(output_video, 'w')
     w, h = 1920, 1080
     # Define the video codec and parameters
-    video_stream = container.add_stream('h264', rate=30)
-    video_stream.width = w
-    video_stream.height = h
+    stream = container.add_stream("h264", 25)
+    options = dict(
+        threads='0',
+        preset='fast',
+        profile='high'
+    )
+    bitrate = 10_000_000
+    stream.bit_rate = bitrate
+    stream.pix_fmt = 'yuvj420p'
+    stream.options = options
+    stream.height = int(h)
+    stream.width = int(w)
 
     # Iterate through the image files
     for image_file in tqdm.tqdm(image_files):
@@ -63,11 +72,12 @@ if __name__ == "__main__":
         # Convert the image to RGB format
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_rgb = cv2.resize(img_rgb, (w, h))
+        print("saving image: ", img_rgb.shape)
         # Create a video frame from the image
         frame = av.VideoFrame.from_ndarray(img_rgb, format='rgb24')
 
         # Add the frame to the video container
-        packet = video_stream.encode(frame)
+        packet = stream.encode(frame)
         container.mux(packet)
 
     # Close the video container
