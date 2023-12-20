@@ -72,6 +72,8 @@ if __name__ == "__main__":
         # Convert the image to RGB format
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_rgb = cv2.resize(img_rgb, (h, w))
+
+        cv2.imwrite("videos/last_image.jpg", img_rgb)
         print("saving image: ", img_rgb.shape)
         # Create a video frame from the image
         frame = av.VideoFrame.from_ndarray(img_rgb, format='rgb24')
