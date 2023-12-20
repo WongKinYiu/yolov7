@@ -197,11 +197,12 @@ def test(data,
 
             # Assign all predictions as incorrect
             correct = torch.zeros(pred.shape[0], niou, dtype=torch.bool, device=device)
+            # print labels and predictions
             if nl:
                 detected = []  # target indices
                 tcls_tensor = labels[:, 0]
-
                 # target boxes
+                print(predn, labels[:, 0:1])
                 tbox = xywh2xyxy(labels[:, 1:5])
                 scale_coords(img[si].shape[1:], tbox, shapes[si][0], shapes[si][1])  # native-space labels
                 if plots:
