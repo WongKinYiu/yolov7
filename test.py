@@ -64,7 +64,6 @@ def test(data,
         
         if trace:
             model = TracedModel(model, device, imgsz)
-    print("USING IMAGE SIZE OF: ", imgsz, gs)
     # Half
     half = device.type != 'cpu' and half_precision  # half precision only supported on CUDA
     if half:
