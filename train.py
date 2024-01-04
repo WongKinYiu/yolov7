@@ -1,4 +1,5 @@
 import argparse
+import csv
 import logging
 import math
 import os
@@ -60,6 +61,7 @@ def train(hyp, opt, device, tb_writer=None, nested=False, conf_thres: float = 0.
         last = wdir / 'last.pt'
         best = wdir / 'best.pt'
         results_file = save_dir / 'results.txt'
+        results_file_csv = save_dir / 'results.csv'
 
         # Save run settings
         with open(save_dir / 'hyp.yaml', 'w') as f:
@@ -453,6 +455,11 @@ def train(hyp, opt, device, tb_writer=None, nested=False, conf_thres: float = 0.
                 # Write
                 with open(results_file, 'a') as f:
                     f.write(s + '%10.4g' * 7 % results + '\n')  # append metrics, val_loss
+                with open(results_file_csv, 'a', newline='') as f:
+                    lines = [['%g/%g' % (epoch, epochs - 1), mem, *mloss, targets.shape[0], imgs.shape[-1]]]
+                    write = csv.writer(f)
+                    write.writerows(lines)
+
                 if len(opt.name) and opt.bucket:
                     os.system('gsutil cp %s gs://%s/results/results%s.txt' % (results_file, opt.bucket, opt.name))
 
