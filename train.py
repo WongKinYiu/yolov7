@@ -689,7 +689,7 @@ if __name__ == '__main__':
 
         train(hyp, opt, device, nested=False, tb_writer=tb_writer, conf_thres=opt.conf_thres, iou_thres=opt.iou_thres,
               overlap=opt.overlap,
-              max_overlap=opt.max_overlap)
+              max_overlap=opt.max_overlap)  # nested is false as it is a normal run and not an evolve run
 
     # Evolve hyperparameters (optional)
     else:
