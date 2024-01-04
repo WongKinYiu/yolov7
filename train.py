@@ -1,5 +1,5 @@
 import argparse
-import csv
+# import csv
 import logging
 import math
 import os
@@ -455,10 +455,13 @@ def train(hyp, opt, device, tb_writer=None, nested=False, conf_thres: float = 0.
                 # Write
                 with open(results_file, 'a') as f:
                     f.write(s + '%10.4g' * 7 % results + '\n')  # append metrics, val_loss
-                with open(results_file_csv, 'a', newline='') as f:
-                    lines = [['%g/%g' % (epoch, epochs - 1), mem, *mloss, targets.shape[0], imgs.shape[-1]]]
-                    write = csv.writer(f)
-                    write.writerows(lines)
+                # with open(results_file_csv, 'a', newline='') as f:
+                #     # lines = [['%g/%g' % (epoch, epochs - 1), mem, *mloss, targets.shape[0], imgs.shape[-1]]]
+                #     # Convert tensors to scalars
+                #     mloss_scalar = [loss.item() if torch.is_tensor(loss) else loss for loss in mloss]
+                #     csv_line = f'{epoch}/{epochs - 1},{mem},' + ','.join(map(str, mloss_scalar)) + f',{targets.shape[0]},{imgs.shape[-1]}'
+                #     write = csv.writer(f)
+                #     write.writerows(csv_line)
 
                 if len(opt.name) and opt.bucket:
                     os.system('gsutil cp %s gs://%s/results/results%s.txt' % (results_file, opt.bucket, opt.name))
@@ -509,17 +512,23 @@ def train(hyp, opt, device, tb_writer=None, nested=False, conf_thres: float = 0.
                                 last.parent, opt, epoch, fi, best_model=best_fitness == fi)
                     del ckpt
 
-            files = list(Path(opt.save_dir).glob('results*.csv'))
-            assert len(
-                files), f'No results.csv files found in {Path(opt.save_dir).resolve()}, nothing to report to MLFlow.'
-            f = files[0]
-            data = pd.read_csv(f, skipinitialspace=True)
-            metrics = data.to_dict('records')[-1]
-
-            for key in list(metrics):
-                if ':' in key:
-                    new_key = key.replace(':', '-')
-                    metrics[new_key] = metrics.pop(key)
+            # todo remove if works
+            # files = list(Path(opt.save_dir).glob('results*.csv'))
+            # assert len(
+            #     files), f'No results.csv files found in {Path(opt.save_dir).resolve()}, nothing to report to MLFlow.'
+            # f = files[0]
+            # # Define your column names based on the structure of your CSV
+            # column_names = ['epoch', 'mem', 'mloss1', 'mloss2', 'mloss3', 'mloss4', 'targets_shape', 'imgs_shape']
+            # # Read the CSV file without a header and with specified column names
+            # data = pd.read_csv(f, header=None, names=column_names, skipinitialspace=True)
+            metrics = {}
+            for x, tag in zip(list(mloss[:-1]) + list(results) + lr, tags):
+                metrics[tag] = x
+            # todo remove if works
+            # for key in list(metrics):
+            #     if ':' in key:
+            #         new_key = key.replace(':', '-')
+            #         metrics[new_key] = metrics.pop(key)
 
             if opt.log_artifacts:
                 mlflow_params['logged_artifacts'] = True
