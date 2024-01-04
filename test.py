@@ -7,8 +7,9 @@ from threading import Thread
 import numpy as np
 import torch
 import yaml
+from PIL import Image
 from tqdm import tqdm
-
+import cv2
 from models.experimental import attempt_load
 from utils.datasets import create_dataloader
 from utils.general import coco80_to_coco91_class, check_dataset, check_file, check_img_size, check_requirements, \
@@ -22,8 +23,10 @@ def test(data,
          weights=None,
          batch_size=32,
          imgsz=640,
-         conf_thres=0.001,
-         iou_thres=0.6,  # for NMS
+         conf_thres: float = 0.001,
+         iou_thres: float = 0.6,  # for NMS
+         overlap: float = 0.5,  # Min overlap to base mAP on; note that this
+         max_overlap: float = 0.95,  # Max overlap to base mAP on.
          save_json=False,
          single_cls=False,
          augment=False,
@@ -58,10 +61,9 @@ def test(data,
         model = attempt_load(weights, map_location=device)  # load FP32 model
         gs = max(int(model.stride.max()), 32)  # grid size (max stride)
         imgsz = check_img_size(imgsz, s=gs)  # check img_size
-        
+
         if trace:
             model = TracedModel(model, device, imgsz)
-
     # Half
     half = device.type != 'cpu' and half_precision  # half precision only supported on CUDA
     if half:
@@ -75,7 +77,7 @@ def test(data,
             data = yaml.load(f, Loader=yaml.SafeLoader)
     check_dataset(data)  # check
     nc = 1 if single_cls else int(data['nc'])  # number of classes
-    iouv = torch.linspace(0.5, 0.95, 10).to(device)  # iou vector for mAP@0.5:0.95
+    iouv = torch.linspace(overlap, max_overlap, 10).to(device)  # iou vector for mAP@0.5:0.95
     niou = iouv.numel()
 
     # Logging
@@ -87,12 +89,13 @@ def test(data,
         if device.type != 'cpu':
             model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
         task = opt.task if opt.task in ('train', 'val', 'test') else 'val'  # path to train/val/test images
+        print("PAD AND RECT: ", opt.pad, opt.rect)
         dataloader = create_dataloader(data[task], imgsz, batch_size, gs, opt, pad=0.5, rect=True,
                                        prefix=colorstr(f'{task}: '))[0]
 
     if v5_metric:
         print("Testing with YOLOv5 AP metric...")
-    
+
     seen = 0
     confusion_matrix = ConfusionMatrix(nc=nc)
     names = {k: v for k, v in enumerate(model.names if hasattr(model, 'names') else model.module.names)}
@@ -101,8 +104,24 @@ def test(data,
     p, r, f1, mp, mr, map50, map, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class, wandb_images = [], [], [], [], []
+    iimg = True
     for batch_i, (img, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
+        # if i:
+        #     Image.fromarray(img).save("videos/first_test_img.png")
+        #     i = False
+        if iimg:
+            print(img.shape)
+            print(type(img))
+            cap_img = img.numpy()
+            cap_img = cap_img[0]
+            cap_img = np.ascontiguousarray(cap_img)
+            print(cap_img.shape)
+            cap_img = cap_img.transpose(1, 2, 0)
+            cap_img = cv2.cvtColor(cap_img, cv2.COLOR_RGB2BGR)
+            cv2.imwrite('videos/test_test.png', cap_img)
+            iimg = False
         img = img.to(device, non_blocking=True)
+
         img = img.half() if half else img.float()  # uint8 to fp16/32
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
         targets = targets.to(device)
@@ -177,10 +196,10 @@ def test(data,
 
             # Assign all predictions as incorrect
             correct = torch.zeros(pred.shape[0], niou, dtype=torch.bool, device=device)
+            # print labels and predictions
             if nl:
                 detected = []  # target indices
                 tcls_tensor = labels[:, 0]
-
                 # target boxes
                 tbox = xywh2xyxy(labels[:, 1:5])
                 scale_coords(img[si].shape[1:], tbox, shapes[si][0], shapes[si][1])  # native-space labels
@@ -214,9 +233,9 @@ def test(data,
         # Plot images
         if plots and batch_i < 3:
             f = save_dir / f'test_batch{batch_i}_labels.jpg'  # labels
-            Thread(target=plot_images, args=(img, targets, paths, f, names), daemon=True).start()
+            Thread(target=plot_images, args=(img, targets, paths, f, names, 1920), daemon=True).start()
             f = save_dir / f'test_batch{batch_i}_pred.jpg'  # predictions
-            Thread(target=plot_images, args=(img, output_to_target(out), paths, f, names), daemon=True).start()
+            Thread(target=plot_images, args=(img, output_to_target(out), paths, f, names, 1920), daemon=True).start()
 
     # Compute statistics
     stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
@@ -293,13 +312,20 @@ if __name__ == '__main__':
     parser.add_argument('--data', type=str, default='data/coco.yaml', help='*.data path')
     parser.add_argument('--batch-size', type=int, default=32, help='size of each image batch')
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-    parser.add_argument('--conf-thres', type=float, default=0.001, help='object confidence threshold')
-    parser.add_argument('--iou-thres', type=float, default=0.65, help='IOU threshold for NMS')
+    parser.add_argument('--conf_thres', type=float, help='Confidence threshold for validation and mAP', default=0.01)
+    parser.add_argument('--iou_thres', type=float, help='NMS for validation and mAP', default=0.6)
+    parser.add_argument('--overlap', type=float, help='Minimum needed overlap (iou threshold) for validation and mAP',
+                        default=0.5)
+    parser.add_argument('--max_overlap', type=float,
+                        help='Maximum needed overlap (iou threshold) for validation and mAP; used for mAP=0.x-o.y',
+                        default=0.95)
     parser.add_argument('--task', default='val', help='train, val, test, speed or study')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--single-cls', action='store_true', help='treat as single-class dataset')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     parser.add_argument('--verbose', action='store_true', help='report mAP by class')
+    parser.add_argument('--rect', action='store_true', help='rectangular training')
+    parser.add_argument('--pad', default=0.5, help='padding')
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
     parser.add_argument('--save-hybrid', action='store_true', help='save label+prediction hybrid results to *.txt')
     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
@@ -313,19 +339,21 @@ if __name__ == '__main__':
     opt.save_json |= opt.data.endswith('coco.yaml')
     opt.data = check_file(opt.data)  # check file
     print(opt)
-    #check_requirements()
+    # check_requirements()
 
     if opt.task in ('train', 'val', 'test'):  # run normally
-        test(opt.data,
-             opt.weights,
-             opt.batch_size,
-             opt.img_size,
-             opt.conf_thres,
-             opt.iou_thres,
-             opt.save_json,
-             opt.single_cls,
-             opt.augment,
-             opt.verbose,
+        test(data=opt.data,
+             weights=opt.weights,
+             batch_size=opt.batch_size,
+             imgsz=opt.img_size,
+             conf_thres=opt.conf_thres,
+             iou_thres=opt.iou_thres,
+             overlap=opt.overlap,
+             max_overlap=opt.max_overlap,
+             save_json=opt.save_json,
+             single_cls=opt.single_cls,
+             augment=opt.augment,
+             verbose=opt.verbose,
              save_txt=opt.save_txt | opt.save_hybrid,
              save_hybrid=opt.save_hybrid,
              save_conf=opt.save_conf,
@@ -335,7 +363,8 @@ if __name__ == '__main__':
 
     elif opt.task == 'speed':  # speed benchmarks
         for w in opt.weights:
-            test(opt.data, w, opt.batch_size, opt.img_size, 0.25, 0.45, save_json=False, plots=False, v5_metric=opt.v5_metric)
+            test(opt.data, w, opt.batch_size, opt.img_size, 0.25, 0.45, save_json=False, plots=False,
+                 v5_metric=opt.v5_metric)
 
     elif opt.task == 'study':  # run over a range of settings and save/plot
         # python test.py --task study --data coco.yaml --iou 0.65 --weights yolov7.pt
