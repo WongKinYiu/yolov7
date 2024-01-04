@@ -46,21 +46,22 @@ logger = logging.getLogger(__name__)
 
 def train(hyp, opt, device, tb_writer=None, nested=False, conf_thres: float = 0.001, iou_thres: float = 0.60, overlap: float = 0.5,
           max_overlap: float = 0.95, ):
-    mlflow_params = opt.__dict__  # converting the parsed opt parameters that are used to set training parameters
-    mlflow_params.update(hyp)  # adding hyper parameters to already defined training run parameters
-    logger.info(mlflow_params)
-    if opt.log_artifacts:
-        mlflow_params['logged_artifacts'] = True
-        artifacts = f'{Path(opt.save_dir).resolve()}'
-    else:
-        mlflow_params['logged_artifacts'] = False
-
-    if mlflow_params:
-        mlflow.log_params(mlflow_params)
-
     mlflow.set_experiment('Trained Models')
     with mlflow.start_run(run_name=opt.name, nested=nested):
         logger.info(colorstr('hyperparameters: ') + ', '.join(f'{k}={v}' for k, v in hyp.items()))
+
+        mlflow_params = opt.__dict__  # converting the parsed opt parameters that are used to set training parameters
+        mlflow_params.update(hyp)  # adding hyper parameters to already defined training run parameters
+        logger.info(mlflow_params)
+        if opt.log_artifacts:
+            mlflow_params['logged_artifacts'] = True
+            artifacts = f'{Path(opt.save_dir).resolve()}'
+        else:
+            mlflow_params['logged_artifacts'] = False
+
+        if mlflow_params:
+            mlflow.log_params(mlflow_params)
+
         save_dir, epochs, batch_size, total_batch_size, weights, rank, freeze = \
             Path(
                 opt.save_dir), opt.epochs, opt.batch_size, opt.total_batch_size, opt.weights, opt.global_rank, opt.freeze
