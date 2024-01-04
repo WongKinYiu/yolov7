@@ -331,7 +331,7 @@ def plot_evolution(yaml_file='data/hyp.finetune.yaml'):  # from utils.plots impo
         y = x[:, i + 7]
         # mu = (y * weights).sum() / weights.sum()  # best weighted result
         mu = y[f.argmax()]  # best single result
-        plt.subplot(6, 5, i + 1)
+        plt.subplot(7, 5, i + 1)
         plt.scatter(y, f, c=hist2d(y, f, 20), cmap='viridis', alpha=.8, edgecolors='none')
         plt.plot(mu, f.max(), 'k+', markersize=15)
         plt.title('%s = %.3g' % (k, mu), fontdict={'size': 9})  # limit to 40 characters
@@ -487,3 +487,6 @@ def plot_skeleton_kpts(im, kpts, steps, orig_shape=None):
         if pos2[0] % 640 == 0 or pos2[1] % 640 == 0 or pos2[0]<0 or pos2[1]<0:
             continue
         cv2.line(im, pos1, pos2, (int(r), int(g), int(b)), thickness=2)
+
+if __name__ == '__main__':
+    plot_evolution(r"C:\Users\koen_\OneDrive\Documents\.Koen de Raad\- Eyedle\model_training\15-12-2023_evolve\results\hyp_evolved.yaml")
