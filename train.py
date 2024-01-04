@@ -548,13 +548,12 @@ def train(hyp, opt, device, tb_writer=None, nested=False, conf_thres: float = 0.
                 mlflow.log_metrics(metrics)
             if artifacts:
                 mlflow.log_artifacts(artifacts)
-
-            if plots:
-                plot_results(save_dir=save_dir)  # save as results.png
-                files = ['results.png', 'confusion_matrix.png', *[f'{x}_curve.png' for x in ('F1', 'PR', 'P', 'R')]]
-                for file in files:
-                    image = cv2.imread(str(save_dir / file))
-                    mlflow.log_image(image, str(save_dir / file))
+            # if plots:
+            #     plot_results(save_dir=save_dir)  # save as results.png
+            #     files = ['results.png', 'confusion_matrix.png', *[f'{x}_curve.png' for x in ('F1', 'PR', 'P', 'R')]]
+            #     for file in files:
+            #         image = cv2.imread(str(save_dir / file))
+            #         mlflow.log_image(image, str(save_dir / file))
             # end epoch ----------------------------------------------------------------------------------------------------
         # end training
         if rank in [-1, 0]:
