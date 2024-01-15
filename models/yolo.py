@@ -26,6 +26,8 @@ class Detect(nn.Module):
     end2end = False
     include_nms = False
     concat = False
+    normalize = False  # set only for export, normalize pixel value outpus
+    imgszxy = None  # set only for export, static model input image size
 
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(Detect, self).__init__()
@@ -57,8 +59,15 @@ class Detect(nn.Module):
                     y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
                 else:
                     xy, wh, conf = y.split((2, 2, self.nc + 1), 4)  # y.tensor_split((2, 4, 5), 4)  # torch 1.8.0
-                    xy = xy * (2. * self.stride[i]) + (self.stride[i] * (self.grid[i] - 0.5))  # new xy
-                    wh = wh ** 2 * (4 * self.anchor_grid[i].data)  # new wh
+                    if not self.normalize:
+                        xy = xy * (2. * self.stride[i]) + (self.stride[i] * (self.grid[i] - 0.5))  # new xy
+                        wh = wh ** 2 * (4 * self.anchor_grid[i].data)  # new wh
+                    else:
+                        # normalized output of pixel coordinates
+                        # precompute normalized constants for static models
+                        # multiplication will be more stable for static quantized models
+                        xy = xy / (self.imgszxy / (2. * self.stride[i])) + (self.stride[i] * (self.grid[i] - 0.5)) / self.imgszxy  # new xy
+                        wh = wh ** 2 * ((4 * self.anchor_grid[i].data) / self.imgszxy)  # new wh
                     y = torch.cat((xy, wh, conf), 4)
                 z.append(y.view(bs, -1, self.no))
 
@@ -100,6 +109,8 @@ class IDetect(nn.Module):
     end2end = False
     include_nms = False
     concat = False
+    normalize = False  # set only for export, normalize pixel value outpus
+    imgszxy = None  # set only for export, static model input image size
 
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(IDetect, self).__init__()
@@ -156,8 +167,15 @@ class IDetect(nn.Module):
                     y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
                 else:
                     xy, wh, conf = y.split((2, 2, self.nc + 1), 4)  # y.tensor_split((2, 4, 5), 4)  # torch 1.8.0
-                    xy = xy * (2. * self.stride[i]) + (self.stride[i] * (self.grid[i] - 0.5))  # new xy
-                    wh = wh ** 2 * (4 * self.anchor_grid[i].data)  # new wh
+                    if not self.normalize:
+                        xy = xy * (2. * self.stride[i]) + (self.stride[i] * (self.grid[i] - 0.5))  # new xy
+                        wh = wh ** 2 * (4 * self.anchor_grid[i].data)  # new wh
+                    else:
+                        # normalized output of pixel coordinates
+                        # precompute normalized constants for static models
+                        # multiplication will be more stable for static quantized models
+                        xy = xy / (self.imgszxy / (2. * self.stride[i])) + (self.stride[i] * (self.grid[i] - 0.5)) / self.imgszxy  # new xy
+                        wh = wh ** 2 * ((4 * self.anchor_grid[i].data) / self.imgszxy)  # new wh
                     y = torch.cat((xy, wh, conf), 4)
                 z.append(y.view(bs, -1, self.no))
 
