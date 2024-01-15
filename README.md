@@ -183,6 +183,15 @@ python ./tensorrt-python/export.py -o yolov7-tiny.onnx -e yolov7-tiny-nms.trt -p
 
 Tested with: Python 3.7.13, Pytorch 1.12.0+cu113
 
+**Pytorch to TFLite INT8** <a href="https://colab.research.google.com/github/WongKinYiu/yolov7/blob/main/tools/YOLOv7tflite_int8.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+```shell
+python export.py --weights yolov7-tiny.pt --grid --simplify --img-size 640 640 --normalize
+onnx2tf -i yolov7-tiny.onnx -o yolov7-tiny.tf --verbosity info -nuo -oiqt -qt per-tensor
+# Or use docker to export with onnx2tf
+docker run --rm -v `pwd`:/workdir -w /workdir docker.io/pinto0309/onnx2tf:1.19.4 \
+    onnx2tf -i yolov7-tiny.onnx -o yolov7-tiny.tf --verbosity info -nuo -oiqt -qt per-tensor
+```
+
 ## Pose estimation
 
 [`code`](https://github.com/WongKinYiu/yolov7/tree/pose) [`yolov7-w6-pose.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-w6-pose.pt)
