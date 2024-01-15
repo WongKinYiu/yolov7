@@ -34,6 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--include-nms', action='store_true', help='export end2end onnx')
     parser.add_argument('--fp16', action='store_true', help='CoreML FP16 half-precision export')
     parser.add_argument('--int8', action='store_true', help='CoreML INT8 quantization')
+    parser.add_argument('--normalize', action='store_true', help='Normal pixel coordinate output of head')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
     opt.dynamic = opt.dynamic and not opt.end2end
@@ -69,6 +70,9 @@ if __name__ == '__main__':
     if opt.include_nms:
         model.model[-1].include_nms = True
         y = None
+    if opt.normalize:
+        model.model[-1].normalize = True
+        model.model[-1].imgszxy = torch.tensor([opt.img_size[1], opt.img_size[0]])
 
     # TorchScript export
     try:
