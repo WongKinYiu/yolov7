@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 2
+names: ['hedef', 'pink']
+
+roboflow:
+  workspace: education-f32oy
+  project: ilkproje
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/education-f32oy/ilkproje/dataset/1
