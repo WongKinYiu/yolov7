@@ -1,4 +1,8 @@
-# Official YOLOv7
+# YOLOv7
+
+Packaged version of the [yolov7](https://github.com/WongKinYiu/yolov7) repository.
+
+## Official YOLOv7
 
 Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors](https://arxiv.org/abs/2207.02696)
 
