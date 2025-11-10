@@ -1,0 +1,33 @@
+name: Testing
+
+on:
+  push:
+    branches:
+        - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.12']
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+
+    - name: Install package
+      run: |
+        pip install -e .
+
+    - name: Test import
+      run: |
+        python -c "import ro_yolov7; print(f'Successfully imported ro_yolov7 version {ro_yolov7.__version__}')"
+        python -c "from ro_yolov7 import Model, attempt_load; print('Successfully imported Model and attempt_load')"
