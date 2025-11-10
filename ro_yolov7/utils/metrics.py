@@ -164,7 +164,11 @@ class ConfusionMatrix:
     def plot(self, save_dir='', names=()):
         try:
             import seaborn as sn
+        except ImportError:
+            print('Warning: seaborn not installed, skipping confusion matrix plot')
+            return
 
+        try:
             array = self.matrix / (self.matrix.sum(0).reshape(1, self.nc + 1) + 1E-6)  # normalize
             array[array < 0.005] = np.nan  # don't annotate (would appear as 0.00)
 

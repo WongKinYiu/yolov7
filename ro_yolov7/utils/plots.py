@@ -12,14 +12,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import torch
 import yaml
 from PIL import Image, ImageDraw, ImageFont
 from scipy.signal import butter, filtfilt
 
-from utils.general import xywh2xyxy, xyxy2xywh
-from utils.metrics import fitness
+from .general import xywh2xyxy, xyxy2xywh
+from .metrics import fitness
 
 # Settings
 matplotlib.rc('font', **{'size': 11})
@@ -277,10 +276,14 @@ def plot_labels(labels, names=(), save_dir=Path(''), loggers=None):
     colors = color_list()
     x = pd.DataFrame(b.transpose(), columns=['x', 'y', 'width', 'height'])
 
-    # seaborn correlogram
-    sns.pairplot(x, corner=True, diag_kind='auto', kind='hist', diag_kws=dict(bins=50), plot_kws=dict(pmax=0.9))
-    plt.savefig(save_dir / 'labels_correlogram.jpg', dpi=200)
-    plt.close()
+    try:
+        import seaborn as sns
+        # seaborn correlogram
+        sns.pairplot(x, corner=True, diag_kind='auto', kind='hist', diag_kws=dict(bins=50), plot_kws=dict(pmax=0.9))
+        plt.savefig(save_dir / 'labels_correlogram.jpg', dpi=200)
+        plt.close()
+    except ImportError:
+        print('Warning: seaborn not installed, skipping correlogram plot')
 
     # matplotlib labels
     matplotlib.use('svg')  # faster
@@ -292,8 +295,13 @@ def plot_labels(labels, names=(), save_dir=Path(''), loggers=None):
         ax[0].set_xticklabels(names, rotation=90, fontsize=10)
     else:
         ax[0].set_xlabel('classes')
-    sns.histplot(x, x='x', y='y', ax=ax[2], bins=50, pmax=0.9)
-    sns.histplot(x, x='width', y='height', ax=ax[3], bins=50, pmax=0.9)
+    try:
+        import seaborn as sns
+        sns.histplot(x, x='x', y='y', ax=ax[2], bins=50, pmax=0.9)
+        sns.histplot(x, x='width', y='height', ax=ax[3], bins=50, pmax=0.9)
+    except ImportError:
+        ax[2].hist2d(x['x'], x['y'], bins=50)
+        ax[3].hist2d(x['width'], x['height'], bins=50)
 
     # rectangles
     labels[:, 1:3] = 0.5  # center
@@ -431,8 +439,8 @@ def plot_results(start=0, stop=0, bucket='', id=(), labels=(), save_dir=''):
 
     ax[1].legend()
     fig.savefig(Path(save_dir) / 'results.png', dpi=200)
-    
-    
+
+
 def output_to_keypoint(output):
     # Convert model output to target format [batch_id, class_id, x, y, w, h, conf]
     targets = []

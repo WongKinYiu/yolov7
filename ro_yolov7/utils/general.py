@@ -18,9 +18,9 @@ import torch
 import torchvision
 import yaml
 
-from utils.google_utils import gsutil_getsize
-from utils.metrics import fitness
-from utils.torch_utils import init_torch_seeds
+from .google_utils import gsutil_getsize
+from .metrics import fitness
+from .torch_utils import init_torch_seeds
 
 # Settings
 torch.set_printoptions(linewidth=320, precision=5, profile='long')
@@ -493,7 +493,7 @@ def box_giou(box1, box2):
 
     area1 = box_area(box1.T)
     area2 = box_area(box2.T)
-    
+
     inter = (torch.min(box1[:, None, 2:], box2[:, 2:]) - torch.max(box1[:, None, :2], box2[:, :2])).clamp(0).prod(2)
     union = (area1[:, None] + area2 - inter)
 
@@ -528,7 +528,7 @@ def box_ciou(box1, box2, eps: float = 1e-7):
 
     area1 = box_area(box1.T)
     area2 = box_area(box2.T)
-    
+
     inter = (torch.min(box1[:, None, 2:], box2[:, 2:]) - torch.max(box1[:, None, :2], box2[:, :2])).clamp(0).prod(2)
     union = (area1[:, None] + area2 - inter)
 
@@ -580,7 +580,7 @@ def box_diou(box1, box2, eps: float = 1e-7):
 
     area1 = box_area(box1.T)
     area2 = box_area(box2.T)
-    
+
     inter = (torch.min(box1[:, None, 2:], box2[:, 2:]) - torch.max(box1[:, None, :2], box2[:, :2])).clamp(0).prod(2)
     union = (area1[:, None] + area2 - inter)
 

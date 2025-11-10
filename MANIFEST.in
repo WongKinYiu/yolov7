@@ -1,0 +1,4 @@
+include README.md
+include LICENSE.md
+recursive-include ro_yolov7/cfg *.yaml
+recursive-include ro_yolov7/data *.yaml

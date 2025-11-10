@@ -8,8 +8,6 @@ from pathlib import Path
 import torch
 import yaml
 
-sys.path.append('./')  # to run '$ python *.py' files in subdirectories
-
 port = 0  # --master_port
 path = Path('').resolve()
 for last in path.rglob('*/**/last.pt'):
