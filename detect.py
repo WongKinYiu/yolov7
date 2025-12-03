@@ -58,11 +58,13 @@ def detect(save_img=False):
         cudnn.benchmark = True  # set True to speed up constant image size inference
         dataset = LoadStreams(source, img_size=imgsz, stride=stride)
     else:
+        resize_or_crop = 'center_crop'
         dataset = LoadImages(source, img_size=imgsz, stride=stride,
                              scaling_type=opt.norm_type, input_channels=opt.input_channels,
                              no_tir_signal=opt.no_tir_signal,
                              tir_channel_expansion=opt.tir_channel_expansion,
-                             rel_path_for_list_files=opt.rel_path_for_list_files)
+                             rel_path_for_list_files=opt.rel_path_for_list_files,
+                             resize_or_crop=resize_or_crop)
 
         dataset_loader = torch.utils.data.DataLoader(dataset,
                             batch_size=1,
@@ -83,7 +85,7 @@ def detect(save_img=False):
     t0 = time.time()
     for path, img, im0s, vid_cap in dataset_loader:
 
-        if os.path.basename(path).split('.')[1] == 'tiff': # im0s only for plotting version
+        if os.path.basename(path).split('.')[-1] == 'tiff': # im0s only for plotting version
             im0s = np.repeat(im0s[ :, :, np.newaxis], 3, axis=2) # convert GL to RGB by replication
             im0s = scaling_image(im0s, scaling_type=opt.norm_type)
             if im0s.max()<=1:
@@ -131,8 +133,18 @@ def detect(save_img=False):
             txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # img.txt
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             if len(det):
+                if resize_or_crop == 'center_crop':
+                    del_x = (im0.shape[1] - img.shape[-1])//2
+                    del_y = (im0.shape[0] - img.shape[-2])//2
+                    # det[:, :4] = det[:, :4] + [del_y, del_y, del_x, del_x]
+                    det[:, [0, 2]] += del_x  # x padding
+                    det[:, [1, 3]] += del_y  # y padding
+
+                elif resize_or_crop == 'resize':
                 # Rescale boxes from img_size to im0 size
-                det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
+                    det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
+                else:
+                    raise
 
                 # Print results
                 for c in det[:, -1].unique():
@@ -163,7 +175,7 @@ def detect(save_img=False):
             if save_img:
                 if dataset.mode == 'image':
                     print(save_path,os.path.basename(save_path).split('.'))
-                    if os.path.basename(save_path).split('.')[1] == 'tiff':
+                    if os.path.basename(save_path).split('.')[-1] == 'tiff':
                         #print('ka')
                         save_path = os.path.join(os.path.dirname(save_path), os.path.basename(save_path).split('.')[0] + '.png')
                         cv2.imwrite(save_path, im0)
@@ -272,4 +284,5 @@ Failed training-set locomotiver
 
 # unlabeled data
 --weights /mnt/Data/hanoch/runs/train/yolov71351/weights/epoch_049.pt --img-size 640 --device 0 --save-txt --norm-type single_image_percentile_0_1 --source yolov7/tir_od/unlabeled_210_data_set.txt --conf 0.65 --rel-path-for-list-files /mnt/Data/hanoch/tir_frames_rois/unlabeled
+--weights /mnt/Data/hanoch/runs/train/yolov71351/weights/epoch_049.pt --img-size 640 --device 0 --save-txt --norm-type single_image_percentile_0_1 --source /mnt/Staging_Isilon/1306_data/TIR_snapshots
 """

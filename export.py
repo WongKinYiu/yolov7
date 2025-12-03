@@ -243,7 +243,6 @@ if __name__ == '__main__':
 
         # Checks
         onnx_model = onnx.load(fname)  # load onnx model
-        onnx_model = onnx.load(fname)  # load onnx model
         onnx.checker.check_model(onnx_model)  # check onnx model
 
         # import onnxruntime as ort

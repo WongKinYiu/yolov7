@@ -299,6 +299,8 @@ def plot_pr_curve(px, py, ap, save_dir='pr_curve.png', names=(),
                     ax.text(x=min(0.1 + (0.5 - k*0.1) * k, 1), y=max(0.5 - 0.2 * i, 0), fontsize=12,
                         s=f"[{recall_of_interest_per_class[k]:.2f};{precisions_of_interest[k]:.2f}]")
 
+            print('Class: {} : Thresholds : {} per precision {}'.format(names[i], conf_at_precision_of_iterest,
+                                                                        precisions_of_interest))
     else:
         ax.plot(px, py, linewidth=1, color='grey')  # plot(recall, precision)
 

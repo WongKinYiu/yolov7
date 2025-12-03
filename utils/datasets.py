@@ -41,6 +41,9 @@ import pandas as pd
 def flatten(lst): return [x for l in lst for x in l]
 
 
+remove_hard_examples = False  # Bad practice Caveats when removing images bbox-less hence no hard negative examples in it
+
+
 def clip_boxes_to_border(boxes_array, border):
     """
     Clips bounding boxes to stay within the given border.
@@ -269,8 +272,9 @@ class LoadImages(Dataset):  # for inference
     def __init__(self, path, img_size=640, stride=32,
                  scaling_type='standardization', img_percentile_removal=0.3, beta=0.3, input_channels=3,
                  tir_channel_expansion=False, no_tir_signal=False,
-                 rel_path_for_list_files='', detection_ordering=True):
+                 rel_path_for_list_files='', detection_ordering=True, resize_or_crop='resize'):
 
+        self.resize_or_crop = resize_or_crop
         self.detection_ordering = detection_ordering
         self.count = 0
         p = str(Path(path).absolute())  # os-agnostic absolute path
@@ -392,8 +396,16 @@ class LoadImages(Dataset):  # for inference
             assert img0 is not None, 'Image Not Found ' + path
             #print(f'image {self.count}/{self.nf} {path}: ', end='')
 
-        # Padded resize
-        img = letterbox(img0, self.img_size, stride=self.stride)[0]
+        # resize_or_crop = 'resize'
+        # 'center_crop'
+        if self.resize_or_crop == 'resize':
+            # Padded resize
+            img = letterbox(img0, self.img_size, stride=self.stride)[0]
+        elif self.resize_or_crop == 'center_crop':
+            img = img0[((img0.shape[0] - self.img_size) // 2): (img0.shape[0] - self.img_size) // 2 + self.img_size, (
+                            img0.shape[1] - self.img_size) // 2 : self.img_size + (img0.shape[1] - self.img_size) // 2]
+        else:
+            raise ValueError(self.resize_or_crop)
 
         if self.tir_channel_expansion:  # HK @@ according to the paper this CE is a sort of augmentation hence no need to preliminary augment. One of the channels are inversion hence avoid channel inversion aug
             img = np.repeat(img[np.newaxis, :, :], 3, axis=0)  # convert GL to RGB by replication
@@ -704,18 +716,19 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             for x in self.labels:
                 x[:, 0] = 0
 
-        if nm > 0: # Caveats when removing images bbox-less hence no hard negative examples in it
-            print(100*'/*/')
-            print('Remove missing annotations file avoiding unlabeled images that would considered as BG. Before', len(self.labels))
-        for ix  in range(len(self.labels) - 1, -1, -1): # safe remove by reverrse iteration #enumerate(self.labels):
-            if (self.labels[ix][:, 1:] > 1).any() or self.labels[ix].size < 5:
-                print(self.label_files[ix])
-                del self.labels[ix]
-                del self.img_files[ix]
-                del self.label_files[ix]
-                del shapes[ix]
+        if remove_hard_examples:
+            if nm > 0: # Caveats when removing images bbox-less hence no hard negative examples in it
+                print(100*'/*/')
+                print('Remove missing annotations file avoiding unlabeled images that would considered as BG. Before', len(self.labels))
+            for ix  in range(len(self.labels) - 1, -1, -1): # safe remove by reverrse iteration #enumerate(self.labels):
+                if (self.labels[ix][:, 1:] > 1).any() or self.labels[ix].size < 5:
+                    print(self.label_files[ix])
+                    del self.labels[ix]
+                    del self.img_files[ix]
+                    del self.label_files[ix]
+                    del shapes[ix]
 
-        print('after',               len(self.labels))
+            print('after',               len(self.labels))
 
         self.shapes = np.array(shapes, dtype=np.float64)
         n = len(shapes)  # number of images
@@ -2252,6 +2265,7 @@ class Albumentations:
             A.RandomGamma(gamma_limit=[80, 120], p=0.01),
             A.Blur(p=0.01),
             A.MedianBlur(p=0.01),
+
             A.ToGray(p=0.01),
             A.ImageCompression(quality_lower=75, p=0.01),],
             bbox_params=A.BboxParams(format='pascal_voc', label_fields=['class_labels']))

@@ -34,8 +34,8 @@ class End2EndRVFixedOutput(nn.Module):
         expanded_tensor[:num_to_copy] = x[:num_to_copy]
         # index_num_to_copy = torch.tensor(num_to_copy, device=x.device)
         # expanded_tensor.index_copy_(0, torch.arange(num_to_copy, device=x.device, dtype=torch.int32), x[:num_to_copy])
-
-        x = expanded_tensor.unsqueeze(0)
+        x = expanded_tensor
+        # x = expanded_tensor.unsqueeze(0)  # HK@@ tensorleap extension
 
         return x
 
