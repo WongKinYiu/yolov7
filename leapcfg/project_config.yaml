@@ -1,0 +1,27 @@
+IMGSZ: 640
+IMGSZ_TEST: 640
+GS: 32
+SINGLE_CLS: false
+CACHE_IMAGES: false
+RECT: false
+WORKERS: 8
+QUAD: false
+MAX_INSTANCE: 50
+LABEL_SMOOTHING: 0.0
+HYP: 'data/hyp.tir_od.tiny_aug_gamma_scaling_before_mosaic_rnd_scaling_no_ota.yaml'
+DATA: 'data/tir_od_center_roi_aug_list_train_cls_feb25_tleap.yaml'
+DATA_TEST: 'data/tir_od_test_set_3_class_train_tleap.yaml'
+UNLABELED_DATASET: 'data/unlabeled_210_data_set_tleap.txt'
+rel_path_for_list_files: '/mnt/Data/hanoch/tir_frames_rois/unlabeled'
+#DATA: 'data/tir_od_center_roi_aug_list_train_cls_feb25.yaml'
+#DATA_TEST: 'data/tir_od_test_set_3_class_train.yaml'
+CFG: 'cfg/training/yolov7.yaml' # 'cfg/deploy/yolov7.yaml'
+
+NMS:
+  IOU_THRESH: 0.6
+  CONF_THRESH: 0.1  # was 0.3
+#create_dataloader(CONFIG['train_path'], CONFIG['imgsz'], CONFIG['batch_size'], CONFIG['gs'],
+#                                            Namespace(single_cls=CONFIG['single_cls']),
+#                                            hyp=hyp, augment=True, cache=CONFIG['cache_images'], rect=CONFIG['rect'],
+#                                            rank=CONFIG['rank'], world_size=CONFIG['world_size'], workers=CONFIG['workers'],
+#                                            image_weights=CONFIG['image_weights'], quad=CONFIG['quad'], prefix='train: ')

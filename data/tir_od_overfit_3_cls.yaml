@@ -1,0 +1,18 @@
+# COCO 2017 dataset http://cocodataset.org
+
+# download command/URL (optional)
+#Make symbolic link
+# sudo ln -s ~hanoch/projects/tir_frames_rois /mnt/Data/hanoch/tir_frames_rois
+path: /mnt/Data/hanoch/tir_frames_rois/yolo7_tir_data_all #/home/hanoch/projects/tir_frames_rois/tir_car_44person_31   #/home/hanochk/tir_frames_rois/yolo7_tir_data
+# train and val data as 1) directory: path/images/, 2) file: path/images.txt, or 3) list: [path1/images/, path2/images/]
+train: ./yolov7/tir_od/training_set_overfit.txt  #./yolov7/tir_od/training_set_yolov7941_w_center_roi.txt
+val: ./yolov7/tir_od/training_set_overfit.txt #./yolov7/tir_od/tir_tiff_car_person_min_size_44_31_validation_set.txt #./yolov7/tir_od/validation_set.txt #./yolov7/tir_od/val_tir_od.txt #./yolov7/tir_od/validation_set.txt  # 5000 images
+#test: ./tir_od/test-dev2017.txt  # 20288 of 40670 images, submit to https://competitions.codalab.org/competitions/20794
+
+# number of classes
+nc: 3
+
+# class names
+names: ['car', 'person', 'Train']
+
+

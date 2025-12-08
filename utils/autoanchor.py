@@ -44,7 +44,7 @@ def check_anchors(dataset, model, thr=4.0, imgsz=640):
         print('. Attempting to improve anchors, please wait...')
         na = m.anchor_grid.numel() // 2  # number of anchors
         try:
-            anchors = kmean_anchors(dataset, n=na, img_size=imgsz, thr=thr, gen=1000, verbose=False)
+            anchors = kmean_anchors(dataset, n=na, img_size=imgsz, thr=thr, gen=1000, verbose=True)
         except Exception as e:
             print(f'{prefix}ERROR: {e}')
         new_bpr = metric(anchors)[0]

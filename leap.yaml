@@ -1,0 +1,23 @@
+codeIntegrationId:
+projectId:
+secretId: ""
+entryFile: leap_binder.py
+include:
+    - cfg/*/*
+    - data/*
+    - deploy/*/*/*
+    - models/*
+    - scripts/*
+    - tools/*
+    - utils/*.py
+    - utils/*/*
+    - models/*/*
+    - leap_binder.py
+    - leap_test.py
+    - leap_custom_test.py
+    - leap_utils.py
+    - leapcfg/*
+    - requirements.txt
+    - YOLOv7onnx.py
+    - leap_mapping.yaml
+pythonVersion: py310

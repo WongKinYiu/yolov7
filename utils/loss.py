@@ -120,13 +120,14 @@ class SigmoidBin(nn.Module):
 
 class FocalLoss(nn.Module):
     # Wraps focal loss around existing loss_fcn(), i.e. criteria = FocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5)
-    def __init__(self, loss_fcn, gamma=1.5, alpha=0.25):
+    def __init__(self, loss_fcn, gamma=1.5, alpha=0.25, multi_class_no_multi_label=False):
         super(FocalLoss, self).__init__()
         self.loss_fcn = loss_fcn  # must be nn.BCEWithLogitsLoss()
         self.gamma = gamma
         self.alpha = alpha
         self.reduction = loss_fcn.reduction
         self.loss_fcn.reduction = 'none'  # required to apply FL to each element
+        self.multi_class_no_multi_label = multi_class_no_multi_label
 
     def forward(self, pred, true):
         loss = self.loss_fcn(pred, true)
@@ -134,11 +135,36 @@ class FocalLoss(nn.Module):
         # loss *= self.alpha * (1.000001 - p_t) ** self.gamma  # non-zero power for gradient stability
 
         # TF implementation https://github.com/tensorflow/addons/blob/v0.7.1/tensorflow_addons/losses/focal_loss.py
-        pred_prob = torch.sigmoid(pred)  # prob from logits
-        p_t = true * pred_prob + (1 - true) * (1 - pred_prob)
-        alpha_factor = true * self.alpha + (1 - true) * (1 - self.alpha)
-        modulating_factor = (1.0 - p_t) ** self.gamma
-        loss *= alpha_factor * modulating_factor
+        if not self.multi_class_no_multi_label:
+            pred_prob = torch.sigmoid(pred)  # prob from logits
+        # For BCE the positive and negative class has different treatment
+            p_t = true * pred_prob + (1 - true) * (1 - pred_prob)
+            if isinstance(self.alpha, torch.Tensor): # weights between classes or labels rather than between each label and BG
+                if self.alpha.numel() > 0:
+                    alpha_factor = true * self.alpha
+            else:# old scalar case of class vs. all but not supporting multi-class weight
+                alpha_factor = true * self.alpha + (1 - true) * (1 - self.alpha)
+            modulating_factor = (1.0 - p_t) ** self.gamma
+            loss *= alpha_factor * modulating_factor
+
+        else:
+            # Get softmax probabilities
+            probs = F.softmax(pred, dim=-1)  # (batch_size, num_classes)
+            pt = probs.gather(dim=-1, index=true.unsqueeze(-1)).squeeze(-1)  # True class probabilities
+
+            # Compute focal loss factor
+            focal_weight = (1 - pt) ** self.gamma  # (batch_size,)
+
+            # Apply alpha weighting
+            if isinstance(self.alpha, torch.Tensor):
+                if self.alpha.numel()>1:# Per-class weighting
+                    alpha_t = self.alpha[true]
+                else:
+                    alpha_t = self.alpha
+
+            # Compute focal loss
+            loss = alpha_t * focal_weight * loss
+
 
         if self.reduction == 'mean':
             return loss.mean()
@@ -147,6 +173,49 @@ class FocalLoss(nn.Module):
         else:  # 'none'
             return loss
 
+"""
+https://github.com/ultralytics/ultralytics/issues/10406
+Define a list of alpha values:
+
+alpha_list = [0.25, 0.5, 0.75]  # Example alpha values for three classes
+Modify the focal loss calculation in your model’s loss function:
+
+alpha_factor = torch.tensor([alpha_list[i] for i in labels]).to(device)
+alpha_factor = alpha_factor * labels + (1 - alpha_factor) * (1 - labels)
+loss *= alpha_factor
+"""
+
+# https://openaccess.thecvf.com/content/ICCV2021/papers/Ridnik_Asymmetric_Loss_for_Multi-Label_Classification_ICCV_2021_paper.pdf
+class AsymmetricLoss(nn.Module):
+    def __init__(self, gamma_neg=4, gamma_pos=1, clip=0.05):
+        super(AsymmetricLoss, self).__init__()
+        self.gamma_neg = gamma_neg
+        self.gamma_pos = gamma_pos
+        self.clip = clip
+
+    def forward(self, x, y):
+        """
+        Asymmetric loss for handling label imbalance
+
+        Args:
+            x (torch.Tensor): Model predictions
+            y (torch.Tensor): Binary label matrix
+
+        Returns:
+            torch.Tensor: Asymmetric loss
+        """
+        # Positive and negative losses
+        xs_pos = torch.sigmoid(x)
+        xs_neg = 1 - xs_pos
+
+        # Asymmetric clipping
+        y = torch.clamp(y, min=self.clip, max=1 - self.clip)
+
+        # Focal-like modulation
+        los_pos = y * torch.log(xs_pos) * (1 - xs_pos) ** self.gamma_pos
+        los_neg = (1 - y) * torch.log(xs_neg) * xs_neg ** self.gamma_neg
+
+        return -torch.mean(los_pos + los_neg)
 
 class QFocalLoss(nn.Module):
     # Wraps Quality focal loss around existing loss_fcn(), i.e. criteria = FocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5)
@@ -418,32 +487,49 @@ class APLoss(torch.autograd.Function):
         g1, =ctx.saved_tensors
         return g1*out_grad1, None, None
 
-
+# Dual obj and cls losses and outputs inherited from Joseph Redmon's original YOLOv3
 class ComputeLoss:
     # Compute losses
-    def __init__(self, model, autobalance=False):
+    def __init__(self, device, model, autobalance=False, loss_weight=torch.tensor([]),
+                 multi_class_no_multi_label=False, multi_label_asymetric_focal_loss=False):
         super(ComputeLoss, self).__init__()
-        device = next(model.parameters()).device  # get model device
+        # device = next(model.parameters()).device  # get model device
         h = model.hyp  # hyperparameters
-
+        self.multi_class_no_multi_label = multi_class_no_multi_label
+        self.multi_label_asymetric_focal_loss = multi_label_asymetric_focal_loss
         # Define criteria
-        BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
-        BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device))
+        if self.multi_class_no_multi_label:
+            xCEcls = nn.CrossEntropyLoss() #weight=loss_weight
+        else:
+            xCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
 
+        BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device))
+        self.loss_weight = loss_weight
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
         self.cp, self.cn = smooth_BCE(eps=h.get('label_smoothing', 0.0))  # positive, negative BCE targets
 
         # Focal loss
         g = h['fl_gamma']  # focal loss gamma
         if g > 0:
-            BCEcls, BCEobj = FocalLoss(BCEcls, g), FocalLoss(BCEobj, g)
+            alpha = 0.25 # default by base code
+            if loss_weight.numel()>0:
+                alpha = loss_weight # Overide the default from the paper
+
+            if multi_label_asymetric_focal_loss:
+                xCEcls, BCEobj = (AsymmetricLoss(),
+                                  FocalLoss(BCEobj, g))
+            else:
+                xCEcls, BCEobj = (FocalLoss(xCEcls, g,
+                                       alpha=alpha,
+                                       multi_class_no_multi_label=self.multi_class_no_multi_label),
+                              FocalLoss(BCEobj, g))
 
         det = model.module.model[-1] if is_parallel(model) else model.model[-1]  # Detect() module
         self.balance = {3: [4.0, 1.0, 0.4]}.get(det.nl, [4.0, 1.0, 0.25, 0.06, .02])  # P3-P7
         #self.balance = {3: [4.0, 1.0, 0.4]}.get(det.nl, [4.0, 1.0, 0.25, 0.1, .05])  # P3-P7
         #self.balance = {3: [4.0, 1.0, 0.4]}.get(det.nl, [4.0, 1.0, 0.5, 0.4, .1])  # P3-P7
         self.ssi = list(det.stride).index(16) if autobalance else 0  # stride 16 index
-        self.BCEcls, self.BCEobj, self.gr, self.hyp, self.autobalance = BCEcls, BCEobj, model.gr, h, autobalance
+        self.xCEcls, self.BCEobj, self.gr, self.hyp, self.autobalance = xCEcls, BCEobj, model.gr, h, autobalance
         for k in 'na', 'nc', 'nl', 'anchors':
             setattr(self, k, getattr(det, k))
 
@@ -466,9 +552,12 @@ class ComputeLoss:
                 pwh = (ps[:, 2:4].sigmoid() * 2) ** 2 * anchors[i]
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
                 iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, CIoU=True)  # iou(prediction, target)
+                # if torch.abs(iou.min())<=1e-6: # otherwise implicitily telling that FN with IOU=0 goes to 0 loss which is un-desireable. CIOU can be negative =>Yes, the CIoU loss can have a value greater than 1 — and that is reasonable and expected in some cases, especially when the predicted box is far from the ground truth in location or shape.
+                #    print('low iou', iou.min())
+
                 lbox += (1.0 - iou).mean()  # iou loss
 
-                # Objectness
+                # Objectness  # # gr iou loss ratio (obj_loss = 1.0 or iou)
                 tobj[b, a, gj, gi] = (1.0 - self.gr) + self.gr * iou.detach().clamp(0).type(tobj.dtype)  # iou ratio
 
                 # Classification
@@ -476,7 +565,10 @@ class ComputeLoss:
                     t = torch.full_like(ps[:, 5:], self.cn, device=device)  # targets
                     t[range(n), tcls[i]] = self.cp
                     #t[t==self.cp] = iou.detach().clamp(0).type(t.dtype)
-                    lcls += self.BCEcls(ps[:, 5:], t)  # BCE
+                    if self.multi_class_no_multi_label:
+                        lcls += self.xCEcls(ps[:, 5:], tcls[i].long().to(device)) # CE
+                    else:
+                        lcls += self.xCEcls(ps[:, 5:], t)  # BCE
 
                 # Append targets to text file
                 # with open('targets.txt', 'a') as file:
@@ -555,13 +647,26 @@ class ComputeLoss:
 
 class ComputeLossOTA:
     # Compute losses
-    def __init__(self, model, autobalance=False):
+    def __init__(self, model, autobalance=False, loss_weight=torch.tensor([]),
+                 multi_class_no_multi_label=False,
+                 multi_label_asymetric_focal_loss=False):
+
         super(ComputeLossOTA, self).__init__()
         device = next(model.parameters()).device  # get model device
         h = model.hyp  # hyperparameters
+        if loss_weight.numel() > 0:
+            raise ValueError('Not imp. yet')
+
+        self.multi_label_asymetric_focal_loss = multi_label_asymetric_focal_loss
+        self.multi_class_no_multi_label = multi_class_no_multi_label
+        # Define criteria
+        if self.multi_class_no_multi_label:
+            xCEcls = nn.CrossEntropyLoss() #weight=loss_weight
+        else:
+            xCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
 
         # Define criteria
-        BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
+        # BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
         BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device))
 
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
@@ -570,12 +675,28 @@ class ComputeLossOTA:
         # Focal loss
         g = h['fl_gamma']  # focal loss gamma
         if g > 0:
-            BCEcls, BCEobj = FocalLoss(BCEcls, g), FocalLoss(BCEobj, g)
+            # BCEcls, BCEobj = FocalLoss(BCEcls, g), FocalLoss(BCEobj, g)
+            alpha = 0.25 # default by base code
+            if loss_weight.numel()>0:
+                alpha = loss_weight # Overide the default from the paper
+
+            if multi_label_asymetric_focal_loss:
+                xCEcls, BCEobj = (AsymmetricLoss(xCEcls, g,
+                                            alpha=alpha.to(device),
+                                            multi_class_no_multi_label=self.multi_class_no_multi_label,
+                                            multi_label_asymetric_focal_loss=self.multi_label_asymetric_focal_loss),
+                                  FocalLoss(BCEobj, g))
+            else:
+                xCEcls, BCEobj = (FocalLoss(xCEcls, g,
+                                       alpha=alpha,
+                                       multi_class_no_multi_label=self.multi_class_no_multi_label),
+                              FocalLoss(BCEobj, g))
+
 
         det = model.module.model[-1] if is_parallel(model) else model.model[-1]  # Detect() module
         self.balance = {3: [4.0, 1.0, 0.4]}.get(det.nl, [4.0, 1.0, 0.25, 0.06, .02])  # P3-P7
         self.ssi = list(det.stride).index(16) if autobalance else 0  # stride 16 index
-        self.BCEcls, self.BCEobj, self.gr, self.hyp, self.autobalance = BCEcls, BCEobj, model.gr, h, autobalance
+        self.xCEcls, self.BCEobj, self.gr, self.hyp, self.autobalance = xCEcls, BCEobj, model.gr, h, autobalance
         for k in 'na', 'nc', 'nl', 'anchors', 'stride':
             setattr(self, k, getattr(det, k))
 
@@ -614,7 +735,7 @@ class ComputeLossOTA:
                 if self.nc > 1:  # cls loss (only if multiple classes)
                     t = torch.full_like(ps[:, 5:], self.cn, device=device)  # targets
                     t[range(n), selected_tcls] = self.cp
-                    lcls += self.BCEcls(ps[:, 5:], t)  # BCE
+                    lcls += self.xCEcls(ps[:, 5:], t)  # BCE
 
                 # Append targets to text file
                 # with open('targets.txt', 'a') as file:
@@ -1695,3 +1816,51 @@ class ComputeLossAuxOTA:
             anch.append(anchors[a])  # anchors
 
         return indices, anch
+
+"""
+
+
+import torch
+import torch.nn.functional as F
+
+def class_weighted_multilabel_bce_loss(logits: torch.Tensor, targets: torch.Tensor, weight_matrix: torch.Tensor) -> torch.Tensor:
+    
+    # Computes class-class weighted multi-label BCE loss.
+    # 
+    # Args:
+    #     logits: Tensor of shape (N, C) - raw model outputs (before sigmoid)
+    #     targets: Tensor of shape (N, C) - ground truth binary labels (0 or 1)
+    #     weight_matrix: Tensor of shape (C, C) - inter-class weight matrix
+    # 
+    # Returns:
+    #     torch.Tensor: Weighted BCE loss
+    
+    # Apply Sigmoid to get probabilities
+    probs = torch.sigmoid(logits)
+
+    # Compute BCE loss for each class
+    bce_loss = - (targets * torch.log(probs + 1e-9) + (1 - targets) * torch.log(1 - probs + 1e-9))
+
+    # Expand weight matrix to (N, C, C) for batch-wise computation
+    expanded_weights = weight_matrix.unsqueeze(0).expand(targets.size(0), -1, -1)
+
+    # Compute inter-class weighted loss (weighted sum across class axis)
+    weighted_loss = torch.matmul(bce_loss.unsqueeze(1), expanded_weights).squeeze(1)
+
+    # Average across samples and classes
+    return weighted_loss.mean()
+
+# Example usage
+N, C = 4, 3  # 4 samples, 3 classes
+logits = torch.randn(N, C)  # Random model outputs
+targets = torch.randint(0, 2, (N, C)).float()  # Random binary ground truth
+
+# Define class-class weight matrix
+weight_matrix = torch.tensor([[1.0, 0.5, 0.2],  # Class 0 affects others with 0.5 and 0.2 weight
+                              [0.5, 1.0, 0.3],  # Class 1 affects others with 0.5 and 0.3 weight
+                              [0.2, 0.3, 1.0]]) # Class 2 affects others with 0.2 and 0.3 weight
+
+loss = class_weighted_multilabel_bce_loss(logits, targets, weight_matrix)
+print(loss)
+
+"""

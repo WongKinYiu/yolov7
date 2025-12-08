@@ -158,7 +158,8 @@ class TRT_NMS(torch.autograd.Function):
 
 class ONNX_ORT(nn.Module):
     '''onnx module with ONNX-Runtime NMS operation.'''
-    def __init__(self, max_obj=100, iou_thres=0.45, score_thres=0.25, max_wh=640, device=None, n_classes=80):
+    def __init__(self, max_obj=100, iou_thres=0.45, score_thres=0.25, max_wh=640,
+                 device=None, n_classes=80, reorder_output_class_to_viz_od=False):
         super().__init__()
         self.device = device if device else torch.device("cpu")
         self.max_obj = torch.tensor([max_obj]).to(device)
@@ -169,6 +170,8 @@ class ONNX_ORT(nn.Module):
                                            dtype=torch.float32,
                                            device=self.device)
         self.n_classes=n_classes
+        self.reorder_output_class_to_viz_od = reorder_output_class_to_viz_od
+        self.mapping_3_classes = torch.tensor([1, 0, 4], device="cuda") #How to remap Ids by torch: 0 goes to 1, 1 goes to 0, 2 goes to 4
 
     def forward(self, x):
         boxes = x[:, :, :4]
@@ -181,6 +184,15 @@ class ONNX_ORT(nn.Module):
             scores *= conf  # conf = obj_conf * cls_conf
         boxes @= self.convert_matrix
         max_score, category_id = scores.max(2, keepdim=True)
+
+        if self.reorder_output_class_to_viz_od:
+            category_id = category_id.clone()
+            # det_[5] = torch.tensor(self.reorder_output_class_to_viz_od_dict[det_[5].int().cpu().item()]).to(self.device)
+            if self.n_classes == 2: # @@HK backward compatible
+                category_id = torch.where(category_id == 0, 1, 0)
+            else:
+                category_id = self.mapping_3_classes[category_id]
+
         dis = category_id.float() * self.max_wh
         nmsbox = boxes + dis
         max_score_tp = max_score.transpose(1, 2).contiguous()
@@ -225,14 +237,19 @@ class ONNX_TRT(nn.Module):
 
 class End2End(nn.Module):
     '''export onnx or tensorrt model with NMS operation.'''
-    def __init__(self, model, max_obj=100, iou_thres=0.45, score_thres=0.25, max_wh=None, device=None, n_classes=80):
+    def __init__(self, model, max_obj=100, iou_thres=0.45, score_thres=0.25, max_wh=None,
+                 device=None, n_classes=80, reorder_output_class_to_viz_od=False):
+
         super().__init__()
         device = device if device else torch.device('cpu')
         assert isinstance(max_wh,(int)) or max_wh is None
+        self.reorder_output_class_to_viz_od = reorder_output_class_to_viz_od
         self.model = model.to(device)
         self.model.model[-1].end2end = True
         self.patch_model = ONNX_TRT if max_wh is None else ONNX_ORT
-        self.end2end = self.patch_model(max_obj, iou_thres, score_thres, max_wh, device, n_classes)
+        self.end2end = self.patch_model(max_obj=max_obj, iou_thres=iou_thres, score_thres=score_thres,
+                                        max_wh=max_wh, device=device, n_classes=n_classes,
+                                        reorder_output_class_to_viz_od=self.reorder_output_class_to_viz_od)
         self.end2end.eval()
 
     def forward(self, x):

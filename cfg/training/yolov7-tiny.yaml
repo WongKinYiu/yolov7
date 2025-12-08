@@ -1,6 +1,6 @@
 # parameters
-nc: 80  # number of classes
-depth_multiple: 1.0  # model depth multiple
+nc: 2  # number of classes
+depth_multiple: 1.0  # model depth multiple  @@ HK TODO:
 width_multiple: 1.0  # layer channel multiple
 
 # anchors

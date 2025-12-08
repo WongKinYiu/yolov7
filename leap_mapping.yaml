@@ -1,0 +1,166 @@
+decorators:
+  - operation: Input
+    data:
+      type: Input
+      output_name: image
+    id: '168'
+    inputs: {}
+    outputs:
+      image:
+        - inputKey: input
+          operation: Permute
+          name: model/model/Transpose_tl_transpose
+          id: '167'
+        - inputKey: data
+          operation: Visualizer
+          id: '701'
+        - inputKey: img
+          operation: Visualizer
+          id: '702'
+        - inputKey: img
+          operation: Visualizer
+          id: '703'
+  - operation: Visualizer
+    data:
+      type: Visualizer
+      name: Image
+      visualizer_name: Image
+      visualizer_type: Image
+      arg_names:
+        - data
+      user_unique_name: Image
+    id: '701'
+    inputs:
+      data:
+        - outputKey: image
+          operation: Input
+          id: '168'
+    outputs: {}
+  - operation: Visualizer
+    data:
+      type: Visualizer
+      name: bb_decoder
+      visualizer_name: bb_decoder
+      visualizer_type: ImageWithBBox
+      arg_names:
+        - pred
+        - img
+      user_unique_name: bb_decoder
+    id: '702'
+    inputs:
+      pred:
+        - outputKey: merged
+          operation: TFOpLambda
+          name: Unsqueeze_5_tl_expand_dims_ax_0
+          id: '1'
+      img:
+        - outputKey: image
+          operation: Input
+          id: '168'
+    outputs: {}
+  - operation: Visualizer
+    data:
+      type: Visualizer
+      name: bb_gt_decoder
+      visualizer_name: bb_gt_decoder
+      visualizer_type: ImageWithBBox
+      arg_names:
+        - gt
+        - img
+      user_unique_name: bb_gt_decoder
+    id: '703'
+    inputs:
+      img:
+        - outputKey: image
+          operation: Input
+          id: '168'
+      gt:
+        - outputKey: classes
+          operation: GroundTruth
+          id: '704'
+    outputs: {}
+  - operation: GroundTruth
+    data:
+      type: GroundTruth
+      output_name: classes
+      selected: classes
+    id: '704'
+    inputs: {}
+    outputs:
+      classes:
+        - inputKey: gt
+          operation: Visualizer
+          id: '703'
+        - inputKey: targets
+          operation: Metric
+          id: '706'
+        - inputKey: targets
+          operation: Metric
+          id: '707'
+        - inputKey: targets
+          operation: CustomLoss
+          id: '705'
+  - operation: CustomLoss
+    data:
+      arg_names:
+        - predictions
+        - targets
+      user_unique_name: od_loss
+      name: od_loss
+      selected: od_loss
+      type: CustomLoss
+    id: '705'
+    inputs:
+      predictions:
+        - outputKey: merged
+          operation: TFOpLambda
+          name: Unsqueeze_5_tl_expand_dims_ax_0
+          id: '1'
+      targets:
+        - outputKey: classes
+          operation: GroundTruth
+          id: '704'
+    outputs: {}
+  - operation: Metric
+    data:
+      type: Metric
+      name: images_stat
+      metric_name: images_stat
+      arg_names:
+        - targets
+      user_unique_name: images_stat
+    id: '706'
+    inputs:
+      targets:
+        - outputKey: classes
+          operation: GroundTruth
+          id: '704'
+    outputs: {}
+  - operation: Metric
+    data:
+      type: Metric
+      name: accuracy_f1
+      metric_name: accuracy_f1
+      arg_names:
+        - predictions
+        - targets
+        - conf_th
+      user_unique_name: accuracy_f1
+    id: '707'
+    inputs:
+      predictions:
+        - outputKey: merged
+          operation: TFOpLambda
+          name: Unsqueeze_5_tl_expand_dims_ax_0
+          id: '1'
+      targets:
+        - outputKey: classes
+          operation: GroundTruth
+          id: '704'
+    outputs: {}
+layers:
+  - operation: TFOpLambda
+    data:
+      prediction_type: classes
+    name: Unsqueeze_5_tl_expand_dims_ax_0
+    id: '1'

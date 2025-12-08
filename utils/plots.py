@@ -58,6 +58,11 @@ def plot_one_box(x, img, color=None, label=None, line_thickness=3):
     # Plots one bounding box on image img
     tl = line_thickness or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
     color = color or [random.randint(0, 255) for _ in range(3)]
+
+    # for y in x[:4]:
+    #     if np.isnan(y):
+    #         print('BP here')
+
     c1, c2 = (int(x[0]), int(x[1])), (int(x[2]), int(x[3]))
     cv2.rectangle(img, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
     if label:
@@ -111,7 +116,8 @@ def output_to_target(output):
     return np.array(targets)
 
 
-def plot_images(images, targets, paths=None, fname='images.jpg', names=None, max_size=640, max_subplots=16):
+def plot_images(images, targets, paths=None, fname='images.jpg',
+                names=None, max_size=640, max_subplots=16, clml_logger=None):
     # Plot image grid with labels
 
     if isinstance(images, torch.Tensor):
@@ -145,10 +151,20 @@ def plot_images(images, targets, paths=None, fname='images.jpg', names=None, max
         block_y = int(h * (i % ns))
 
         img = img.transpose(1, 2, 0)
+        n_ch = img.shape[-1]
         if scale_factor < 1:
             img = cv2.resize(img, (w, h))
+            if n_ch == 1:
+                img = img[..., None]
 
-        mosaic[block_y:block_y + h, block_x:block_x + w, :] = img
+        if img.shape[2] > 1: # GL no permute
+            # Convert
+            mosaic[block_y:block_y + h, block_x:block_x + w, :] = img
+        else:
+            # img = img[np.newaxis,...] # unsqueeze
+            mosaic[block_y:block_y + h, block_x:block_x + w, :] = np.repeat(img, 3, axis=2) # np.repeat(img[np.newaxis, :, :], 3, axis=0).transpose(1, 2, 0)
+
+
         if len(targets) > 0:
             image_targets = targets[targets[:, 0] == i]
             boxes = xywh2xyxy(image_targets[:, 2:6]).T
@@ -168,7 +184,7 @@ def plot_images(images, targets, paths=None, fname='images.jpg', names=None, max
                 cls = int(classes[j])
                 color = colors[cls % len(colors)]
                 cls = names[cls] if names else cls
-                if labels or conf[j] > 0.25:  # 0.25 conf thresh
+                if labels or conf[j] > 0.1:  # 0.25 conf thresh @@HK modify to be parameter, however when setting the conf_th it will filters out implicitly
                     label = '%s' % cls if labels else '%s %.1f' % (cls, conf[j])
                     plot_one_box(box, mosaic, label=label, color=color, line_thickness=tl)
 
@@ -187,6 +203,14 @@ def plot_images(images, targets, paths=None, fname='images.jpg', names=None, max
         mosaic = cv2.resize(mosaic, (int(ns * w * r), int(ns * h * r)), interpolation=cv2.INTER_AREA)
         # cv2.imwrite(fname, cv2.cvtColor(mosaic, cv2.COLOR_BGR2RGB))  # cv2 save
         Image.fromarray(mosaic).save(fname)  # PIL save
+        if clml_logger is not None:
+            clml_logger.report_image(
+                "image",
+                "image PIL",
+                iteration=0,
+                image=mosaic
+            )
+
     return mosaic
 
 
@@ -487,3 +511,17 @@ def plot_skeleton_kpts(im, kpts, steps, orig_shape=None):
         if pos2[0] % 640 == 0 or pos2[1] % 640 == 0 or pos2[0]<0 or pos2[1]<0:
             continue
         cv2.line(im, pos1, pos2, (int(r), int(g), int(b)), thickness=2)
+
+
+def append_to_txt(file_path, class_name, images, labels, P, R, map_5, map_5_95):
+    # Format the new line with the provided values
+    formatted_line = f"{class_name:<10} {images:<10} {labels:<10} {P:<10.4f} {R:<10.4f} {map_5:<10.4f} {map_5_95:<10.4f}\n"
+
+    # Open the file in append mode and write the new line
+    with open(file_path, 'a') as file:
+        file.write(formatted_line)
+
+
+# # Example usage:
+# file_path = 'results.txt'
+# append_to_txt(file_path, 'Dog', 500, 1500, 0.85, 0.80, 0.90, 0.75)

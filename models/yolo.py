@@ -20,7 +20,7 @@ except ImportError:
     thop = None
 
 
-class Detect(nn.Module):
+class Detect(nn.Module): # classifier head
     stride = None  # strides computed during build
     export = False  # onnx export
     end2end = False
@@ -93,7 +93,9 @@ class Detect(nn.Module):
         box @= convert_matrix                          
         return (box, score)
 
-
+# IDetect contains YOLOR implicit knowledge modeling. Where the Detect block just use a 1x1 Conv block to create the anchors, HK
+# IDetect first pass the inputs through a ImplicitA block then the Conv block, and then through a ImplicitM block.
+# https://www.kaggle.com/code/jobayerhossain/yolov7-explanation-and-implementation-from-scratch
 class IDetect(nn.Module):
     stride = None  # strides computed during build
     export = False  # onnx export
@@ -575,7 +577,7 @@ class Model(nn.Module):
 
         # Init weights, biases
         initialize_weights(self)
-        self.info()
+        self.info(verbose=False)
         logger.info('')
 
     def forward(self, x, augment=False, profile=False):
@@ -706,7 +708,7 @@ class Model(nn.Module):
             elif isinstance(m, (IDetect, IAuxDetect)):
                 m.fuse()
                 m.forward = m.fuseforward
-        self.info()
+        self.info(verbose=True)
         return self
 
     def nms(self, mode=True):  # add or remove NMS module

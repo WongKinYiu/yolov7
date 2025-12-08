@@ -342,7 +342,7 @@ def revert_sync_batchnorm(module):
 
 class TracedModel(nn.Module):
 
-    def __init__(self, model=None, device=None, img_size=(640,640)): 
+    def __init__(self, model=None, device=None, img_size=(640, 640), input_channels=3):
         super(TracedModel, self).__init__()
         
         print(" Convert model to Traced-model... ") 
@@ -357,7 +357,8 @@ class TracedModel(nn.Module):
         self.detect_layer = self.model.model[-1]
         self.model.traced = True
         
-        rand_example = torch.rand(1, 3, img_size, img_size)
+        self.input_channels = input_channels
+        rand_example = torch.rand(1, self.input_channels, img_size, img_size)
         
         traced_script_module = torch.jit.trace(self.model, rand_example, strict=False)
         #traced_script_module = torch.jit.script(self.model)
@@ -366,9 +367,53 @@ class TracedModel(nn.Module):
         self.model = traced_script_module
         self.model.to(device)
         self.detect_layer.to(device)
-        print(" model is traced! \n") 
+        print(" model is traced! \n")
 
     def forward(self, x, augment=False, profile=False):
-        out = self.model(x)
+        out = self.model(x)# feat = torch.mean(out[-1], dim=[2, 3])
+        self.features  = [x.clone().detach() for x in out]
         out = self.detect_layer(out)
         return out
+    # https://stackoverflow.com/questions/75319661/how-to-extract-and-visualize-feature-value-for-an-arbitrary-layer-during-inferen
+
+    """
+    def plot_ts_feature_maps(feature_maps, tag=''):
+        import matplotlib
+        feature_maps = feature_maps.to(torch.float32)
+        ts.show(feature_maps)
+        ts.save(feature_maps, '/home/hanoch/projects/tir_od/output/' + tag + '.jpg')   
+     
+    plot_ts_feature_maps(torch.mean(out[-1], dim=[2, 3]))
+    """
+
+from torch.autograd import Variable
+class topk_crossEntrophy(nn.Module):
+    def __init__(self, loss, top_k=0.7):
+        super(topk_crossEntrophy, self).__init__()
+
+        # self.loss = nn.NLLLoss()
+        self.top_k = top_k
+        # self.softmax = nn.LogSoftmax()
+
+        self.loss = loss
+        return
+
+
+    def forward(self, input, target):
+        softmax_result = self.softmax(input)
+
+        loss = Variable(torch.Tensor(1).zero_())
+        for idx, row in enumerate(softmax_result):
+            gt = target[idx]
+            pred = torch.unsqueeze(row, 0)
+            cost = self.loss(pred, gt)
+            loss = torch.cat((loss, cost), 0)
+
+        loss = loss[1:]
+        if self.k == 1:
+            valid_loss = loss
+
+        index = torch.topk(loss, int(self.top_k * loss.size()[0]))
+        valid_loss = loss[index[1]]
+
+        return torch.mean(valid_loss)
