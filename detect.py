@@ -177,7 +177,7 @@ def detect(save_img=False):
                     print(save_path,os.path.basename(save_path).split('.'))
                     if os.path.basename(save_path).split('.')[-1] == 'tiff':
                         #print('ka')
-                        save_path = os.path.join(os.path.dirname(save_path), os.path.basename(save_path).split('.')[0] + '.png')
+                        save_path = os.path.join(os.path.dirname(save_path), '_'.join(os.path.basename(save_path).split('.')[:-1]) + '.png')
                         cv2.imwrite(save_path, im0)
                     else:
                         cv2.imwrite(save_path, im0)
@@ -285,4 +285,6 @@ Failed training-set locomotiver
 # unlabeled data
 --weights /mnt/Data/hanoch/runs/train/yolov71351/weights/epoch_049.pt --img-size 640 --device 0 --save-txt --norm-type single_image_percentile_0_1 --source yolov7/tir_od/unlabeled_210_data_set.txt --conf 0.65 --rel-path-for-list-files /mnt/Data/hanoch/tir_frames_rois/unlabeled
 --weights /mnt/Data/hanoch/runs/train/yolov71351/weights/epoch_049.pt --img-size 640 --device 0 --save-txt --norm-type single_image_percentile_0_1 --source /mnt/Staging_Isilon/1306_data/TIR_snapshots
+
+/mnt/Staging_Isilon/1306_data/TIR_snapshots
 """
