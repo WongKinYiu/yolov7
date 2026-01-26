@@ -1,0 +1,9 @@
+	PARAMETERS FOR BASELINE YOLOV7 FOR FIRE AND SMOKE DETECTION:
+Class      Images      Labels           P           R      mAP@.5      mAP@.5:.95: 
+                 all        1724        3932       0.465       0.401       0.349       0.134
+               smoke        1724        1756       0.483       0.475       0.403       0.166
+                fire        1724        2176       0.446       0.326       0.294       0.102
+                
+                
+                
+

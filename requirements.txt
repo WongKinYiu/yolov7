@@ -1,25 +1,25 @@
 # Usage: pip install -r requirements.txt
 
 # Base ----------------------------------------
-matplotlib>=3.2.2
-numpy>=1.18.5,<1.24.0
-opencv-python>=4.1.1
-Pillow>=7.1.2
-PyYAML>=5.3.1
-requests>=2.23.0
-scipy>=1.4.1
-torch>=1.7.0,!=1.12.0
-torchvision>=0.8.1,!=0.13.0
-tqdm>=4.41.0
-protobuf<4.21.3
+#matplotlib>=3.2.2
+#numpy>=1.18.5,<1.24.0
+#opencv-python>=4.1.1
+#Pillow>=7.1.2
+#PyYAML>=5.3.1
+#requests>=2.23.0
+#scipy>=1.4.1
+#torch>=1.7.0,!=1.12.0
+#torchvision>=0.8.1,!=0.13.0
+#tqdm>=4.41.0
+#protobuf<4.21.3
 
 # Logging -------------------------------------
-tensorboard>=2.4.1
+#tensorboard>=2.4.1
 # wandb
 
 # Plotting ------------------------------------
-pandas>=1.1.4
-seaborn>=0.11.0
+#pandas>=1.1.4
+#seaborn>=0.11.0
 
 # Export --------------------------------------
 # coremltools>=4.1  # CoreML export
@@ -31,9 +31,41 @@ seaborn>=0.11.0
 # openvino-dev  # OpenVINO export
 
 # Extras --------------------------------------
-ipython  # interactive notebook
-psutil  # system utilization
-thop  # FLOPs computation
+#ipython  # interactive notebook
+#psutil  # system utilization
+#thop  # FLOPs computation
 # albumentations>=1.0.3
 # pycocotools>=2.0  # COCO mAP
 # roboflow
+
+
+# Usage: pip install -r requirements.txt
+# Compatible with Python 3.8 – 3.10 (NOT 3.12)
+
+# Base ----------------------------------------
+matplotlib>=3.5.0,<3.8.0
+numpy>=1.21.0,<1.24.0
+opencv-python>=4.6.0
+Pillow>=8.0.0
+PyYAML>=6.0
+requests>=2.28.0
+scipy>=1.7.0
+
+# PyTorch -------------------------------------
+torch>=1.8.0,<2.1.0,!=1.12.0
+torchvision>=0.9.0,<0.16.0,!=0.13.0
+
+tqdm>=4.64.0
+protobuf>=3.19.0,<4.21.3
+
+# Logging -------------------------------------
+tensorboard>=2.9.0
+
+# Plotting ------------------------------------
+pandas>=1.3.0,<2.1.0
+seaborn>=0.11.2
+
+# Extras --------------------------------------
+ipython
+psutil
+thop

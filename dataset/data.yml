@@ -1,0 +1,13 @@
+path: /kaggle/working/D Fire Dataset  # dataset root dir
+train: dataset/data/train/images  # train images (relative to 'path')
+val: dataset/data/val/images  # val images (relative to 'path')
+test: dataset/data/test/images  # test images (relative to 'path')
+
+# Classes
+names: ['smoke', 'fire']  # Replace with your actual class names
+
+# Counts
+nc: 2  # number of classes
+train_count: 14122
+val_count: 3099
+test_count: 4306

@@ -1,0 +1,7 @@
+#!/home/sibi/Documents/final_yr_project/yolov7/yolov7-py10/bin/python3.10
+import sys
+from triton.profiler.viewer import main
+if __name__ == '__main__':
+    if sys.argv[0].endswith('.exe'):
+        sys.argv[0] = sys.argv[0][:-4]
+    sys.exit(main())
