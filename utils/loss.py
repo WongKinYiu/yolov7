@@ -659,7 +659,7 @@ class ComputeLossOTA:
             if this_target.shape[0] == 0:
                 continue
                 
-            txywh = this_target[:, 2:6] * imgs[batch_idx].shape[1]
+            txywh = this_target[:, 2:6] * torch.tensor([imgs[batch_idx].shape[2], imgs[batch_idx].shape[1], imgs[batch_idx].shape[2], imgs[batch_idx].shape[1]], device=this_target.device)
             txyxy = xywh2xyxy(txywh)
 
             pxyxys = []
@@ -982,7 +982,7 @@ class ComputeLossBinOTA:
             if this_target.shape[0] == 0:
                 continue
                 
-            txywh = this_target[:, 2:6] * imgs[batch_idx].shape[1]
+            txywh = this_target[:, 2:6] * torch.tensor([imgs[batch_idx].shape[2], imgs[batch_idx].shape[1], imgs[batch_idx].shape[2], imgs[batch_idx].shape[1]], device=this_target.device)
             txyxy = xywh2xyxy(txywh)
 
             pxyxys = []
@@ -1304,7 +1304,7 @@ class ComputeLossAuxOTA:
             if this_target.shape[0] == 0:
                 continue
                 
-            txywh = this_target[:, 2:6] * imgs[batch_idx].shape[1]
+            txywh = this_target[:, 2:6] * torch.tensor([imgs[batch_idx].shape[2], imgs[batch_idx].shape[1], imgs[batch_idx].shape[2], imgs[batch_idx].shape[1]], device=this_target.device)
             txyxy = xywh2xyxy(txywh)
 
             pxyxys = []
@@ -1457,7 +1457,7 @@ class ComputeLossAuxOTA:
             if this_target.shape[0] == 0:
                 continue
                 
-            txywh = this_target[:, 2:6] * imgs[batch_idx].shape[1]
+            txywh = this_target[:, 2:6] * torch.tensor([imgs[batch_idx].shape[2], imgs[batch_idx].shape[1], imgs[batch_idx].shape[2], imgs[batch_idx].shape[1]], device=this_target.device)
             txyxy = xywh2xyxy(txywh)
 
             pxyxys = []
