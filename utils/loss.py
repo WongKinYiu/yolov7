@@ -177,7 +177,7 @@ class RankSort(torch.autograd.Function):
     @staticmethod
     def forward(ctx, logits, targets, delta_RS=0.50, eps=1e-10): 
 
-        classification_grads=torch.zeros(logits.shape).cuda()
+        classification_grads=torch.zeros(logits.shape).to(logits.device)
         
         #Filter fg logits
         fg_labels = (targets > 0.)
@@ -191,10 +191,10 @@ class RankSort(torch.autograd.Function):
         relevant_bg_labels=((targets==0) & (logits>=threshold_logit))
         
         relevant_bg_logits = logits[relevant_bg_labels] 
-        relevant_bg_grad=torch.zeros(len(relevant_bg_logits)).cuda()
-        sorting_error=torch.zeros(fg_num).cuda()
-        ranking_error=torch.zeros(fg_num).cuda()
-        fg_grad=torch.zeros(fg_num).cuda()
+        relevant_bg_grad=torch.zeros(len(relevant_bg_logits)).to(logits.device)
+        sorting_error=torch.zeros(fg_num).to(logits.device)
+        ranking_error=torch.zeros(fg_num).to(logits.device)
+        fg_grad=torch.zeros(fg_num).to(logits.device)
         
         #sort the fg logits
         order=torch.argsort(fg_logits)
@@ -275,7 +275,7 @@ class RankSort(torch.autograd.Function):
 class aLRPLoss(torch.autograd.Function):
     @staticmethod
     def forward(ctx, logits, targets, regression_losses, delta=1., eps=1e-5): 
-        classification_grads=torch.zeros(logits.shape).cuda()
+        classification_grads=torch.zeros(logits.shape).to(logits.device)
         
         #Filter fg logits
         fg_labels = (targets == 1)
@@ -289,10 +289,10 @@ class aLRPLoss(torch.autograd.Function):
         #Get valid bg logits
         relevant_bg_labels=((targets==0)&(logits>=threshold_logit))
         relevant_bg_logits=logits[relevant_bg_labels] 
-        relevant_bg_grad=torch.zeros(len(relevant_bg_logits)).cuda()
-        rank=torch.zeros(fg_num).cuda()
-        prec=torch.zeros(fg_num).cuda()
-        fg_grad=torch.zeros(fg_num).cuda()
+        relevant_bg_grad=torch.zeros(len(relevant_bg_logits)).to(logits.device)
+        rank=torch.zeros(fg_num).to(logits.device)
+        prec=torch.zeros(fg_num).to(logits.device)
+        fg_grad=torch.zeros(fg_num).to(logits.device)
         
         max_prec=0                                           
         #sort the fg logits
@@ -345,7 +345,7 @@ class aLRPLoss(torch.autograd.Function):
 class APLoss(torch.autograd.Function):
     @staticmethod
     def forward(ctx, logits, targets, delta=1.): 
-        classification_grads=torch.zeros(logits.shape).cuda()
+        classification_grads=torch.zeros(logits.shape).to(logits.device)
         
         #Filter fg logits
         fg_labels = (targets == 1)
@@ -359,10 +359,10 @@ class APLoss(torch.autograd.Function):
         #Get valid bg logits
         relevant_bg_labels=((targets==0)&(logits>=threshold_logit))
         relevant_bg_logits=logits[relevant_bg_labels] 
-        relevant_bg_grad=torch.zeros(len(relevant_bg_logits)).cuda()
-        rank=torch.zeros(fg_num).cuda()
-        prec=torch.zeros(fg_num).cuda()
-        fg_grad=torch.zeros(fg_num).cuda()
+        relevant_bg_grad=torch.zeros(len(relevant_bg_logits)).to(logits.device)
+        rank=torch.zeros(fg_num).to(logits.device)
+        prec=torch.zeros(fg_num).to(logits.device)
+        fg_grad=torch.zeros(fg_num).to(logits.device)
         
         max_prec=0                                           
         #sort the fg logits
@@ -783,12 +783,12 @@ class ComputeLossOTA:
                 matching_targets[i] = torch.cat(matching_targets[i], dim=0)
                 matching_anchs[i] = torch.cat(matching_anchs[i], dim=0)
             else:
-                matching_bs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_as[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_gjs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_gis[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_targets[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_anchs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_bs[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_as[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_gjs[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_gis[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_targets[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_anchs[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
 
         return matching_bs, matching_as, matching_gjs, matching_gis, matching_targets, matching_anchs           
 
@@ -1110,12 +1110,12 @@ class ComputeLossBinOTA:
                 matching_targets[i] = torch.cat(matching_targets[i], dim=0)
                 matching_anchs[i] = torch.cat(matching_anchs[i], dim=0)
             else:
-                matching_bs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_as[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_gjs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_gis[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_targets[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_anchs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_bs[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_as[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_gjs[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_gis[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_targets[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_anchs[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
 
         return matching_bs, matching_as, matching_gjs, matching_gis, matching_targets, matching_anchs       
 
@@ -1428,12 +1428,12 @@ class ComputeLossAuxOTA:
                 matching_targets[i] = torch.cat(matching_targets[i], dim=0)
                 matching_anchs[i] = torch.cat(matching_anchs[i], dim=0)
             else:
-                matching_bs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_as[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_gjs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_gis[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_targets[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_anchs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_bs[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_as[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_gjs[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_gis[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_targets[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_anchs[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
 
         return matching_bs, matching_as, matching_gjs, matching_gis, matching_targets, matching_anchs
 
@@ -1581,12 +1581,12 @@ class ComputeLossAuxOTA:
                 matching_targets[i] = torch.cat(matching_targets[i], dim=0)
                 matching_anchs[i] = torch.cat(matching_anchs[i], dim=0)
             else:
-                matching_bs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_as[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_gjs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_gis[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_targets[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
-                matching_anchs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
+                matching_bs[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_as[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_gjs[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_gis[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_targets[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
+                matching_anchs[i] = torch.tensor([], device=targets.device, dtype=torch.int64)
 
         return matching_bs, matching_as, matching_gjs, matching_gis, matching_targets, matching_anchs              
 
