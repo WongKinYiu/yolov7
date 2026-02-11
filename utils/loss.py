@@ -71,7 +71,7 @@ class SigmoidBin(nn.Module):
     def forward(self, pred):
         assert pred.shape[-1] == self.length, 'pred.shape[-1]=%d is not equal to self.length=%d' % (pred.shape[-1], self.length)
 
-        pred_reg = (pred[..., 0] * self.reg_scale - self.reg_scale/2.0) * self.step
+        pred_reg = (pred[..., 0].sigmoid() * self.reg_scale - self.reg_scale/2.0) * self.step
         pred_bin = pred[..., 1:(1+self.bin_count)]
 
         _, bin_idx = torch.max(pred_bin, dim=-1)
