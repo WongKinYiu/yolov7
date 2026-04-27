@@ -55,6 +55,7 @@ from pathlib import Path
 import pandas as pd
 import torch
 import yaml
+import torch.nn as nn
 from torch.utils.mobile_optimizer import optimize_for_mobile
 
 FILE = Path(__file__).resolve()
@@ -65,11 +66,108 @@ if platform.system() != 'Windows':
     ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 from models.experimental import attempt_load
-from models.yolo import Detect
+from models.common import SPPCSPC
+from models.yolo import Detect, IDetect, ISegment, Segment, IRSegment
 from utils.dataloaders import LoadImages
 from utils.general import (LOGGER, Profile, check_dataset, check_img_size, check_requirements, check_version,
                            check_yaml, colorstr, file_size, get_default_args, print_args, url2file)
 from utils.torch_utils import select_device, smart_inference_mode
+
+
+class RepeatedMaxPool2d(nn.Module):
+    # Repeats a MaxPool2d layer N times to emulate larger kernels.
+    def __init__(self, repeats=1, kernel_size=5, stride=1, padding=2):
+        super().__init__()
+        self.ops = nn.Sequential(*[nn.MaxPool2d(kernel_size, stride, padding) for _ in range(repeats)])
+
+    def forward(self, x):
+        return self.ops(x)
+
+
+def replace_spp_maxpool_for_dla(model):
+    """Replace SPPCSPC(k=(5,9,13)) pools with DLA-safe stacked 5x5 pools.
+
+    The transformation is applied only to the internal pooling list and keeps
+    all learned conv/BN parameters unchanged.
+    """
+    replaced = 0
+    for m in model.modules():
+        if not isinstance(m, SPPCSPC):
+            continue
+        if not isinstance(m.m, nn.ModuleList) or len(m.m) != 3:
+            continue
+
+        pools = list(m.m)
+        kernels = [tuple(p.kernel_size) if isinstance(p.kernel_size, tuple) else (p.kernel_size, p.kernel_size)
+                   for p in pools if isinstance(p, nn.MaxPool2d)]
+        strides = [tuple(p.stride) if isinstance(p.stride, tuple) else (p.stride, p.stride)
+                   for p in pools if isinstance(p, nn.MaxPool2d)]
+        paddings = [tuple(p.padding) if isinstance(p.padding, tuple) else (p.padding, p.padding)
+                    for p in pools if isinstance(p, nn.MaxPool2d)]
+        if len(kernels) != 3:
+            continue
+        if kernels != [(5, 5), (9, 9), (13, 13)]:
+            continue
+        if strides != [(1, 1), (1, 1), (1, 1)] or paddings != [(2, 2), (4, 4), (6, 6)]:
+            continue
+
+        m.m = nn.ModuleList([
+            RepeatedMaxPool2d(repeats=1),
+            RepeatedMaxPool2d(repeats=2),
+            RepeatedMaxPool2d(repeats=3),
+        ])
+        replaced += 1
+    return replaced
+
+
+def fuse_implicit_a_for_dla(model):
+    """Fuse ImplicitA into following Conv2d bias for DLA export.
+
+    For head path y = Conv(x + a), fold Conv(a) into bias and replace the
+    ImplicitA module with Identity to avoid Add nodes in exported ONNX.
+    """
+    fused = 0
+    with torch.no_grad():
+        for head in model.modules():
+            if not isinstance(head, (IDetect, ISegment, IRSegment)):
+                continue
+            if not hasattr(head, 'ia') or not hasattr(head, 'm'):
+                continue
+
+            n = min(len(head.ia), len(head.m))
+            for i in range(n):
+                implicit = head.ia[i]
+                conv = head.m[i]
+                if isinstance(implicit, nn.Identity):
+                    continue
+                if not hasattr(implicit, 'implicit'):
+                    continue
+                if not isinstance(conv, nn.Conv2d):
+                    continue
+                if conv.groups != 1:
+                    LOGGER.warning(f"DLA: skip ImplicitA fusion for grouped conv at head scale {i} (groups={conv.groups})")
+                    continue
+
+                a = implicit.implicit.to(device=conv.weight.device, dtype=conv.weight.dtype).reshape(-1)
+                if a.numel() != conv.in_channels:
+                    LOGGER.warning(
+                        f"DLA: skip ImplicitA fusion at head scale {i} due to channel mismatch "
+                        f"(implicit={a.numel()}, conv_in={conv.in_channels})")
+                    continue
+
+                if conv.bias is None:
+                    conv.bias = nn.Parameter(torch.zeros(conv.out_channels,
+                                                         device=conv.weight.device,
+                                                         dtype=conv.weight.dtype))
+
+                kh, kw = conv.kernel_size
+                # Spatially broadcast ImplicitA over kernel taps before matmul.
+                a_kernel = a.repeat_interleave(kh * kw)
+                delta = conv.weight.reshape(conv.out_channels, -1).matmul(a_kernel)
+                conv.bias.add_(delta)
+                head.ia[i] = nn.Identity()
+                fused += 1
+    return fused
 
 
 def export_formats():
@@ -124,7 +222,7 @@ def export_torchscript(model, im, file, optimize, prefix=colorstr('TorchScript:'
 
 
 @try_export
-def export_onnx(model, im, file, opset, train, dynamic, simplify, prefix=colorstr('ONNX:')):
+def export_onnx(model, im, file, opset, train, dynamic, simplify, dla=False, prefix=colorstr('ONNX:')):
     # YOLOv5 ONNX export
     check_requirements(('onnx',))
     import onnx
@@ -132,25 +230,31 @@ def export_onnx(model, im, file, opset, train, dynamic, simplify, prefix=colorst
     LOGGER.info(f'\n{prefix} starting export with onnx {onnx.__version__}...')
     f = file.with_suffix('.onnx')
 
+    # DLA export: emit 4 named 4D outputs (proto + 3 raw det maps) and force
+    # static shapes (DLA requires static). Standard export keeps the single
+    # decoded "output" tensor and optional dynamic axes.
+    if dla:
+        output_names = ['proto', 'det_p3', 'det_p4', 'det_p5']
+        dynamic_axes = None
+    else:
+        output_names = ['output']
+        dynamic_axes = {
+            'images': {0: 'batch', 2: 'height', 3: 'width'},
+            'output': {0: 'batch', 1: 'anchors'},
+        } if dynamic else None
+
     torch.onnx.export(
         model.cpu() if dynamic else model,  # --dynamic only compatible with cpu
         im.cpu() if dynamic else im,
         f,
         verbose=False,
         opset_version=opset,
+        dynamo=False,  # keep legacy exporter for YOLOv7 implicit/fused head compatibility
         training=torch.onnx.TrainingMode.TRAINING if train else torch.onnx.TrainingMode.EVAL,
         do_constant_folding=not train,
         input_names=['images'],
-        output_names=['output'],
-        dynamic_axes={
-            'images': {
-                0: 'batch',
-                2: 'height',
-                3: 'width'},  # shape(1,3,640,640)
-            'output': {
-                0: 'batch',
-                1: 'anchors'}  # shape(1,25200,85)
-        } if dynamic else None)
+        output_names=output_names,
+        dynamic_axes=dynamic_axes)
 
     # Checks
     model_onnx = onnx.load(f)  # load onnx model
@@ -458,6 +562,7 @@ def run(
         topk_all=100,  # TF.js NMS: topk for all classes to keep
         iou_thres=0.45,  # TF.js NMS: IoU threshold
         conf_thres=0.25,  # TF.js NMS: confidence threshold
+        dla=False,  # DLA-friendly ONNX: raw 4D outputs, static shapes
 ):
     t = time.time()
     include = [x.lower() for x in include]  # to lowercase
@@ -473,6 +578,17 @@ def run(
         assert device.type != 'cpu' or coreml, '--half only compatible with GPU export, i.e. use --device 0'
         assert not dynamic, '--half not compatible with --dynamic, i.e. use either --half or --dynamic but not both'
     model = attempt_load(weights, device=device, inplace=True, fuse=True)  # load FP32 model
+    if dla:
+        replaced = replace_spp_maxpool_for_dla(model)
+        if replaced:
+            LOGGER.info(f"DLA: replaced SPPCSPC large-kernel MaxPool in {replaced} module(s)")
+        else:
+            LOGGER.warning("DLA: no SPPCSPC(k=(5,9,13)) modules found to rewrite")
+        fused_ia = fuse_implicit_a_for_dla(model)
+        if fused_ia:
+            LOGGER.info(f"DLA: fused {fused_ia} ImplicitA layer(s) into detection head Conv2d bias")
+        else:
+            LOGGER.warning("DLA: no ImplicitA layers were fused")
 
     # Checks
     imgsz *= 2 if len(imgsz) == 1 else 1  # expand
@@ -486,11 +602,15 @@ def run(
 
     # Update model
     model.train() if train else model.eval()  # training mode = no Detect() layer grid construction
+    if dla:
+        assert not dynamic, '--dla is not compatible with --dynamic (DLA requires static shapes)'
     for k, m in model.named_modules():
-        if isinstance(m, Detect):
+        if isinstance(m, (Detect, IDetect, Segment, ISegment, IRSegment)):
             m.inplace = inplace
             m.dynamic = dynamic
             m.export = True
+            if dla and isinstance(m, (IDetect, ISegment, IRSegment)):
+                m.export_dla = True
 
     for _ in range(2):
         y = model(im)  # dry runs
@@ -507,7 +627,7 @@ def run(
     if engine:  # TensorRT required before ONNX
         f[1], _ = export_engine(model, im, file, half, dynamic, simplify, workspace, verbose)
     if onnx or xml:  # OpenVINO requires ONNX
-        f[2], _ = export_onnx(model, im, file, opset, train, dynamic, simplify)
+        f[2], _ = export_onnx(model, im, file, opset, train, dynamic, simplify, dla=dla)
     if xml:  # OpenVINO
         f[3], _ = export_openvino(model, file, half)
     if coreml:
@@ -579,6 +699,8 @@ def parse_opt():
                         nargs='+',
                         default=['torchscript'],
                         help='torchscript, onnx, openvino, engine, coreml, saved_model, pb, tflite, edgetpu, tfjs')
+    parser.add_argument('--dla', action='store_true',
+                        help='DLA-friendly export: raw 4D outputs, decode moved to CPU (static shapes only)')
     opt = parser.parse_args()
     print_args(vars(opt))
     return opt

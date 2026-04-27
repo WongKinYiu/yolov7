@@ -94,6 +94,7 @@ class IDetect(nn.Module):
     stride = None  # strides computed during build
     dynamic = False  # force grid reconstruction
     export = False  # export mode
+    export_dla = False  # DLA-friendly export: emit raw 4D conv outputs only
 
     def __init__(self, nc=80, anchors=(), ch=(), inplace=True):  # detection layer
         super().__init__()
@@ -111,6 +112,15 @@ class IDetect(nn.Module):
         self.im = nn.ModuleList(ImplicitM(self.no * self.na) for _ in ch)
 
     def forward(self, x):
+        # DLA export path: return raw per-scale 4D conv outputs.
+        # After model.fuse() (+ optional implicit fusion) ImplicitA folds into
+        # the conv bias so the whole head collapses to a single 1x1 Conv2d per
+        # level - fully DLA-compatible. All decoding (reshape/permute/sigmoid/
+        # grid/cat) is moved to CPU (see seg/dla_postprocess.py).
+        # Matches the forward path below which applies ia->m only.
+        if self.export_dla:
+            return [self.m[i](self.ia[i](x[i])) for i in range(self.nl)]
+
         z = []  # inference output
         for i in range(self.nl):
             x[i] = self.m[i](self.ia[i](x[i]))  # conv
@@ -175,6 +185,18 @@ class ISegment(IDetect):
         self.detect = IDetect.forward
 
     def forward(self, x):
+        # DLA export path: proto mask + three raw detection maps, no decode.
+        # Output contract (4 tensors, all 4D, DLA-friendly):
+        #   proto:   (bs, nm,        H/4,  W/4)
+        #   det_p3:  (bs, na*no,     H/8,  W/8)
+        #   det_p4:  (bs, na*no,     H/16, W/16)
+        #   det_p5:  (bs, na*no,     H/32, W/32)
+        # CPU postprocessor in seg/dla_postprocess.py reconstructs boxes/masks.
+        if self.export_dla:
+            p = self.proto(x[0])
+            det = IDetect.forward(self, x)
+            return (p, *det)
+
         p = self.proto(x[0])
         x = self.detect(self, x)
         return (x, p) if self.training else (x[0], p) if self.export else (x[0], (x[1], p))
@@ -403,13 +425,14 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
         n = n_ = max(round(n * gd), 1) if n > 1 else n  # depth gain
         if m in {
                 Conv, GhostConv, Bottleneck, GhostBottleneck, SPP, SPPF, DWConv, MixConv2d, Focus, CrossConv,
-                BottleneckCSP, C3, C3TR, C3SPP, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, SPPCSPC}:
+                BottleneckCSP, C3, C3TR, C3SPP, C3Ghost, nn.ConvTranspose2d, DWConvTranspose2d, C3x, SPPCSPC,
+                SPPCSPC_DLA}:
             c1, c2 = ch[f], args[0]
             if c2 != no:  # if not output
                 c2 = make_divisible(c2 * gw, 8)
 
             args = [c1, c2, *args[1:]]
-            if m in {BottleneckCSP, C3, C3TR, C3Ghost, C3x, SPPCSPC}:
+            if m in {BottleneckCSP, C3, C3TR, C3Ghost, C3x, SPPCSPC, SPPCSPC_DLA}:
                 args.insert(2, n)  # number of repeats
                 n = 1
         elif m is nn.BatchNorm2d:
