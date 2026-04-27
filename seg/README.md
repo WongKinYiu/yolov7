@@ -12,6 +12,37 @@ All of installation, data preparation, and usage are as same as yolov5.
 python segment/train.py --data coco.yaml --batch 16 --weights '' --cfg yolov7-seg.yaml --epochs 300 --name yolov7-seg --img 640 --hyp hyp.scratch-high.yaml
 ```
 
+## DLA export (TensorRT on Jetson Orin)
+
+Optional path for DLA-friendly ONNX: raw head outputs (`proto`, `det_p3`, `det_p4`, `det_p5`) and export-time fixes for SPP max-pool and implicit head adds. Normal export is unchanged without `--dla`.
+
+**Export ONNX** (run from this `seg` directory):
+
+```shell
+python export.py \
+  --weights best.pt \
+  --imgsz 640 832 \
+  --include onnx \
+  --dla \
+  --device cpu
+```
+
+From repository root, use `python seg/export.py` with the same arguments.
+
+**Check ONNX** (from repo root):
+
+```shell
+python check_yoloseg_dla.py path/to/model.onnx
+```
+
+Or: `python seg/tools/check_dla_graph.py path/to/model.onnx`
+
+**Training with DLA-safe SPP** (optional): use `models/segment/yolov7-seg-dla.yaml` instead of `yolov7-seg.yaml` so the backbone uses `SPPCSPC_DLA` from the start. Exporting a standard checkpoint with `--dla` still rewrites `SPPCSPC` pools at export time.
+
+**CPU postprocess** after inference: `dla_postprocess.py` (`DLAPostprocessor`) decodes raw tensors; see `DLA_EXPORT.md` in this folder.
+
+**TensorRT INT8** (Jetson): use a real calibration cache for production builds; see `DLA_EXPORT.md` for a full `trtexec` example and notes.
+
 ## Results
 
 [`yolov7-seg.pt`](https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7-seg.pt)

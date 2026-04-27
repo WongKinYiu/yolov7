@@ -297,6 +297,34 @@ class SPPCSPC(nn.Module):
         return self.cv7(torch.cat((y1, y2), dim=1))
 
 
+class SPPCSPC_DLA(nn.Module):
+    # DLA-compatible drop-in replacement for SPPCSPC with k=(5, 9, 13).
+    # A single 5x5 s=1 MaxPool applied 1/2/3 times is algebraically identical
+    # to separate 5x5, 9x9, 13x13 pools (SPPF trick). Jetson Orin DLA caps
+    # MaxPool window at 8, so 9 and 13 would fall back to GPU; this variant
+    # stays fully on DLA. No learnable params in the pools, so weights from
+    # an existing SPPCSPC(k=(5,9,13)) checkpoint transfer bit-for-bit.
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5, k=(5, 9, 13)):
+        super().__init__()
+        c_ = int(2 * c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, c_, 1, 1)
+        self.cv2 = Conv(c1, c_, 1, 1)
+        self.cv3 = Conv(c_, c_, 3, 1)
+        self.cv4 = Conv(c_, c_, 1, 1)
+        self.m = nn.MaxPool2d(kernel_size=5, stride=1, padding=2)
+        self.cv5 = Conv(4 * c_, c_, 1, 1)
+        self.cv6 = Conv(c_, c_, 3, 1)
+        self.cv7 = Conv(2 * c_, c2, 1, 1)
+
+    def forward(self, x):
+        x1 = self.cv4(self.cv3(self.cv1(x)))
+        y5 = self.m(x1)           # receptive field 5x5
+        y9 = self.m(y5)           # stacked 5+5 -> effective 9x9
+        y13 = self.m(y9)          # stacked 5+5+5 -> effective 13x13
+        y1 = self.cv6(self.cv5(torch.cat([x1, y5, y9, y13], 1)))
+        return self.cv7(torch.cat((y1, self.cv2(x)), dim=1))
+
+
 class Focus(nn.Module):
     # Focus wh information into c-space
     def __init__(self, c1, c2, k=1, s=1, p=None, g=1, act=True):  # ch_in, ch_out, kernel, stride, padding, groups
