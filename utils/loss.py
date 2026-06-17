@@ -74,7 +74,7 @@ class SigmoidBin(nn.Module):
         pred_reg = (pred[..., 0] * self.reg_scale - self.reg_scale/2.0) * self.step
         pred_bin = pred[..., 1:(1+self.bin_count)]
 
-        _, bin_idx = torch.max(pred_bin, dim=-1)
+        _, bin_idx = torch.max(pred_bin.sigmoid(), dim=-1)
         bin_bias = self.bins[bin_idx]
 
         if self.use_fw_regression:
